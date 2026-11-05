@@ -13,3 +13,9 @@ __pycache__/
 
 # OS metadata
 .DS_Store
+
+# Independent evaluation results; keep original upstream seed fixtures tracked.
+/output/*.json
+/runs/*
+!/runs/.gitkeep
+/labels.json

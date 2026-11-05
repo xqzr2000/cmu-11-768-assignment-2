@@ -4,6 +4,8 @@ version = "0.1.0"
 description = "11-768 HW2: a validator for agentic data-visualization runs."
 requires-python = ">=3.12"
 dependencies = [
+    # Reuse the tested Assignment 1 Docker sandbox without copying its code.
+    "agent-sandbox-runtime @ git+https://github.com/xqzr2000/cmu-11-768-assignment-1.git@0cb0534c2fffb67ddfff619100057fad0be90a3c#subdirectory=packages/agent-sandbox-runtime",
     "matplotlib==3.10.5", # matches the visualization-agent execution environment
     "modal==1.5.5",       # deploys student-owned development endpoints
     "numpy==2.3.2",       # matches the visualization-agent execution environment
