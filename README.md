@@ -1,5 +1,7 @@
-# CMU 11-768 Assignment 2 — Independent Evaluation Study
+# 11-768 Assignment 2: Evaluating a Data-Visualization Agent
 
-This repository is being initialized as an independent, non-credit adaptation of [CMU 11-768 Assignment 2](https://github.com/cmu-agents/assignment-2).
+This repository contains the starter code and instructions for Assignment 2 for 11-768 (AI Agents). See [ASSIGNMENT.md](ASSIGNMENT.md) for the assignment instructions and setup guide.
 
-Development is taking place on a feature branch and will be reviewed by pull request before merging. The planned implementation retains the official starter fixtures, uses a pinned Git dependency for the Assignment 1 Docker sandbox, and begins with offline evaluation.
+Authors: Andy Liu, Jiarui Liu, Yueqi Song
+
+Acknowledgements: 11-768 course instructors (Daniel Fried, Graham Neubig) and TAs (Apurva Gandhi, Aditya Soni, Weiwei Sun, Saujas Vaduguru, Demi Wang), Modal (compute credits)
