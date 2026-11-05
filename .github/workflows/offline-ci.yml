@@ -1,0 +1,25 @@
+name: Offline dataset checks
+
+on:
+  pull_request:
+  push:
+    branches: [main, feature/phase-0-offline-evaluation]
+
+permissions:
+  contents: read
+
+jobs:
+  offline:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check structural fixtures and tests without dependencies or API access
+        run: |
+          python3 scripts/offline_preflight.py
+          python3 -m unittest discover -s tests -p 'test_offline_*.py' -v
+      - name: Verify pinned dependency resolves with uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+      - name: Install official project and pinned sandbox
+        run: uv sync --locked
