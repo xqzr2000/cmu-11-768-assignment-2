@@ -1,0 +1,28 @@
+name: One-time uv lockfile generation
+
+on:
+  push:
+    branches: [feature/phase-0-offline-evaluation]
+    paths: [.github/workflows/bootstrap-lockfile.yml]
+
+permissions:
+  contents: write
+
+jobs:
+  lock:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+      - name: Resolve and commit universal lockfile
+        shell: bash
+        run: |
+          set -euo pipefail
+          uv lock
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add uv.lock
+          git diff --cached --quiet || git commit -m "Lock Phase 0 Python dependencies [skip ci]"
+          git push origin HEAD:feature/phase-0-offline-evaluation
