@@ -11,7 +11,7 @@
 ## Checks
 
 ```bash
-uv sync
+uv sync --locked
 uv run python scripts/offline_preflight.py
 uv run python -m unittest discover -s tests -p 'test_offline_*.py'
 ```
@@ -22,12 +22,14 @@ Known released inventory at initial inspection: 110 labeled runs, 98 `figure.png
 
 ## Completion criteria
 
-- [ ] Full official starter imported on feature branch from pinned source revision.
-- [ ] Sandbox package dependency pinned to a specific Assignment 1 commit.
-- [ ] Offline preflight successfully checks the original fixtures.
-- [ ] Offline unit tests pass in CI.
-- [ ] No credentials and no model inference in the preflight process.
+- [x] Full official starter imported on feature branch from pinned source revision.
+- [x] Sandbox package dependency pinned to a specific Assignment 1 commit.
+- [x] Offline preflight successfully checks the original fixtures.
+- [x] Offline unit tests pass in CI.
+- [x] No credentials and no model inference in the preflight process.
 - [ ] Open PR reviewed before merging into `main`.
+
+The pinned Python dependency graph is captured in `uv.lock`; use `uv sync --locked` to check that the lockfile matches `pyproject.toml`.
 
 ## Next milestone
 

@@ -23,7 +23,7 @@ An independent, non-credit adaptation of [CMU 11-768 Assignment 2: Evaluating a 
 In GitHub Codespaces, open this repository and let the devcontainer install dependencies. Or use Python 3.12 with [uv](https://docs.astral.sh/uv/):
 
 ```bash
-uv sync
+uv sync --locked
 uv run python scripts/offline_preflight.py
 uv run python -m unittest discover -s tests -p 'test_offline_*.py'
 ```

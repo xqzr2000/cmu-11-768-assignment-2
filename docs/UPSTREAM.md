@@ -6,7 +6,7 @@
 - **Pinned source revision:** `f609e76d2efd302b4b8babee06c5592899010b8b`
 - Imported by copying the full repository tree **without** importing its separate Git history or credentials.
 - The official `ASSIGNMENT.md`, `seed_labels.json`, `artifacts/`, `validator/`, `workflow/`, `infrastructure/`, `harbor/`, and `tasks/` are retained. Downstream adaptations should be documented and reviewed.
-- The first import ran via a one-time GitHub Actions bootstrap on the feature branch. The workflow was removed after import to avoid stale automation.
+- The project's `uv.lock` records the full resolved Python dependency graph. The first import ran via a one-time GitHub Actions bootstrap on the feature branch. The import and lockfile bootstrap workflows were removed after completion to avoid stale automation.
 - **Not a fork/merge:** the resulting repository intentionally has an independent history. To compare later changes, use a clone of the exact pinned upstream revision.
 
 ## Sandbox dependency
