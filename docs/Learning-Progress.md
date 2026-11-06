@@ -438,7 +438,20 @@ Never commit secrets, generated jobs, copied environment files or transient arti
 - The baseline's `validate(run)` first asks about `execution_failure`. On a predicted failure it returns immediately, avoiding the other three checks. Otherwise it asks separately about `wrong_data`, `wrong_chart`, and `hard_to_read` and concatenates their errors. This is a model-based judgment, **not an infallible determination**.
 - Normal nonterminal baseline processing calls the model once per category, for **four model requests per run**. What actually gets sent and how context overflow is handled will be examined next in `baseline._ask` and `validator/model.py`.
 
-**Next exercises:** (a) **Completed:** loading `001`, `004`, `008` with `Run.load()`. (b) Trace `validator/runner.py` from `runs()` to `validate(run)` and output schema; (c) review how `validator/baseline.py` asks four category questions and handles context overflow. Record observed outputs and problems in the next update to this session.
+**Step 7 — source walkthrough of multimodal model requests (user-verified):**
+
+- User fast-forwarded the feature branch to commit `f2a8bb7` and printed `validator/baseline.py` lines 99–163, `validator/model.py` lines 1–65, and `validator/prediction.py` lines 1–46.
+- `baseline._ask(run, family, question)` reads each named input file's text, stringifies the complete trajectory, and reads PNG bytes if a figure exists; `make_prompt` adds task instructions and requests a **YES/NO with brief explanation**.
+- `ask()` builds a multimodal chat request: `text` content plus, when available, a PNG encoded as a base64 `data:image/png` URL. It calls `validator.model.complete()` with `MAX_OUTPUT_TOKENS=250`. The endpoint must actually support image understanding.
+- `validator/model.py` uses `VALIDATOR_BASE_URL`, `VALIDATOR_API_KEY`, and optional `VALIDATOR_MODEL` (default `validator`) to construct an OpenAI-compatible client. Client timeout is 300 seconds, SDK `max_retries=3`, and requests default to `temperature=0`. No live endpoint was contacted in this exercise.
+- The baseline parses only the beginning of the response text: if it starts with `YES` (case-insensitive), it creates `Error(family=..., evidence=...)`; every other response becomes an empty list. `prediction.py` permits only the four `ErrorFamily` values and requires nonempty evidence. `PredictionFile` stores an array of `Prediction` records.
+- On a context-length `BadRequestError`, the baseline tries shorter trajectory and input excerpts using compatible vLLM tokenizer endpoints, then progressively downscales the figure if needed. Non-context 400 errors are propagated. This **changes the evidence available to the judge**.
+- Hypotheses to evaluate in future work (**not measured findings**): response-prefix parsing is brittle; asking separately for four families resends long evidence; truncation may lose decisive tool calls; reducing resolution can obscure readability defects; execution evidence could be handled partly with deterministic checks rather than only model judgment.
+- Distinguish the `openai` client's internal request retries, the baseline's **context-overflow fallback**, and the outer runner's **per-run retries**—they are three separate mechanisms.
+
+**What is not established yet:** No mocked-response or live-model execution test of `_ask()`, no vision endpoint validation, no prediction JSON output, no confusion matrix, and no MCC or macro-MCC result.
+
+**Next exercises:** (a) **Completed:** loading `001`, `004`, `008` with `Run.load()`. (b) **Completed:** runner import, call, retry and checkpoint source walkthrough. (c) **Completed:** baseline request construction, model adapter, response parser and context-overflow fallback source walkthrough. (d) **Next:** a tiny offline mock of `baseline.complete()` to observe the request format, four questions, and parsed `Error` objects without calling a real model.
 
 ### Template for future sessions
 
