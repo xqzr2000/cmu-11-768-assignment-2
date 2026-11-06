@@ -781,6 +781,14 @@ git status --short --branch
 
 When a Codespaces secret has been added, verify `"key_configured": true` in the offline preview. If false, **stop and restart the existing Codespace**, not Rebuild Container. Only once offline tests and API budget checks pass should the user independently consent to the one-request opt-in. Keep PR #6 draft until that evidence is reviewed.
 
+**Step 9 — Codespace OpenAI setup and offline checks verified (user-executed):**
+
+- User fast-forwarded the feature branch from `f0d63d2` to `c4c38b2` with `git pull --ff-only`. No merge was performed.
+- `uv run python scripts/openai_seed_pilot.py --run-id 004 --family wrong_data` completed an **offline** preview: `provider=OpenAI`, `model=gpt-5.4-mini`, `network_requests=0`, `planned_completion_requests=1`, `key_configured=true`, `prompt_chars=13424`, `trajectory_messages=10`, image `1200×1000` and `137276` bytes, no CSV inputs, `human_labels_sent=false`, and `official_qwen_equivalent=false`.
+- The user ran `uv run python -m unittest discover -s tests -p 'test_validator_*_offline.py' -v`: **49/49 passed** in **0.447 seconds**. `git status --short --branch` showed a clean branch tracking `origin/feature/session-005-seed-evaluation`.
+- This is strong evidence that `OPENAI_API_KEY` is available in the active Codespace **without displaying its value**; no rebuild or restart is needed for this session. It is **not evidence** of sufficient billing credit, permissions, model access, or live compatibility.
+- No OpenAI live request has yet been made. GitHub Actions had also passed 49 validator tests and five structural tests on the current implementation. The next step is a separately authorized, **one-call** `wrong_data` pilot. If successful, use `--compare` to compare the already saved decision against human labels offline. Do not move to other families or run 008 without reviewing this first case.
+
 **Next exercise:**
 
 ~~~bash
