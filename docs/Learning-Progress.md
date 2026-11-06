@@ -74,7 +74,7 @@ The original course setup fixes the validator to **Qwen/Qwen3-VL-30B-A3B-Instruc
 - **Agent generation:** `workflow/generate.py` still calls Modal; it has **not** been migrated to the Assignment 1 Docker runtime. Do not run it expecting local Docker behavior.
 - **Harbor:** example and template exist; our own packaged tasks do not yet exist. Docker execution and reward tests were **not performed in this session**.
 - **Documentation:** this journal is the session 001 deliverable. GitHub source inspection and branch creation are verified; **no code execution, model calls, score computation, or CI result is claimed by this journal-writing session**.
-- **Git:** Learning journal PR [#2](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/2), Session 002 PR [#3](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/3), and Session 003 PR [#4](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/4) are merged into `main`. Session 004 uses `feature/session-004-vision-evaluation`; test and review its changes via PR before merging.
+- **Git:** PRs [#2](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/2), [#3](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/3), [#4](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/4), and [#5](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/5) are merged into `main`. Session 005 develops on `feature/session-005-seed-evaluation`; offline pilot code is committed, but tests and any live seed-model calls are pending.
 
 ## How information flows through the code
 
@@ -661,6 +661,49 @@ git status --short --branch
 **Review state:** [Draft PR #5](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/5) is open and unmerged. Its purpose is solely the safe single-image capability probe. Review and merge this small milestone independently before expanding to multi-run scoring.
 
 **Next after offline inventory:** Select exact-checkpoint deployment route based on actual hardware/access and budget, create a tiny opt-in image probe with mocked tests, run it once only after approval, and if successful pilot two seed trajectories before a full baseline sweep.
+
+### Session 005 — 2026-11-05 (America/Vancouver) — Bounded real-seed vision evaluation
+
+**Starting point:** The user merged [Session 004 PR #5](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/5) into `main` at `8b9baa0`, fast-forwarded the Codespace's `main`, removed `feature/session-004-vision-evaluation` locally and created a clean local `feature/session-005-seed-evaluation`. A matching remote branch was created.
+
+**Goal:** Turn the proven one-request synthetic Z.ai GLM-4.6V-Flash vision probe into a reproducible, controlled evaluation of two real seed trajectories, using **labels only after predictions are complete**. This is an independent model experiment, not official-equivalent scoring.
+
+**Source read and bounded study selection:**
+
+- `Run.load()` in `validator/runner.py` loads `result.json` instructions, agent messages, existing `figure.png` and task input paths. The generic runner includes retries and is not appropriate for this small API-budget pilot.
+- `validator/solution.py` first checks a PNG deterministically and then calls the three semantic baseline questions: `wrong_data`, `wrong_chart`, and `hard_to_read`. `validator.baseline._ask` sends the **full task instructions, trajectory, input file contents, and image** to a model; the baseline also uses vLLM-specific `/tokenize` routes if it detects context overflow.
+- `workflow/evaluate.py` enforces matching coverage of labels/predictions for official MCC scoring. Two runs are not enough to support generalizable MCC claims; report per-run predicted/missed/false-alarm families before attempting a larger measurement.
+- Seed **004** contains 10 trajectory messages and a mathematical multi-panel visualization with no CSV inputs. Seed **008** contains 23 messages, a Sankey diagram, and `inputs/008/data.csv`. Both have existing PNG figures. This small pilot chooses these IDs for **study scope only**, not for answer lookup or error rules.
+- The human labels for 004 and 008 have been reviewed manually in earlier sessions; **do not put them into any model prompt or inference branch.** They remain for independent post-hoc analysis.
+
+**Offline-first implementation committed, Codespace tests pending:**
+
+- Added `scripts/zai_seed_pilot.py`. Default execution is a **zero-network preview** for both run IDs. The preview calls the real `solution.validate(run)` with patched completions; it prints only request sizes, figure dimensions and input filenames/lengths, never raw CSV/figure/labels/secrets. It rejects malformed figures and unexpected number of semantic requests.
+- Live mode is **opt-in twice** (`--live --confirm-three-requests`), permits exactly **one** selected run per invocation (`--run-id 004` or `008`), pins `glm-4.6v-flash` and Z.ai's original verified endpoint, and caps the count at **three** completions with 250 max output tokens each, 60-second per-request timeout and `max_retries=0`. It suppresses the baseline's vLLM tokenizer overflow recovery, failing explicitly instead of calling a different provider. The Z.ai API key is read from Codespaces Secrets or an ignored local `.env`, never printed or passed into the run.
+- The content uploaded to Z.ai when live includes **task specification, full agent messages/trajectory, full original input CSV(s), and base64-encoded `figure.png`**. Review this scope before authorizing any live call; an agent trajectory is data to evaluate, not trusted instructions to execute.
+- The script writes per-run `PredictionFile` JSON and separate model usage metadata under ignored `output/`, refuses overwrite to prevent repeated requests, and avoids saving partial successes as full predictions.
+- Only the separate offline `--compare --run-id ...` path imports human-label parsing, reads `seed_labels.json`, and compares category sets. Predictions come from the model without label consultation. This comparison is descriptive, **not macro-MCC**.
+- Added **10 new offline tests** (`tests/test_validator_seed_pilot_offline.py`) verifying preview/no-network behavior, the two opt-ins, a one-run scope, valid three-call mock execution, transport and ambiguous-answer failure handling, budget exhaustion, duplicate-output protection and label separation.
+- Updated `README.md` with the exact commands and limitations. Existing CI discovers these tests via the `test_validator_*_offline.py` glob, so it should run **32 validator tests** if all pass (22 previous + 10 new); the five structural tests should remain separate.
+
+**No live seed-data requests were made** while writing this code. No model score, CI pass or Codespace test is claimed for the new pilot yet.
+
+**Next exercise:**
+
+~~~bash
+git fetch origin
+git branch --set-upstream-to=origin/feature/session-005-seed-evaluation
+git pull --ff-only
+
+# Zero-request previews of exact planned model payloads
+uv run python scripts/zai_seed_pilot.py
+uv run python -m unittest discover -s tests -p 'test_validator_*_offline.py' -v
+uv run python -m unittest discover -s tests -p 'test_offline_*.py' -v
+uv run python scripts/offline_preflight.py
+git status --short --branch
+~~~
+
+**Stop before live inference:** Inspect the offline request-size preview, the source fixture payloads, and the current Z.ai account limits. If all offline tests pass, start with only `004` and compare **after** the prediction was written. `008` should be a second, separately authorized step rather than an automatic continuation. Keep GitHub PR in draft until the results and constraints are reviewed.
 
 ### Template for future sessions
 
