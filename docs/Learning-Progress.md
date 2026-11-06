@@ -69,11 +69,12 @@ The original course setup fixes the validator to **Qwen/Qwen3-VL-30B-A3B-Instruc
 - **Existing code:** imported full pinned official starter; offline preflight, its unit tests, GitHub Actions CI, development-container setup, and supporting Phase 0 docs.
 - **Seed inventory:** 110 released `result.json` trajectories; 98 final `figure.png` files; 19 committed CSV input files; `seed_labels.json` contains 110 human labels. Some runs legitimately have no figure.
 - **Reported Phase 0 label counts (not validator predictions):** 12 `execution_failure`, 25 `wrong_data`, 71 `wrong_chart`, 39 `hard_to_read`, and 16 fully acceptable runs; refer to [PHASE-0.md](PHASE-0.md) and rerun the preflight before relying on a local environment.
+- **Session 002 offline preflight:** Verified in Codespace on 2026-11-05: 111 resolved packages, 110 seed runs / 98 figures / 110 labels, and 5/5 unit tests passed. Visual/trajectory case studies for runs 004 and 008 recorded below; no model judging performed.
 - **Validator status:** `validator/solution.py` is deliberately a stub with `NotImplementedError`. The working `validator/baseline.py` is supplied but its performance is **not verified in this session**.
 - **Agent generation:** `workflow/generate.py` still calls Modal; it has **not** been migrated to the Assignment 1 Docker runtime. Do not run it expecting local Docker behavior.
 - **Harbor:** example and template exist; our own packaged tasks do not yet exist. Docker execution and reward tests were **not performed in this session**.
 - **Documentation:** this journal is the session 001 deliverable. GitHub source inspection and branch creation are verified; **no code execution, model calls, score computation, or CI result is claimed by this journal-writing session**.
-- **Git:** only `main` existed at inspection; branch `feature/learning-progress-journal` was created from `main` specifically for this documentation change. A PR should be reviewed before merging.
+- **Git:** Learning journal PR [#2](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/2) has merged to `main`. Session 002 uses `feature/session-002-offline-preflight`; review its changes by PR before merging.
 
 ## How information flows through the code
 
@@ -377,6 +378,54 @@ Never commit secrets, generated jobs, copied environment files or transient arti
 5. Preserving official source and recording deliberate deviations makes an independent reproduction interpretable.
 
 **Next session:** Run and log offline commands in the Assignment 2 Codespace; open several real public trajectories and compare their figures with instructions and human labels. Then design a reproducible **baseline vision-endpoint validation plan** without pretending text-only GLM tests prove image-evaluation ability.
+
+### Session 002 — 2026-11-05 (America/Vancouver) — Offline preflight and real trajectory evidence
+
+**Goal:** Validate the Codespace environment, inspect representative seed runs and figures, and learn to connect visible errors with agent tool calls before building an evaluator.
+
+**Starting point:** The previous learning-journal PR [#2](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/2) was merged into `main` on 2026-11-05. The user created a clean local branch `feature/session-002-offline-preflight` after `git pull --ff-only origin main`. The GitHub documentation update is committed on a same-named remote branch; synchronize with `git fetch origin && git pull --ff-only origin feature/session-002-offline-preflight` before making more local edits.
+
+**Verified Codespace commands and observations:**
+
+| Command | Observed result | What this establishes |
+| --- | --- | --- |
+| `git switch main && git pull --ff-only origin main` | Already up to date | Merged journal is present on `main`. |
+| `git switch -c feature/session-002-offline-preflight` | New local feature branch | Work is isolated from `main`. |
+| `git status --short --branch` | `## feature/session-002-offline-preflight` | Clean status at start of session. |
+| `ls -l docs/Learning-Progress.md` | File exists | Journal is available locally. |
+| `uv sync --locked` | Resolved **111 packages**; rebuilt/reinstalled local `hw2-validator==0.1.0` | Dependency lock is usable in Codespaces. |
+| `uv run python scripts/offline_preflight.py` | **PASSED**; **110** runs, **98** figures, **110** labels, **16** acceptable | Structural integrity of released dataset; **not** validator accuracy. |
+| `uv run python -m unittest discover -s tests -p 'test_offline_*.py' -v` | **5 tests passed**, 0.009s | Offline fixture/schema checks behave as expected. |
+| `uv run python -m workflow --help` | All seven workflow commands shown | CLI dispatcher is importable. |
+| Read-only Python script extracting matching agent tool-call lines from `artifacts/004/result.json` and `artifacts/008/result.json` | Matching source code printed as below | Confirms exact trajectory evidence, independent of a model call. |
+
+**Human seed label inventory** (these are not validator predictions): `execution_failure=12`, `wrong_chart=71`, `wrong_data=25`, `hard_to_read=39`. Categories overlap, except that terminal `execution_failure` stands alone. No MCC or macro-MCC was calculated.
+
+**Case study — run `004`: mathematical function subplots.** The user inspected `artifacts/004/figure.png` and extracted the script text from the recorded `bash` tool call.
+
+- The code sets `y4 = 15 ** x4`. Human reviewers label `wrong_data` because panel 4 omits a required cubing step. We have evidence for **what code executed** and for the reviewer judgment; do not infer a more specific intended formula without reconciling the assignment wording.
+- The code sets `axs[1, 1].set_yscale('log')` but does not set the bottom-right subplot's x-axis to logarithmic. The image shows evenly spaced x ticks. This is a human-labeled `wrong_chart` error, not an execution failure.
+- Other subplots contain `set_xscale('log')` where applicable, demonstrating why a broad search for "log" is insufficient: the validator must associate each instruction with the correct subplot.
+
+**Case study — run `008`: Sankey diagram.** The user inspected `artifacts/008/figure.png` and the actual tool-call code.
+
+- `pd.read_csv(...).query("source != 'orange'")` discards requested orange **source** rows, leaving no orange source node; human `wrong_data`.
+- Both source and target `ax.text(..., color="#f4f4f4")` labels use near-white text on white; human `hard_to_read`. The image visually corroborates low contrast.
+- An orange **target** node or a legend entry is not a substitute for a missing orange **source** node.
+
+**Control example — run `001`:** Its human seed label is `execution_failure` and the released tree has no `artifacts/001/figure.png`. This was identified from source records, but the user has **not** yet reported running `Run.load()` interactively for this case.
+
+**Concepts learned:**
+
+1. A successful `figure.png` write proves that an image file exists, not that values, chart design or readability are correct.
+2. The *task* defines expectations, the *trajectory* shows what the agent did, the *figure* reveals visual outcomes, and *human labels* let us measure evaluator predictions after the fact.
+3. A defect in agent code is an **agent failure**; a missed or wrongly assigned category in our judge is a **validator failure**. We have studied agent failures, not measured validator failures.
+4. `Run.load()` will turn raw JSON/PNG/input paths into a `Run` object; `validator.runner` invokes `validate(run)` and writes prediction JSON; `workflow score` compares those predictions with human labels.
+5. Offline preflight and unit tests are meaningful reproducibility evidence, but do not establish any vision model's performance.
+
+**Current blockers / limits:** No image-capable judge endpoint verified, no baseline predictions or MCC, no Docker-backed generation runner, no Harbor oracle/nop tests. The baseline has not been executed in this session. This session has so far been read-only for Python and fixture files.
+
+**Next exercises:** (a) Run `Run.load()` on `001`, `004`, `008` and inspect its attributes; (b) trace `validator/runner.py` from `runs()` to `validate(run)` and output schema; (c) review how `validator/baseline.py` asks four category questions and handles context overflow. Record observed outputs and problems in the next update to this session.
 
 ### Template for future sessions
 
