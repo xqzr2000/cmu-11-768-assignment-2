@@ -449,9 +449,20 @@ Never commit secrets, generated jobs, copied environment files or transient arti
 - Hypotheses to evaluate in future work (**not measured findings**): response-prefix parsing is brittle; asking separately for four families resends long evidence; truncation may lose decisive tool calls; reducing resolution can obscure readability defects; execution evidence could be handled partly with deterministic checks rather than only model judgment.
 - Distinguish the `openai` client's internal request retries, the baseline's **context-overflow fallback**, and the outer runner's **per-run retries**—they are three separate mechanisms.
 
-**What is not established yet:** No mocked-response or live-model execution test of `_ask()`, no vision endpoint validation, no prediction JSON output, no confusion matrix, and no MCC or macro-MCC result.
+**Step 8 — offline mock of the baseline model (user-executed, passed):**
 
-**Next exercises:** (a) **Completed:** loading `001`, `004`, `008` with `Run.load()`. (b) **Completed:** runner import, call, retry and checkpoint source walkthrough. (c) **Completed:** baseline request construction, model adapter, response parser and context-overflow fallback source walkthrough. (d) **Next:** a tiny offline mock of `baseline.complete()` to observe the request format, four questions, and parsed `Error` objects without calling a real model.
+- Synchronized the branch via `git pull --ff-only`, fast-forwarding `f2a8bb7..bbc8b80`.
+- Loaded run `008` using `Run.load(Path("artifacts/008"), Path.cwd())` and temporarily replaced `validator.baseline.complete` with a local `fake_complete()`. The original function was restored in a `finally` block.
+- The mock returned four artificial messages in order: `NO` for execution failure, `YES` for wrong data, `NO` for wrong chart, and `YES` for readability.
+- Observed exactly **four model-request payloads** with prompts asking the four expected questions. Every payload had content types `['text', 'image_url']`, confirming that the baseline included the run's PNG with each question.
+- Observed **two parsed Pydantic `Error` objects**, with families `wrong_data` and `hard_to_read` and the exact mocked evidence strings. Printing `error.model_dump()` showed the Python `ErrorFamily` enum instance; `model_dump(mode="json")` would emit plain string values.
+- **Result: PASS for local call-order, request-shape and answer-parsing control flow.** No real model request was made, no network API credits used, and no validator accuracy/macro-MCC can be inferred. The mock was run as a terminal heredoc, not committed as a reusable test.
+
+**Design implication:** Separate deterministic artifact/execution checks from semantic chart judgments when designing `validator/solution.py`, but confirm what counts as a valid figure. A file's mere existence and PNG header are insufficient evidence of correctness. Build independent unit tests for the new logic before any live multimodal evaluation.
+
+**What is not established yet:** No live-model execution test of `_ask()`, no verified vision endpoint, no actual validator predictions on the labeled dataset, no confusion matrix, and no MCC or macro-MCC result.
+
+**Next exercises:** (a) **Completed:** loading `001`, `004`, `008` with `Run.load()`. (b) **Completed:** runner import, call, retry and checkpoint source walkthrough. (c) **Completed:** baseline request construction, model adapter, response parser and context-overflow fallback source walkthrough. (d) **Completed:** offline mock of `baseline.complete()` verified four text+image calls and two parsed errors. (e) **Next:** design a narrow deterministic first layer for `validator/solution.py` (missing/invalid figure handling), unit-test it offline, and keep any semantic chart decisions deferred until a verified vision endpoint exists.
 
 ### Template for future sessions
 
