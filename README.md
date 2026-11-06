@@ -2,7 +2,7 @@
 
 An independent, non-credit adaptation of [CMU 11-768 Assignment 2: Evaluating a Data-Visualization Agent](https://github.com/cmu-agents/assignment-2).
 
-**Status:** Phase 0 — reproducible offline exploration. We retained the **entire pinned official starter**, including the released agent trajectories, figures, human labels, evaluator, and Harbor examples. We do **not** use Modal for execution or model hosting.
+**Status:** Phase 1 (early) — reproducible offline exploration and deterministic execution checks; vision validation remains unverified. We retained the **entire pinned official starter**, including the released agent trajectories, figures, human labels, evaluator, and Harbor examples. We do **not** use Modal for execution or model hosting.
 
 ## Our learning goals
 
@@ -26,9 +26,12 @@ In GitHub Codespaces, open this repository and let the devcontainer install depe
 uv sync --locked
 uv run python scripts/offline_preflight.py
 uv run python -m unittest discover -s tests -p 'test_offline_*.py'
+uv run python -m unittest discover -s tests -p 'test_validator_*_offline.py' -v
 ```
 
 `offline_preflight.py` checks the public run/label inventory, label schema, and PNG file headers without calling a model. It **does not** manufacture validator predictions or use human labels as model inputs.
+
+The new execution checks in `validator/solution.py` can reject a missing or undecodable `figure.png` without model calls. **They do not assess chart correctness, data accuracy, or readability.** On a decodable PNG the remaining solution judges still raise `NotImplementedError` until a verified image-capable endpoint is integrated. Do not run the full `validator.runner` with `validator.solution` yet.
 
 The original course scorer is also available:
 
