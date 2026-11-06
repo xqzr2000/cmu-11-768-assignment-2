@@ -721,7 +721,7 @@ There are **at most three** model completion attempts per live invocation with n
 - The previous error reporting suppressed the exact `ValueError` source, so we cannot establish from the user-visible terminal whether the problem occurred before a request, in the model response format (e.g. reply not beginning YES/NO), or while storing results. **Do not claim a model-quality failure or a provider outage.** Z.ai had previously passed a simpler controlled image test.
 - **Learning:** Mocked integration tests and successful HTTP vision probes cannot guarantee that a real multi-thousand-character chart-judging prompt elicits the required machine-parsable response. Future failures need secure structural telemetry without printing raw provider responses, input data or secrets.
 
-**Step 5 — safe diagnostic changes added, local verification pending:**
+**Step 5 — safe diagnostic changes added; offline verification complete:**
 
 - `scripts/zai_seed_pilot.py` now tracks `stage`, `completion_attempts` (incremented before any API request), `responses_received`, and `validated_replies` on the live path. When the returned answer does not begin with YES or NO, it reports only `reply_class`, character count, allowlisted `finish_reason`, and `completion_tokens`. Exception strings and raw model-generated content remain suppressed; no human label is read during inference.
 - `tests/test_validator_seed_pilot_offline.py` adds four synthetic tests of safe reporting for malformed replies, second-call failure, transport errors, and main's redacted error JSON; these run with **mock clients only**, without Z.ai.
@@ -738,7 +738,15 @@ uv run python scripts/zai_seed_pilot.py --run-id 004
 git status --short --branch
 ~~~
 
-**Do not yet rerun `--live`**. Inspect new diagnostics and authorization policy first. A fresh `--compare` remains pointless until a complete prediction file exists.
+**Step 6 — diagnostic code confirmed in Codespaces (user-executed):**
+
+- `git pull --ff-only` advanced the local feature branch from `0878a88` to `419633b`, including the privacy-safe diagnostic changes.
+- `uv run python -m unittest discover -s tests -p 'test_validator_*_offline.py' -v` completed **36/36 tests passing** in **0.226 seconds**. Mocked failure and redaction tests all passed. The expected argparse usage output from one intentionally invalid-flags test was not a failure.
+- `uv run python scripts/zai_seed_pilot.py --run-id 004` reported `mode=offline`, `network_requests=0`, three planned model completions, figure dimensions **1200 × 1000**, figure size **137,276 bytes**, instruction length **1,034 characters**, **10** trajectory messages, zero CSV inputs, and prompt sizes **13,042 / 13,048 / 13,033 characters**. It confirmed `human_labels_sent=false`.
+- Final `git status --short --branch` showed a clean feature branch tracking `origin/feature/session-005-seed-evaluation`.
+- **No further live API call was made** in this verification. No new model prediction or MCC has been measured. Latest GitHub Actions on `419633b` also passed.
+
+**Next decision:** Given the user's earlier authorization to perform a tightly bounded one-run live evaluation, a new **deliberate** invocation of `uv run python scripts/zai_seed_pilot.py --run-id 004 --live --confirm-three-requests` is now reasonable if the user consents to send the same public seed content again. It may make up to three new Z.ai requests, with no automatic SDK retries. Check returned `stage`, actual `completion_attempts`, `responses_received`, `validated_replies`, `reply_class`, and `finish_reason`; do not reveal raw provider responses, secret tokens or user data. Only run `--compare` if the live command succeeds and saves a prediction file. Keep draft PR #6 unmerged until this live issue is understood, and do not proceed to run 008 automatically.
 
 
 
