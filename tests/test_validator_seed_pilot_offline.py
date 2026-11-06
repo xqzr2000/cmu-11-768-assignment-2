@@ -108,7 +108,11 @@ class SeedPilotOfflineTests(unittest.TestCase):
         ]
         out = io.StringIO()
         saved = []
-        with patch.object(pilot, "load_case", return_value=self.run_case()), patch.object(
+        # The mock output paths live outside the real checkout; point ROOT at
+        # that same temporary directory so relative-path reporting is realistic.
+        with patch.object(pilot, "ROOT", self.root), patch.object(
+            pilot, "load_case", return_value=self.run_case()
+        ), patch.object(
             pilot, "load_dotenv"
         ), patch.dict(os.environ, {"ZAI_API_KEY": "test-placeholder"}), patch.object(
             pilot, "OpenAI", return_value=mock_client
