@@ -1,17 +1,17 @@
-"""Student validator: deterministic execution checks before semantic judging.
+"""Student validator: offline execution checks plus baseline semantic judgments.
 
-Phase 1, offline-first: recognize when the final figure is missing or cannot be
-opened as a complete PNG. These are structural failures, not judgments about
-data correctness, chart design, or readability.
-
-The other judges remain deliberately unimplemented until we have a verified
-image-capable endpoint. Do not treat a decodable PNG as an acceptable run.
+Missing or undecodable PNGs produce a terminal execution failure without a
+model request. For valid PNGs, reuse the official baseline's image-capable
+judging path as the first integration step. This is NOT a measured improvement
+over the baseline: actual data/chart/readability decisions require a live
+vision-language endpoint, and need independent evaluation against human labels.
 """
 
 from pathlib import Path
 
 from PIL import Image, UnidentifiedImageError
 
+from validator import baseline
 from validator.prediction import Error, ErrorFamily
 from validator.runner import Run
 
@@ -53,20 +53,20 @@ def judge_execution(run: Run) -> list[Error]:
 
 
 def judge_data_and_chart(run: Run) -> list[Error]:
-    """Judge numerical correctness and requested chart design (future stage)."""
-    raise NotImplementedError("Semantic data/chart judging needs a validated image-capable endpoint")
+    """Delegate data and chart questions to the supplied baseline VLM judge."""
+    return baseline.judge_data_and_chart(run)
 
 
 def judge_readability(run: Run) -> list[Error]:
-    """Judge the actual legibility of the rendered image (future stage)."""
-    raise NotImplementedError("Readability judging needs a validated image-capable endpoint")
+    """Delegate rendered-image readability checks to the baseline VLM judge."""
+    return baseline.judge_readability(run)
 
 
 def validate(run: Run) -> list[Error]:
-    """Return terminal execution failures, otherwise invoke remaining judges.
+    """Check the figure first; then ask the model about three semantic families.
 
-    This is intentionally incomplete for figures that pass structural checks:
-    never silently return [] just because Pillow could decode a PNG.
+    A valid PNG does not imply a correct chart. The semantic model failures
+    propagate to the runner; they must not become false "acceptable" results.
     """
     execution = judge_execution(run)
     if execution:
