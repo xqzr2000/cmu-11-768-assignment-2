@@ -74,7 +74,7 @@ The original course setup fixes the validator to **Qwen/Qwen3-VL-30B-A3B-Instruc
 - **Agent generation:** `workflow/generate.py` still calls Modal; it has **not** been migrated to the Assignment 1 Docker runtime. Do not run it expecting local Docker behavior.
 - **Harbor:** example and template exist; our own packaged tasks do not yet exist. Docker execution and reward tests were **not performed in this session**.
 - **Documentation:** this journal is the session 001 deliverable. GitHub source inspection and branch creation are verified; **no code execution, model calls, score computation, or CI result is claimed by this journal-writing session**.
-- **Git:** Learning journal PR [#2](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/2), Session 002 PR [#3](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/3), and Session 003 PR [#4](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/4) are merged into `main`. Session 004 uses `feature/session-004-vision-evaluation`; test and review its changes via PR before merging.
+- **Git:** PRs [#2](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/2), [#3](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/3), [#4](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/4), and [#5](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/5) are merged into `main`. Session 005 remains on `feature/session-005-seed-evaluation`, draft PR #6. The independent OpenAI structured-output pilot has completed three semantic judgments on seed 004: `wrong_data` TP, `wrong_chart` TP, `hard_to_read` TN; **three binary matches on one run**, but `wrong_data` evidence was imperfect. Z.ai's real run-004 attempt failed due to output formatting/truncation. No reliable MCC has been measured.
 
 ## How information flows through the code
 
@@ -661,6 +661,176 @@ git status --short --branch
 **Review state:** [Draft PR #5](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/5) is open and unmerged. Its purpose is solely the safe single-image capability probe. Review and merge this small milestone independently before expanding to multi-run scoring.
 
 **Next after offline inventory:** Select exact-checkpoint deployment route based on actual hardware/access and budget, create a tiny opt-in image probe with mocked tests, run it once only after approval, and if successful pilot two seed trajectories before a full baseline sweep.
+
+### Session 005 — 2026-11-05 (America/Vancouver) — Bounded real-seed vision evaluation
+
+**Starting point:** The user merged [Session 004 PR #5](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/5) into `main` at `8b9baa0`, fast-forwarded the Codespace's `main`, removed `feature/session-004-vision-evaluation` locally and created a clean local `feature/session-005-seed-evaluation`. A matching remote branch was created.
+
+**Goal:** Turn the proven one-request synthetic Z.ai GLM-4.6V-Flash vision probe into a reproducible, controlled evaluation of two real seed trajectories, using **labels only after predictions are complete**. This is an independent model experiment, not official-equivalent scoring.
+
+**Source read and bounded study selection:**
+
+- `Run.load()` in `validator/runner.py` loads `result.json` instructions, agent messages, existing `figure.png` and task input paths. The generic runner includes retries and is not appropriate for this small API-budget pilot.
+- `validator/solution.py` first checks a PNG deterministically and then calls the three semantic baseline questions: `wrong_data`, `wrong_chart`, and `hard_to_read`. `validator.baseline._ask` sends the **full task instructions, trajectory, input file contents, and image** to a model; the baseline also uses vLLM-specific `/tokenize` routes if it detects context overflow.
+- `workflow/evaluate.py` enforces matching coverage of labels/predictions for official MCC scoring. Two runs are not enough to support generalizable MCC claims; report per-run predicted/missed/false-alarm families before attempting a larger measurement.
+- Seed **004** contains 10 trajectory messages and a mathematical multi-panel visualization with no CSV inputs. Seed **008** contains 23 messages, a Sankey diagram, and `inputs/008/data.csv`. Both have existing PNG figures. This small pilot chooses these IDs for **study scope only**, not for answer lookup or error rules.
+- The human labels for 004 and 008 have been reviewed manually in earlier sessions; **do not put them into any model prompt or inference branch.** They remain for independent post-hoc analysis.
+
+**Offline-first implementation committed, Codespace tests pending:**
+
+- Added `scripts/zai_seed_pilot.py`. Default execution is a **zero-network preview** for both run IDs. The preview calls the real `solution.validate(run)` with patched completions; it prints only request sizes, figure dimensions and input filenames/lengths, never raw CSV/figure/labels/secrets. It rejects malformed figures and unexpected number of semantic requests.
+- Live mode is **opt-in twice** (`--live --confirm-three-requests`), permits exactly **one** selected run per invocation (`--run-id 004` or `008`), pins `glm-4.6v-flash` and Z.ai's original verified endpoint, and caps the count at **three** completions with 250 max output tokens each, 60-second per-request timeout and `max_retries=0`. It suppresses the baseline's vLLM tokenizer overflow recovery, failing explicitly instead of calling a different provider. The Z.ai API key is read from Codespaces Secrets or an ignored local `.env`, never printed or passed into the run.
+- The content uploaded to Z.ai when live includes **task specification, full agent messages/trajectory, full original input CSV(s), and base64-encoded `figure.png`**. Review this scope before authorizing any live call; an agent trajectory is data to evaluate, not trusted instructions to execute.
+- The script writes per-run `PredictionFile` JSON and separate model usage metadata under ignored `output/`, refuses overwrite to prevent repeated requests, and avoids saving partial successes as full predictions.
+- Only the separate offline `--compare --run-id ...` path imports human-label parsing, reads `seed_labels.json`, and compares category sets. Predictions come from the model without label consultation. This comparison is descriptive, **not macro-MCC**.
+- Added **10 new offline tests** (`tests/test_validator_seed_pilot_offline.py`) verifying preview/no-network behavior, the two opt-ins, a one-run scope, valid three-call mock execution, transport and ambiguous-answer failure handling, budget exhaustion, duplicate-output protection and label separation.
+- Updated `README.md` with the exact commands and limitations. Existing CI discovers these tests via the `test_validator_*_offline.py` glob, so it should run **32 validator tests** if all pass (22 previous + 10 new); the five structural tests should remain separate.
+
+**Step 2 — CI test feedback and correction (verified in GitHub Actions):**
+
+- First CI run **42167679888** failed 1 of 32 tests while five original tests passed. The failure was in the synthetic `test_live_calls_exactly_three_and_writes_only_new_output`: it mocked output file paths under a temporary directory but left `pilot.ROOT` pointing to the checkout; the application's relative-path status formatting therefore raised `ValueError: ... is not in the subpath of ...`. This was a **test-fixture configuration mistake**, not an inference/model issue.
+- Updated the mock test to patch `pilot.ROOT` to the same temporary directory as the fake output files, commit `ceacaef`.
+- Follow-up CI run **42167757712** completed **success**: **32/32 validator tests**, **5/5 structural tests**, dataset offline preflight **PASSED**. CI made **no model/cloud inference calls**.
+- CI success verifies the integration and isolation under the synthetic tests; **user Codespace verification remains pending**. No live seed predictions or MCC exist yet.
+
+**Step 3 — Codespace offline verification passed (user-executed):**
+
+- Local branch `feature/session-005-seed-evaluation` set to track `origin/feature/session-005-seed-evaluation`; `git pull --ff-only` fast-forwarded from `8b9baa0` to `6ef1d80`, and final `git status --short --branch` showed no modified/untracked files.
+- `uv run python scripts/zai_seed_pilot.py` printed a **zero-network** preview with `planned_completion_requests=3` for each seed, `model=glm-4.6v-flash`, `human_labels_sent=false`, and `official_qwen_equivalent=false`. Run 004: 1200×1000 PNG, 137,276 bytes, 1034 instruction characters, 10 trajectory messages, no input CSV, and three multimodal text prompt lengths **13,042 / 13,048 / 13,033** characters. Run 008: 1500×1050 PNG, 160,555 bytes, 714 instruction characters, 23 messages, one `data.csv` input (14,475 bytes), and prompt lengths **37,126 / 37,132 / 37,117** characters.
+- `uv run python -m unittest discover -s tests -p 'test_validator_*_offline.py' -v` **32/32 passed** (0.113 seconds); `uv run python -m unittest discover -s tests -p 'test_offline_*.py' -v` **5/5 passed** (0.007 seconds). Argparse usage output in a deliberately invalid-flag test is expected; test was marked `ok`.
+- Dataset preflight **PASSED**, reporting 110 runs, 98 figures, 110 labels, 16 acceptable and human label counts: `execution_failure=12`, `hard_to_read=39`, `wrong_chart=71`, `wrong_data=25`. This is ground-truth inventory, **not** Z.ai predictions.
+- **Interpretation:** The pilot is ready for a separately authorized, single-run live call, beginning with 004; run 008's longer prompt and CSV are deferred. No live requests were made in these commands. Human labels must remain out of inference requests; `--compare` reads them only after a saved prediction exists.
+
+**Proposed next step, only after reviewing the public seed payload and consenting to its transmission to Z.ai:**
+
+~~~bash
+git pull --ff-only
+uv run python scripts/zai_seed_pilot.py --run-id 004 --live --confirm-three-requests
+# If this created a prediction file successfully, compare offline:
+uv run python scripts/zai_seed_pilot.py --run-id 004 --compare
+git status --short --branch
+~~~
+
+There are **at most three** model completion attempts per live invocation with no automatic retries and a 60-second per-request timeout. Stop if authentication, rate limits or prompt-size errors occur; never share credentials or raw API error bodies. A two-case pilot cannot yield a statistically meaningful generalization claim or official Qwen score.
+
+**Step 4 — first attempted live seed 004 evaluation failed (user-executed):**
+
+- On clean local feature branch, `git pull --ff-only` succeeded and fast-forwarded to journal commit `0878a88`.
+- The user explicitly invoked `uv run python scripts/zai_seed_pilot.py --run-id 004 --live --confirm-three-requests`. The program returned `mode=live`, `run_id=004`, `success=false`, `error_type=ValueError`, `http_status=null`, `automatic_retries=0`, `max_completion_attempts=3`. **Do not infer that three requests occurred**; this was the cap, not an observed request count.
+- A subsequent `--run-id 004 --compare` returned `FileNotFoundError`, consistent with no complete saved `output/session005_zai_004_predictions.json`. This is a *missing output*, not a comparison score.
+- The previous error reporting suppressed the exact `ValueError` source, so we cannot establish from the user-visible terminal whether the problem occurred before a request, in the model response format (e.g. reply not beginning YES/NO), or while storing results. **Do not claim a model-quality failure or a provider outage.** Z.ai had previously passed a simpler controlled image test.
+- **Learning:** Mocked integration tests and successful HTTP vision probes cannot guarantee that a real multi-thousand-character chart-judging prompt elicits the required machine-parsable response. Future failures need secure structural telemetry without printing raw provider responses, input data or secrets.
+
+**Step 5 — safe diagnostic changes added; offline verification complete:**
+
+- `scripts/zai_seed_pilot.py` now tracks `stage`, `completion_attempts` (incremented before any API request), `responses_received`, and `validated_replies` on the live path. When the returned answer does not begin with YES or NO, it reports only `reply_class`, character count, allowlisted `finish_reason`, and `completion_tokens`. Exception strings and raw model-generated content remain suppressed; no human label is read during inference.
+- `tests/test_validator_seed_pilot_offline.py` adds four synthetic tests of safe reporting for malformed replies, second-call failure, transport errors, and main's redacted error JSON; these run with **mock clients only**, without Z.ai.
+- No provider retry has occurred as part of this code change. Since the earlier failed live response was not preserved, the new diagnostics cannot retrospectively identify its root cause. A further live attempt would be a **new** invocation with up to three potential model requests; obtain deliberate user opt-in only after the updated offline tests pass.
+- The pilot remains independent, labeled `official_qwen_equivalent=false`. No actual model predictions or MCC exist yet.
+
+**Next investigation commands (offline, no Z.ai request):**
+
+~~~bash
+git pull --ff-only
+uv run python -m unittest discover -s tests -p 'test_validator_*_offline.py' -v
+uv run python -m unittest discover -s tests -p 'test_offline_*.py' -v
+uv run python scripts/zai_seed_pilot.py --run-id 004
+git status --short --branch
+~~~
+
+**Step 6 — diagnostic code confirmed in Codespaces (user-executed):**
+
+- `git pull --ff-only` advanced the local feature branch from `0878a88` to `419633b`, including the privacy-safe diagnostic changes.
+- `uv run python -m unittest discover -s tests -p 'test_validator_*_offline.py' -v` completed **36/36 tests passing** in **0.226 seconds**. Mocked failure and redaction tests all passed. The expected argparse usage output from one intentionally invalid-flags test was not a failure.
+- `uv run python scripts/zai_seed_pilot.py --run-id 004` reported `mode=offline`, `network_requests=0`, three planned model completions, figure dimensions **1200 × 1000**, figure size **137,276 bytes**, instruction length **1,034 characters**, **10** trajectory messages, zero CSV inputs, and prompt sizes **13,042 / 13,048 / 13,033 characters**. It confirmed `human_labels_sent=false`.
+- Final `git status --short --branch` showed a clean feature branch tracking `origin/feature/session-005-seed-evaluation`.
+- **No further live API call was made** in this verification. No new model prediction or MCC has been measured. Latest GitHub Actions on `419633b` also passed.
+
+**Earlier plan before the second live attempt:** Given the user's earlier authorization to perform a tightly bounded one-run live evaluation, a new **deliberate** invocation of `uv run python scripts/zai_seed_pilot.py --run-id 004 --live --confirm-three-requests` is now reasonable if the user consents to send the same public seed content again. It may make up to three new Z.ai requests, with no automatic SDK retries. Check returned `stage`, actual `completion_attempts`, `responses_received`, `validated_replies`, `reply_class`, and `finish_reason`; do not reveal raw provider responses, secret tokens or user data. Only run `--compare` if the live command succeeds and saves a prediction file. Keep draft PR #6 unmerged until this live issue is understood, and do not proceed to run 008 automatically.
+
+
+
+**Step 7 — second live run 004 attempt and model-provider decision point (user-executed):**
+
+- User pulled latest docs `f0d63d2` and deliberately ran `uv run python scripts/zai_seed_pilot.py --run-id 004 --live --confirm-three-requests`.
+- This time the privacy-safe failure report showed `error_type=ValueError`, `stage=response_validation`, `completion_attempts=1`, `responses_received=1`, `validated_replies=0`, `reply_class=non_yes_no_text`, `reply_characters=1084`, `finish_reason=length`, and `completion_tokens=250`. No HTTP status or automatic SDK retry was reported. The Z.ai endpoint **returned a response**, but the model's response did not begin with `YES` / `NO` and was cut off at the exact **250-token** output cap. This directly establishes a **response-format/truncation failure**, not a connection failure; it does **not** establish anything about the model's visual accuracy.
+- The subsequent user-triggered `--compare` failed with `FileNotFoundError`, because the pilot does not save incomplete predictions. **No prediction, comparison, or MCC** is available. Do not retry with unchanged settings.
+- The user asked whether to use **OpenAI API instead**. Recommended experimenting next with `gpt-5.4-mini` as a **separate, optional provider**, keeping GLM results distinct and documenting this as **not** the official `Qwen/Qwen3-VL-30B-A3B-Instruct-FP8`. OpenAI's current model documentation confirms image inputs and Structured Outputs at https://developers.openai.com/api/docs/models/gpt-5.4-mini and https://developers.openai.com/api/docs/guides/structured-outputs .
+- **Engineering recommendation:** Do **not** simply swap the client/model in the current `YES/NO` parser. Add a provider-isolated adapter with a strict machine-readable schema (e.g. `has_error: bool`, `evidence: str`), bounded token budget and one-call test, preserve label-free inference and output provenance, and add offline mock tests before running OpenAI. Current advertised pricing is USD `$0.75 / 1M` input and `$4.50 / 1M` output tokens for GPT-5.4 Mini, including billed image tokens; actual cost depends on usage and requires separately funded API access. Do not presume a ChatGPT subscription supplies API access.
+- **Status:** Provider switch is a recommendation, **not yet approved or implemented**; no OpenAI request made, no API key requested or exposed, and draft PR #6 remains unmerged. Z.ai may still be worth revisiting later with different prompting/output limits.
+
+**Step 8 — user approved OpenAI API integration (coding only; no live calls):**
+
+- User explicitly asked to **add OpenAI API support to the repository**, noting that their existing Codespace may need refreshing. We did not ask the user to share credentials or assert their API account has billing enabled. The official Qwen checkpoint remains unchanged. Do not claim OpenAI experimental scores are official or equivalent to Z.ai/Qwen.
+- Current OpenAI [GPT-5.4 Mini model documentation](https://developers.openai.com/api/docs/models/gpt-5.4-mini) lists `gpt-5.4-mini` with **image inputs**, Chat Completions, and **Structured Outputs**. [Structured Outputs documentation](https://developers.openai.com/api/docs/guides/structured-outputs) explains a strict JSON schema and the need to handle refusal/incomplete output. Published token rates are currently USD **$0.75 per 1M input** and **$4.50 per 1M output** tokens, with images contributing billed input tokens; actual bills and availability depend on the API account. These were verified during this session; no API request or paid test has been initiated.
+- Added standalone `scripts/openai_seed_pilot.py`: default **offline-only** preview, single selected `004` or `008` run and one semantic family (`wrong_data` by default), with **no human labels read**. Live mode requires **both** `--live --confirm-one-request` and `OPENAI_API_KEY`. The host is fixed at `https://api.openai.com/v1/`, model at `gpt-5.4-mini`, 400 max completion tokens, reasoning effort `none`, 60s timeout and `max_retries=0`. It requests exactly `has_error: boolean` and `evidence: string` via strict `json_schema` response format, with no vLLM tokenizer fallback and no response-prefix parsing.
+- The new adapter **does not** modify `validator.model`, `validator.solution`, or `scripts/zai_seed_pilot.py`. The result is **one family decision**, not a full `PredictionFile`, stored in ignored `output/session005_openai_<run>_<family>_decision.json`. It prevents overwriting, validates response completion, JSON field types, and nonempty evidence, and prints only safe failure metadata rather than model exception strings or untrusted raw payloads.
+- **Only** the separate `--compare` command can load `seed_labels.json`, after a decision file exists; it produces a single-family TP/FP/FN/TN observation, not MCC. Each API call includes real public task instructions, trajectory, relevant input-file contents and PNG, but **no human labels**. Preview outputs metadata only.
+- Added `tests/test_validator_openai_seed_offline.py` with **13 mocked tests**, covering payload preparation, zero-network preview, strict schema, refused and truncated response rejection, exact call parameters, exception redaction, double opt-in, no key/no output overwrite, local output, and post-hoc label isolation. Alongside the previously passing 36 validator tests, CI should discover **49** tests; **this count is an expectation until CI verifies it**.
+- Updated `README.md` and `.env.example` with separate OpenAI API setup and Codespaces instructions. No new Python packages were added (the starter already pins `openai==2.54.0`), and **no `.devcontainer` config was altered**. Configure `OPENAI_API_KEY` as a GitHub **Codespaces Secret**, scoped to this repo; a **stop/restart** of an existing Codespace activates new secrets, rather than rebuilding the whole container. Official source: https://docs.github.com/en/codespaces/managing-your-codespaces/managing-your-account-specific-secrets-for-github-codespaces .
+- No user-entered API key is recorded in GitHub source, journal, CI, or this conversation. Code and tests are committed on draft PR #6; **CI and user Codespace tests remain to be confirmed**. No OpenAI model inference was performed.
+
+**Next commands (offline; no model request):**
+
+~~~bash
+git pull --ff-only
+uv run python scripts/openai_seed_pilot.py
+uv run python -m unittest discover -s tests -p 'test_validator_*_offline.py' -v
+git status --short --branch
+~~~
+
+When a Codespaces secret has been added, verify `"key_configured": true` in the offline preview. If false, **stop and restart the existing Codespace**, not Rebuild Container. Only once offline tests and API budget checks pass should the user independently consent to the one-request opt-in. Keep PR #6 draft until that evidence is reviewed.
+
+**Step 9 — Codespace OpenAI setup and offline checks verified (user-executed):**
+
+- User fast-forwarded the feature branch from `f0d63d2` to `c4c38b2` with `git pull --ff-only`. No merge was performed.
+- `uv run python scripts/openai_seed_pilot.py --run-id 004 --family wrong_data` completed an **offline** preview: `provider=OpenAI`, `model=gpt-5.4-mini`, `network_requests=0`, `planned_completion_requests=1`, `key_configured=true`, `prompt_chars=13424`, `trajectory_messages=10`, image `1200×1000` and `137276` bytes, no CSV inputs, `human_labels_sent=false`, and `official_qwen_equivalent=false`.
+- The user ran `uv run python -m unittest discover -s tests -p 'test_validator_*_offline.py' -v`: **49/49 passed** in **0.447 seconds**. `git status --short --branch` showed a clean branch tracking `origin/feature/session-005-seed-evaluation`.
+- This is strong evidence that `OPENAI_API_KEY` is available in the active Codespace **without displaying its value**; no rebuild or restart is needed for this session. It is **not evidence** of sufficient billing credit, permissions, model access, or live compatibility.
+- No OpenAI live request has yet been made. GitHub Actions had also passed 49 validator tests and five structural tests on the current implementation. The next step is a separately authorized, **one-call** `wrong_data` pilot. If successful, use `--compare` to compare the already saved decision against human labels offline. Do not move to other families or run 008 without reviewing this first case.
+
+**Step 10 — first actual OpenAI seed-004 vision judgment (user-executed, SUCCESS):**
+
+- The user pulled the journal update to `7355f53`, then explicitly invoked `uv run python scripts/openai_seed_pilot.py --run-id 004 --family wrong_data --live --confirm-one-request` after completing local offline tests and configuring the API key.
+- **The call succeeded:** `mode=live`, `success=true`, one completion attempt, `model_requested=gpt-5.4-mini`, `model_reported=gpt-5.4-mini-2026-03-17`, `has_error=true`, `human_labels_sent=false`, `official_qwen_equivalent=false`. Usage was **5,649 prompt tokens + 101 completion tokens = 5,750 total**. The code saved the structured family decision under ignored `output/session005_openai_004_wrong_data_decision.json` in the user's Codespace; it did not commit or transmit the file to GitHub.
+- The model's evidence was: "Yes. The fourth subplot is wrong: it plots 15^x on a linear x-axis, but the task requested data generated by raising 15 to a linearly spaced array and that both axes be logarithmic. The x-axis is not log-scaled, and the first three subplots also do not fully match the requested scaling/data layout (e.g., the first subplot uses a linear x-axis)." The full response is reproduced here **only because this public-data example was shared by the user**; the script itself does not emit or persist secrets.
+- The user then ran the **offline** `--run-id 004 --family wrong_data --compare`: `predicted_error=true`, `human_error=true`, `match=true`, `outcome=TP`. This is **one true positive for one selected family**, not an MCC and not a full run verdict. The run's separate human `wrong_chart` label was **not** evaluated by this request.
+- **Qualitative evidence audit is important:** the official seed human `wrong_data` explanation identifies a **missing cubing step in panel 4**, whereas this response did **not** explicitly identify that missing operation. It also mixed chart-design violations into a data judgment. In particular, the original instructions request a logarithmic **y-axis** for the first subplot, **not** a logarithmic x-axis; citing the first panel's linear x-axis as an error is therefore unsupported. The response correctly matched the binary family label but its explanation should **not** be counted as an accurate fault localization.
+- **Engineering result:** OpenAI Chat Completions accepted the real 1,200×1,000 PNG + task/trajectory, returned a finished structured response, and the strict JSON parser accepted it without a prefix-format issue. This establishes a functioning experimental provider integration, **not** generalization, accurate evidence by itself, or equivalence to the official Qwen3-VL checkpoint.
+- **Next controlled experiment:** Optionally test only `wrong_chart` on the **same** seed 004 using a new explicitly approved single request; it uses a separate per-family output file. Inspect its evidence against the public original instructions before expanding to run 008 or an MCC sweep. No automatic further model calls are authorized by this journal update.
+- Keep [draft PR #6](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/6) open until the pilot is reviewed and the desired milestone scope is complete.
+
+**Step 11 — OpenAI seed 004 `wrong_chart` single-request pilot (user-executed, SUCCESS):**
+
+- The user fast-forwarded the Codespace feature branch from `7355f53` to `7033c56`. Offline preview for `--run-id 004 --family wrong_chart` reported `model=gpt-5.4-mini`, `network_requests=0`, `planned_completion_requests=1`, `key_configured=true`, `prompt_chars=13431`, `trajectory_messages=10`, a 1200×1000 PNG of 137,276 bytes, no input files, and `human_labels_sent=false`.
+- The user explicitly authorized the **one-call** OpenAI live pilot for that family (`--live --confirm-one-request`). It returned `success=true`, `model_reported=gpt-5.4-mini-2026-03-17`, `has_error=true`, `completion_attempts=1`, usage **5,650 input + 104 output = 5,754 total tokens**, and a saved ignored local file `output/session005_openai_004_wrong_chart_decision.json`. No human labels were sent.
+- Model evidence: "The figure does not follow the requested design in the fourth subplot: it should have both axes on a logarithmic scale, but the rendered plot only shows a log y-axis while the x-axis remains linear. Also, the requested x-data for the fourth subplot should be based on a linearly spaced array of powers of 15, but the plotted x-axis ranges from 0 to 30 and is not log-scaled."
+- The user then ran the separate **offline** `--compare` command; it returned `predicted_error=true`, `human_error=true`, `match=true`, `outcome=TP`. The course human `wrong_chart` evidence is that the x-axis of `axes[3]` is linear when it should be logarithmic. The model's **central missing-log-x diagnosis is aligned with that evidence**; its additional claims about the fourth subplot's x-values were not independently established by this single-label comparison.
+- **Comparison of the two independent family decisions on run 004:** `wrong_data` = TP and `wrong_chart` = TP; model calls used **5,750 + 5,754 = 11,504 total tokens** across two separate opt-in requests. The `wrong_data` label matched while its evidence missed the human-identified missing cubing operation. The `wrong_chart` justification is more faithful to the human-reviewed chart defect. No `hard_to_read` request was made; it must not be silently scored as negative based on an absent model result.
+- **Conclusions:** The OpenAI structured-output integration now works for two distinct error families of a real figure, with two correct binary results but differing explanatory quality. This is not an estimate of overall accuracy, not a statistically meaningful MCC, and not equivalent to the assignment-required Qwen3-VL checkpoint. The two local decision files remain ignored by Git and PR #6 remains draft.
+- **Next recommendation:** finish a controlled same-run 004 `hard_to_read` test (a possible true-negative case) only if the user explicitly opts into one more potentially billed request; compare offline afterward. Alternatively stop the live pilot here and review PR #6 as an integration milestone. Do not launch a broad sweep or run 008 automatically.
+
+**Step 12 — OpenAI seed 004 `hard_to_read` evaluation completes all three semantic families (user-executed, SUCCESS):**
+
+- User fast-forwarded the feature branch from `7033c56` to `8710a6f`. The default **offline** `--run-id 004 --family hard_to_read` preview reported `network_requests=0`, `planned_completion_requests=1`, `key_configured=true`, a 13,417-character prompt, 10 trajectory messages, a 1200×1000 PNG (137,276 bytes), and `human_labels_sent=false`.
+- User explicitly opted into one live request: `uv run python scripts/openai_seed_pilot.py --run-id 004 --family hard_to_read --live --confirm-one-request`. It **succeeded** with one completion attempt, `model_reported=gpt-5.4-mini-2026-03-17`, `has_error=false`, usage **5,647 prompt tokens + 60 completion tokens = 5,707 total tokens**, and saved local ignored `output/session005_openai_004_hard_to_read_decision.json`. No label was supplied during inference.
+- Model evidence: "The figure is legible overall: all four subplots, titles, axes, and curves are visible and readable. Some dense oscillations/error bars make parts busy, but not difficult or impossible to read."
+- The separately executed offline `--compare` command reported `predicted_error=false`, `human_error=false`, `match=true`, `outcome=TN`. This is a **true negative** for the run's `hard_to_read` family; the evidence is consistent with the human label.
+- **Completed seed 004 summary:** `wrong_data` = **TP** (5,750 tokens; explanation did **not** identify missing cubing operation); `wrong_chart` = **TP** (5,754 tokens; identified the human-noted missing logarithmic x-axis); `hard_to_read` = **TN** (5,707 tokens; legibility explanation aligned). **3/3 binary family decisions matched**, across exactly **3 separately authorized OpenAI API completions**, using **17,211 total reported tokens** (16,946 prompt + 265 completion). The case is still **one selected run**, not a statistical performance estimate. There is no valid macro-MCC from these three family decisions, and the official Qwen3-VL model was not used.
+- The three `session005_openai_004_<family>_decision.json` files exist **only in the user's ignored Codespace `output/` directory**. The GitHub repo has source code, tests and this factual summary, but does not contain those raw response artifacts.
+- **Recommended stopping point:** The run-004 pilot meets the goal of verifying OpenAI structured output on a real seed with independent post-hoc labels. Either close Session 005 as a reproducible integration milestone after CI and PR review, or separately opt into **run 008** (a longer trajectory plus 14,475-byte `data.csv`) as an additional case; do not auto-run three new billed questions or report MCC. Keep draft PR #6 unmerged until review.
+
+**Next offline review commands (no model calls):**
+
+~~~bash
+git pull --ff-only
+uv run python -m unittest discover -s tests -p 'test_validator_*_offline.py' -v
+uv run python -m unittest discover -s tests -p 'test_offline_*.py' -v
+uv run python scripts/offline_preflight.py
+git status --short --branch
+~~~
+
+**Next decision:** Review draft PR #6 as an integration milestone or independently authorize an additional single-family test on seed 008. Any seed 008 live request will send its task, 23 trajectory messages, `data.csv` contents and PNG to OpenAI, and is separate from the three completed seed 004 calls.
 
 ### Template for future sessions
 
