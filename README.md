@@ -42,6 +42,29 @@ uv run python -m workflow score --help
 
 To score a validator, first generate predictions independently, then use `python -m workflow score --labels seed_labels.json --predictions <path>`. The released labels are for measurement and analysis, not for hard-coded prediction lookup.
 
+## Session 004: Z.ai visual-understanding smoke test (offline first)
+
+This optional **independent experiment** uses `glm-4.6v-flash` as a vision judge; it is **not** the assignment-required `Qwen/Qwen3-VL-30B-A3B-Instruct-FP8` and does not alter `validator/model.py` or the official evaluator. Z.ai's [model guide](https://docs.z.ai/guides/vlm/glm-4.6v) documents image input, [API quick start](https://docs.z.ai/guides/overview/quick-start) supports the OpenAI client, and the [pricing page](https://docs.z.ai/guides/overview/pricing) currently lists `GLM-4.6V-Flash` as free. Check your account terms and rate limits before invoking it; free listing does not guarantee unlimited access.
+
+Offline dry run (default; **zero API calls**, no key required):
+
+```bash
+uv run python scripts/zai_vision_probe.py
+uv run python -m unittest discover -s tests -p 'test_validator_*_offline.py' -v
+```
+
+The probe creates a **256×256 synthetic chart** in memory with a tall blue bar and short orange bar, then assembles the official OpenAI-compatible `image_url` data-URL payload. It prints payload metadata, **not** base64 image data or secrets.
+
+For an optional **single** live image request, set `ZAI_API_KEY` through Codespaces Secrets (or in a local, untracked `.env` file), then **explicitly opt in twice**:
+
+```bash
+uv run python scripts/zai_vision_probe.py --live --confirm-one-request
+```
+
+The live probe sends **at most one chat completion attempt** to `https://api.z.ai/api/paas/v4/` using model `glm-4.6v-flash`, `max_tokens=64`, `max_retries=0`, a 45-second client timeout, and disabled thinking. It reports the answer and any returned token usage, not credentials or raw error bodies. HTTP 429/auth/unsupported-image responses fail visibly and are **not retried automatically**. A failed/ambiguous answer is not reported as a passed vision test. No seed artifact, human label, or full validator sweep is sent in this probe.
+
+**Do not use Z.ai results as official Qwen-equivalent scores.** Running the full seed validator with a different provider would require separate provider configuration and compatibility tests (the baseline's context-overflow fallback uses vLLM-only tokenizer routes). Keep model provenance on any experimental predictions.
+
 ## Development phases
 
 1. **Phase 0 (this PR):** preserve upstream, pin sandbox dependency, validate offline dataset, establish Docker-ready Codespace and CI.

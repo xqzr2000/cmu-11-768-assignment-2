@@ -70,11 +70,11 @@ The original course setup fixes the validator to **Qwen/Qwen3-VL-30B-A3B-Instruc
 - **Seed inventory:** 110 released `result.json` trajectories; 98 final `figure.png` files; 19 committed CSV input files; `seed_labels.json` contains 110 human labels. Some runs legitimately have no figure.
 - **Reported Phase 0 label counts (not validator predictions):** 12 `execution_failure`, 25 `wrong_data`, 71 `wrong_chart`, 39 `hard_to_read`, and 16 fully acceptable runs; refer to [PHASE-0.md](PHASE-0.md) and rerun the preflight before relying on a local environment.
 - **Session 002 offline preflight:** Verified in Codespace on 2026-11-05: 111 resolved packages, 110 seed runs / 98 figures / 110 labels, and 5/5 unit tests passed. Visual/trajectory case studies for runs 004 and 008 recorded below; no model judging performed.
-- **Validator status:** Session 002 deterministic execution checks passed 7/7 tests, with 5/5 existing preflight tests and green GitHub CI. In Session 003, structurally valid PNGs now delegate data/chart/readability decisions to the supplied baseline model logic, with seven **new** mock integration tests **passed in Codespaces (14/14 combined validator tests)**. No verified live image-capable endpoint or measured baseline/solution MCC.
+- **Validator status:** Session 002's structural execution checks and Session 003's baseline semantic wiring passed their offline tests. In Session 004, **22/22 validator tests, 5/5 structural tests, seed preflight and a one-request live Z.ai `glm-4.6v-flash` controlled image probe all passed**. The live test confirms only basic image-input capability for Z.ai, **not official Qwen equivalence or any per-family/macro-MCC**.
 - **Agent generation:** `workflow/generate.py` still calls Modal; it has **not** been migrated to the Assignment 1 Docker runtime. Do not run it expecting local Docker behavior.
 - **Harbor:** example and template exist; our own packaged tasks do not yet exist. Docker execution and reward tests were **not performed in this session**.
 - **Documentation:** this journal is the session 001 deliverable. GitHub source inspection and branch creation are verified; **no code execution, model calls, score computation, or CI result is claimed by this journal-writing session**.
-- **Git:** Learning journal PR [#2](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/2) and Session 002 PR [#3](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/3) have merged into `main`. Session 003 uses `feature/session-003-semantic-validator`; changes should be tested and reviewed through a new PR before merging.
+- **Git:** Learning journal PR [#2](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/2), Session 002 PR [#3](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/3), and Session 003 PR [#4](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/4) are merged into `main`. Session 004 uses `feature/session-004-vision-evaluation`; test and review its changes via PR before merging.
 
 ## How information flows through the code
 
@@ -547,6 +547,120 @@ git status --short --branch
 
 
 **Next:** Review [draft PR #4](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/4), verify CI on its latest head, and decide whether to merge this explicitly limited, mock-tested integration milestone. Next learning goal: verify a permitted real vision-model endpoint and establish actual baseline and solution scores without using human labels to generate predictions.
+
+### Session 004 — 2026-11-05 (America/Vancouver) — Planning exact-checkpoint vision evaluation
+
+**Goal:** Establish a real, evidence-based route to the official `Qwen/Qwen3-VL-30B-A3B-Instruct-FP8` multimodal evaluator without Modal, then measure baseline and solution predictions against held-out-by-construction seed human labels. Do not call a paid model or mislabel mock responses as accuracy measurements.
+
+**Starting Git state (user-confirmed):** Session 003 PR [#4](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/4) was merged into `main` at `4bfcd74`. The user fast-forwarded local `main`, deleted the old local feature branch, and created a clean `feature/session-004-vision-evaluation` branch with `git status --short --branch` showing no changes. A same-named remote branch now stores this journal entry. Sync it before making local edits.
+
+**Verified source review:**
+
+- `ASSIGNMENT.md` mandates **exact checkpoint** `Qwen/Qwen3-VL-30B-A3B-Instruct-FP8` for official validator comparisons, rather than an arbitrary vision-language or text-only model. The scorer expects `validate(run) -> list[Error]` and four families; `seed_labels.json` is for *scoring*, not for producing predictions.
+- `validator/model.py` already supports OpenAI-compatible `VALIDATOR_BASE_URL`, `VALIDATOR_API_KEY`, and `VALIDATOR_MODEL` (default service alias `validator`). An alias alone does **not** demonstrate which weights back the endpoint.
+- `.env.example` remains the canonical **Modal-oriented** template; its example URL and token are placeholders, not a working endpoint. Do **not** put secrets into git, terminal logs, or assistant messages.
+- `validator.baseline` retries context overflow by calling vLLM-like `tokenize` / `detokenize` routes outside `/v1`. Thus ordinary OpenAI-compatible chat completion support **does not guarantee** that all existing context-overflow fallbacks work.
+- The validator's Session 003 semantic integration is mock-tested (14 validator + 5 original offline tests and green CI), but **no image-bearing response from an actual VLM has been observed**, and no MCC is measured.
+
+**External documentation reviewed on 2026-11-05:**
+
+1. Official FP8 checkpoint: https://huggingface.co/Qwen/Qwen3-VL-30B-A3B-Instruct-FP8 — publishes weights and documents `vllm serve "Qwen/Qwen3-VL-30B-A3B-Instruct-FP8"` plus OpenAI-compatible image requests.
+2. Qwen official deployment docs: https://github.com/QwenLM/Qwen3-VL — recommend vLLM (v0.11+) or SGLang for multimodal serving.
+3. vLLM recipes: https://docs.vllm.ai/projects/recipes/en/stable/Qwen/Qwen3-VL.html — serving and OpenAI-compatible clients, including GPU requirements and practical limitations. Do **not** confuse a different 235B-model hardware example with an exact 30B requirement.
+
+**Deployment approaches (investigation only; availability, cost and identity are NOT yet verified):**
+
+- **Remotely host the exact FP8 checkpoint on a GPU VM / dedicated inference endpoint**, run vLLM or a compatible image-serving stack, use the Codespace only as an API client. This is a feasible technical route; deployment, GPU VRAM sufficiency, token handling, costs and checkpoint provenance require verification.
+- **Use an already-hosted OpenAI-compatible provider only if the provider can attest to the exact FP8 checkpoint**, image support and authentication. Similar model names, a "Qwen3-VL" generic API, or an API model alias alone do not establish checkpoint identity.
+- **Codespaces-only local inference** is not assumed possible. Verify whether this particular Codespace has CUDA GPUs and appropriate GPU memory before considering it. Installing Python libraries alone does not provide GPU access.
+
+**Safety and reproducibility guardrails:** Offline discovery first. Before any `--live` or image-bearing request, record the provider, deployed checkpoint/revision, transport URL without credentials, request limits, billing/timeout policy, and how to avoid leaking secrets. A two-image *controlled content* probe is stronger evidence of actual vision support than a successful HTTP 200 from a text endpoint; it still cannot independently prove the model's weight identity. Do not claim a private-grade-equivalent score if the deployment or model differs.
+
+**First Codespace exercise (offline, no model requests):**
+
+~~~bash
+git fetch origin
+git branch --set-upstream-to=origin/feature/session-004-vision-evaluation
+git pull --ff-only
+command -v nvidia-smi >/dev/null && nvidia-smi -L || echo "No nvidia-smi GPU inventory available"
+uv run python - <<'PY'
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+for key in ("VALIDATOR_BASE_URL", "VALIDATOR_API_KEY", "VALIDATOR_MODEL"):
+    value = os.getenv(key)
+    if key == "VALIDATOR_MODEL":
+        print(f"{key}: {value if value else '(unset; code defaults to validator)'}")
+    else:
+        print(f"{key}: {'configured' if value else 'not configured'}")
+print("No network or model call made.")
+PY
+git status --short --branch
+~~~
+
+**First Codespace audit — user-executed:**
+
+- `git fetch origin`, `git branch --set-upstream-to=origin/feature/session-004-vision-evaluation` and `git pull --ff-only` succeeded; local branch advanced from `4bfcd74` to journal commit `147f811`. `git status --short --branch` showed a clean tracking branch.
+- `command -v nvidia-smi >/dev/null && nvidia-smi -L || echo "No NVIDIA GPU inventory available"` printed **No NVIDIA GPU inventory available**. This shows no accessible NVIDIA inventory via that command, **not** a proof that no alternative accelerator exists. Avoid relying on Codespaces for the 30B FP8 inference deployment.
+- The attempted `uv run python - <<'PY'` configuration audit raised `AssertionError` from `dotenv.find_dotenv`, at `assert frame.f_back is not None`, because `load_dotenv()` attempted automatic script-based discovery from Python executed via stdin. **Environment-variable status remains unknown.** This is a script-discovery issue; it is not evidence that a token or endpoint is missing.
+- Safer next audit: `load_dotenv(dotenv_path=Path.cwd() / ".env")` with `from pathlib import Path`, and print only whether `VALIDATOR_BASE_URL` and `VALIDATOR_API_KEY` are configured, not their values. The actual repository's `validator/model.py` is imported from a normal file and need not be modified solely because the heredoc failed.
+- No live requests, GPU deployment, model downloads, costs, or MCC scores occurred.
+
+**Hosted-model selection discussion (verified public model/provider docs; deployment untested):**
+
+- **Official exact-checkpoint route:** Qwen's `Qwen/Qwen3-VL-30B-A3B-Instruct-FP8` from https://huggingface.co/Qwen/Qwen3-VL-30B-A3B-Instruct-FP8 served with GPU-backed vLLM/SGLang. This provides the strongest fidelity to the official model requirement if checkpoint/revision and serving configuration are recorded. Codespaces would be the API client, not the inference host.
+- **Lower-operations same-family prototype:** A hosted API model named `qwen3-vl-30b-a3b-instruct` is listed by Alibaba Model Studio and Novita; its exact FP8 checkpoint, image behavior, and vLLM tokenizer extensions **must be verified** and cannot be assumed from the marketing/model ID. Novita's advertised standard pricing is approximately USD `$0.20 / 1M input tokens` and `$0.70 / 1M output tokens` at https://novita.ai/pricing; these are price-page figures, **not quoted job costs**, and availability may change.
+- **Lower-cost pilot with a different model:** Alibaba Model Studio lists `qwen3-vl-flash` with low token rates (e.g. `$0.05 / 1M input` and `$0.40 / 1M output` for a Singapore region tier; source https://www.alibabacloud.com/help/en/model-studio/model-pricing). Its semantics/checkpoint differ from the assignment's required model, so results would be engineering experiments only, never official-equivalent baseline scores.
+- Avoid using Assignment 1's previously tested **text-only GLM** chat endpoint for chart judging: its successful text/tool calls do not demonstrate vision.
+- Before any model request, distinguish hardware setup (GPU hosting billable), provider API billing (token/image-dependent), and model accuracy. The old baseline's vLLM `/tokenize` fallback may not work on generic third-party chat endpoints.
+
+**Current results:** Git/GPU-command audit and dotenv script-discovery failure confirmed. No reliable environment-variable configuration status, live endpoint, vision probe, model inference, score, or new code test yet. **Decision deferred to user:** prioritize exact official checkpoint fidelity versus cheap hosted exploration before writing a live probe.
+
+**User decision — Z.ai vision first:** The user chose `glm-4.6v-flash` for **offline-first, cost-controlled independent exploration** instead of exact official-checkpoint scoring. This does **not** change the course's required Qwen3-VL validator or establish its accuracy.
+
+**Provider evidence rechecked (2026-11-05 America/Vancouver):**
+
+- https://docs.z.ai/guides/vlm/glm-4.6v lists GLM-4.6V-Flash as an image/text input model; https://docs.z.ai/guides/overview/quick-start documents the OpenAI-compatible client at `https://api.z.ai/api/paas/v4/`.
+- https://docs.z.ai/guides/overview/pricing currently lists `GLM-4.6V-Flash` as **Free** for input, cached input, storage, and output; this is public pricing, not verified account entitlements or absence of rate limits.
+- Z.ai API docs document `image_url` multimodal content, output token limits and the optional `thinking` setting: https://docs.z.ai/api-reference/llm/chat-completion . The live **data-URL/base64** form is plausible, but its acceptance by this exact hosted account has **not** been tested yet.
+- Successful GLM-4.7-Flash **text** calls in Assignment 1 do not establish GLM-4.6V-Flash vision access; the model names and modalities differ.
+
+**Step 2 — probe and mock tests committed, Codespace execution pending:**
+
+- `scripts/zai_vision_probe.py`: creates a 256×256 synthetic bar chart (BLUE visibly taller than ORANGE), builds a text + PNG `image_url` data-URL request, and **defaults to offline mode with no network call**. Any live call needs **both** `--live` and `--confirm-one-request`, an existing `ZAI_API_KEY`, and uses the fixed Z.ai endpoint, `glm-4.6v-flash`, 64 max output tokens, disabled thinking, 45-second timeout, and **zero automatic retries**. Only one completion can be attempted per invocation. Prints minimal answer/usage without exposing API key or raw HTTP response body. Distinguishes a wrong/ambiguous answer from transport failure. Never touches seed artifacts, labels, or `validator/model.py`.
+- `tests/test_validator_vision_probe_offline.py`: adds **eight synthetic tests** covering PNG pixel content and height, encoded image payload, zero-request dry run, double opt-in, missing-key short circuit, one fake request with fixed host/no retries, wrong answer handling, and provider failure handling. CI's existing `test_validator_*_offline.py` glob should discover all **22** validator tests (7 structural execution, 7 semantic integration, 8 probe) if this suite passes.
+- `README.md`: includes usage, opt-in safeguards, cost/rate-limit caveats, and official-checkpoint non-equivalence.
+- **Pending:** Codespace output for `uv run python scripts/zai_vision_probe.py`, 22 validator tests, five existing structural tests, and dataset preflight; GitHub Actions CI. No live Z.ai request was made in this session yet.
+
+**Updated next exercise:**
+
+~~~bash
+git pull --ff-only
+uv run python scripts/zai_vision_probe.py
+uv run python -m unittest discover -s tests -p 'test_validator_*_offline.py' -v
+uv run python -m unittest discover -s tests -p 'test_offline_*.py' -v
+uv run python scripts/offline_preflight.py
+git status --short --branch
+~~~
+
+**Only after these pass and the user explicitly approves one live attempt:** `uv run python scripts/zai_vision_probe.py --live --confirm-one-request`. Check that `ZAI_API_KEY` is configured without printing its value. Do not launch live as part of CI or the offline test suite.
+
+**Step 3 — offline checks and live Z.ai vision probe verified (user-executed):**
+
+- The user ran `git pull --ff-only` from `147f811` to `603b3fc` and confirmed a clean `feature/session-004-vision-evaluation...origin/feature/session-004-vision-evaluation` tracking branch.
+- Default `uv run python scripts/zai_vision_probe.py` reported `mode=offline`, `network_requests=0`, `api_key_configured=true`, synthetic image `256×256`, `image_bytes=827`, request parts `[text,image_url]`, expected answer BLUE, and `official_qwen_equivalent=false`. No credential value was printed.
+- `uv run python -m unittest discover -s tests -p 'test_validator_*_offline.py' -v` completed **22/22 tests passing** in 0.091 seconds (7 original execution + 7 semantic integration + 8 vision probe). The usage messages in the double-opt-in test are expected argparse error output; that test passed.
+- `uv run python -m unittest discover -s tests -p 'test_offline_*.py' -v` completed **5/5** in 0.008 seconds.
+- `uv run python scripts/offline_preflight.py` **PASSED** (110 runs, 98 figures, 110 labeled runs, 16 acceptable; execution_failure 12, hard_to_read 39, wrong_chart 71, wrong_data 25). Offline checks called no model or cloud resources.
+- The user voluntarily invoked the one-request live command `uv run python scripts/zai_vision_probe.py --live --confirm-one-request` **after offline validation**. Z.ai response: `model_requested=glm-4.6v-flash`, `model_reported=glm-4.6v-flash`, `answer=BLUE`, `expected=BLUE`, `vision_smoke_test_passed=true`, `completion_attempts=1`, usage **118 prompt tokens + 4 completion tokens = 122 total tokens**, and `official_qwen_equivalent=false`.
+- GitHub Actions on code head `603b3fc`, workflow run `42165860956`, also completed **success**. Job logs show **22/22 validator tests and 5/5 structural tests passing**.
+- **Interpretation:** We now have concrete evidence of account access to Z.ai GLM-4.6V-Flash and at least one correct image-grounded simple response using the actual OpenAI-compatible endpoint. This does **not** establish robust chart correctness, model checkpoint provenance beyond the API-reported ID, cost charged, or any MCC accuracy.
+- **Next experiment:** A strictly bounded independent two-run pilot on real public data-visualization trajectories, with baseline and solution evaluated separately and existing human labels used only afterward for scoring. Design offline mocked plumbing, rate limits and output separation before sending larger or sensitive contents. The released trajectories may include task/user data, so review the specific pilot payload before upload to an external provider. Keep Z.ai results explicitly separate from official Qwen metrics. Do not run an unbounded sweep.
+
+**Review state:** [Draft PR #5](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/5) is open and unmerged. Its purpose is solely the safe single-image capability probe. Review and merge this small milestone independently before expanding to multi-run scoring.
+
+**Next after offline inventory:** Select exact-checkpoint deployment route based on actual hardware/access and budget, create a tiny opt-in image probe with mocked tests, run it once only after approval, and if successful pilot two seed trajectories before a full baseline sweep.
 
 ### Template for future sessions
 
