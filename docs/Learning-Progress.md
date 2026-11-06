@@ -70,7 +70,7 @@ The original course setup fixes the validator to **Qwen/Qwen3-VL-30B-A3B-Instruc
 - **Seed inventory:** 110 released `result.json` trajectories; 98 final `figure.png` files; 19 committed CSV input files; `seed_labels.json` contains 110 human labels. Some runs legitimately have no figure.
 - **Reported Phase 0 label counts (not validator predictions):** 12 `execution_failure`, 25 `wrong_data`, 71 `wrong_chart`, 39 `hard_to_read`, and 16 fully acceptable runs; refer to [PHASE-0.md](PHASE-0.md) and rerun the preflight before relying on a local environment.
 - **Session 002 offline preflight:** Verified in Codespace on 2026-11-05: 111 resolved packages, 110 seed runs / 98 figures / 110 labels, and 5/5 unit tests passed. Visual/trajectory case studies for runs 004 and 008 recorded below; no model judging performed.
-- **Validator status:** The first offline-first layer of `validator/solution.py` checks for missing/non-file/corrupt/wrong-format/truncated final PNGs and returns terminal `execution_failure` evidence. On structurally decodable PNGs, semantic data/chart/readability judges remain **explicitly unimplemented** (`NotImplementedError`), pending a verified vision endpoint. Seven new synthetic tests have been committed; their Codespace/CI execution is **pending verification**. The supplied baseline has not been scored.
+- **Validator status:** The first offline-first layer of `validator/solution.py` checks for missing/non-file/corrupt/wrong-format/truncated final PNGs and returns terminal `execution_failure` evidence. On structurally decodable PNGs, semantic data/chart/readability judges remain **explicitly unimplemented** (`NotImplementedError`), pending a verified vision endpoint. Seven new synthetic tests have been committed and **all passed in Codespaces**; GitHub Actions also passed for code commit `5f79d76`. The supplied baseline has not been scored.
 - **Agent generation:** `workflow/generate.py` still calls Modal; it has **not** been migrated to the Assignment 1 Docker runtime. Do not run it expecting local Docker behavior.
 - **Harbor:** example and template exist; our own packaged tasks do not yet exist. Docker execution and reward tests were **not performed in this session**.
 - **Documentation:** this journal is the session 001 deliverable. GitHub source inspection and branch creation are verified; **no code execution, model calls, score computation, or CI result is claimed by this journal-writing session**.
@@ -469,7 +469,17 @@ Never commit secrets, generated jobs, copied environment files or transient arti
 - Added `tests/test_validator_solution_offline.py`: **seven synthetic cases**, covering None, nonexistent path, directory, garbage data, JPEG disguised as PNG, truncated PNG, and valid PNG (with mocked downstream judges proving execution continues).
 - Updated `.github/workflows/offline-ci.yml` to execute these tests **after** `uv sync --locked`, leaving the original dependency-free preflight tests intact. Updated `README.md` to document the scope and command.
 - Commit sequence: `3089b18` (implementation), `8641c16` (tests), `b77fbee` (CI), `2464c81` (README); this journal entry records the change as a separate documentation commit.
-- **Not yet verified:** the seven tests, CI status, and how the code behaves in the user's Codespace. No image-model request, dataset accuracy metric, or full validator run has been performed.
+- **Verified after this initial implementation note:** seven tests passed in Codespaces, five original tests passed, dataset preflight passed, and the code commit's GitHub CI passed. **Not yet done:** image-model request, dataset accuracy metric, or full validator run.
+
+**Step 10 — local verification passed (user-executed):**
+
+- The user ran `git pull --ff-only`, fast-forwarding the local branch from `4ec99c0` to `5f79d76`. The changed files were `.github/workflows/offline-ci.yml`, `README.md`, `docs/Learning-Progress.md`, `tests/test_validator_solution_offline.py`, and `validator/solution.py`.
+- New offline unit suite: `uv run python -m unittest discover -s tests -p 'test_validator_*_offline.py' -v` yielded **7 tests, 7 passed, 0 failures/errors** (0.265 seconds). Cases covered directory, garbage bytes, misnamed JPEG, `None`, nonexistent path, truncated PNG, and structurally valid PNG with downstream semantic mocks.
+- Original offline unit suite: `uv run python -m unittest discover -s tests -p 'test_offline_*.py' -v` yielded **5 tests, 5 passed, 0 failures/errors** (0.006 seconds).
+- Dataset structural preflight: **PASSED**, reporting 110 runs, 98 figures, 110 labeled runs, 16 acceptable runs; category counts `execution_failure=12`, `hard_to_read=39`, `wrong_chart=71`, `wrong_data=25`. No model or cloud infrastructure was called.
+- Git status: `## feature/session-002-offline-preflight...origin/feature/session-002-offline-preflight`, with no modified/untracked file lines.
+- GitHub Actions workflow `Offline dataset checks` for code commit `5f79d76` was also observed **completed/success** (workflow run 42162196977). A subsequent documentation-only commit may trigger another workflow run that needs its own status checked.
+- **Interpretation:** Deterministic execution checks and synthetic offline tests are reproducibly passing; the semantic validator is still unimplemented. None of these successes measures MCC or chart-judge accuracy.
 
 **Reproduce in Codespaces (after `git pull --ff-only`):**
 
@@ -483,7 +493,7 @@ git status --short --branch
 
 **What we'll learn next:** Interpret real unit-test output and any errors; distinguish "a well-formed PNG" from "a correct readable figure"; then establish the requirements for a genuinely image-capable semantic judge. **Do not run the full `validator.runner` with the partial solution yet**: valid PNG cases intentionally raise `NotImplementedError` and trigger retries.
 
-**Next exercises:** (a) **Completed:** loading `001`, `004`, `008` with `Run.load()`. (b) **Completed:** runner import, call, retry and checkpoint source walkthrough. (c) **Completed:** baseline request construction, model adapter, response parser and context-overflow fallback source walkthrough. (d) **Completed:** offline mock of `baseline.complete()` verified four text+image calls and two parsed errors. (e) **Implemented, tests pending:** deterministic execution checks plus seven synthetic tests. (f) **Next:** run those tests and the existing preflight in Codespaces, and record the actual output before claiming a pass.
+**Next exercises:** (a) **Completed:** loading `001`, `004`, `008` with `Run.load()`. (b) **Completed:** runner import, call, retry and checkpoint source walkthrough. (c) **Completed:** baseline request construction, model adapter, response parser and context-overflow fallback source walkthrough. (d) **Completed:** offline mock of `baseline.complete()` verified four text+image calls and two parsed errors. (e) **Implemented, tests pending:** deterministic execution checks plus seven synthetic tests. (f) **Completed:** all local tests and dataset preflight passed; GitHub CI passed for code commit. (g) **Next:** review the draft PR for scope, merge if desired, and plan a separate milestone for a real image-capable semantic judge.
 
 ### Template for future sessions
 
