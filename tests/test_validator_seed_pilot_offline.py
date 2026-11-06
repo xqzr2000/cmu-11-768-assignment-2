@@ -209,5 +209,79 @@ class SeedPilotOfflineTests(unittest.TestCase):
         self.assertFalse(report["official_qwen_equivalent"])
 
 
+    def test_non_yes_no_reply_produces_only_safe_diagnostics(self):
+        client = MagicMock()
+        client.chat.completions.create.return_value = fake_response(
+            "Private-looking answer: credential=do-not-log"
+        )
+        diagnostics = {}
+        with self.assertRaisesRegex(ValueError, "YES or NO"):
+            pilot.send_one_run(self.run_case(), client, diagnostics=diagnostics)
+        self.assertEqual(client.chat.completions.create.call_count, 1)
+        self.assertEqual(diagnostics["stage"], "response_validation")
+        self.assertEqual(diagnostics["completion_attempts"], 1)
+        self.assertEqual(diagnostics["responses_received"], 1)
+        self.assertEqual(diagnostics["validated_replies"], 0)
+        self.assertEqual(diagnostics["reply_class"], "non_yes_no_text")
+        self.assertEqual(diagnostics["completion_tokens"], 15)
+        self.assertNotIn("credential", json.dumps(diagnostics))
+        self.assertNotIn("do-not-log", json.dumps(diagnostics))
+
+    def test_second_invalid_reply_counts_prior_success_without_leaking_text(self):
+        client = MagicMock()
+        client.chat.completions.create.side_effect = [
+            fake_response("YES: First family."),
+            fake_response("not a yes or no. secret-marker"),
+        ]
+        diagnostics = {}
+        with self.assertRaisesRegex(ValueError, "YES or NO"):
+            pilot.send_one_run(self.run_case(), client, diagnostics=diagnostics)
+        self.assertEqual(client.chat.completions.create.call_count, 2)
+        self.assertEqual(diagnostics["completion_attempts"], 2)
+        self.assertEqual(diagnostics["responses_received"], 2)
+        self.assertEqual(diagnostics["validated_replies"], 1)
+        self.assertNotIn("secret-marker", json.dumps(diagnostics))
+
+    def test_transport_failure_reports_one_attempt_and_zero_responses(self):
+        client = MagicMock()
+        client.chat.completions.create.side_effect = RuntimeError("hidden transport details")
+        diagnostics = {}
+        with self.assertRaises(RuntimeError):
+            pilot.send_one_run(self.run_case(), client, diagnostics=diagnostics)
+        self.assertEqual(client.chat.completions.create.call_count, 1)
+        self.assertEqual(diagnostics["stage"], "api_request")
+        self.assertEqual(diagnostics["completion_attempts"], 1)
+        self.assertEqual(diagnostics["responses_received"], 0)
+        self.assertEqual(diagnostics["validated_replies"], 0)
+        self.assertNotIn("hidden transport details", json.dumps(diagnostics))
+
+    def test_main_failed_live_response_redacts_content_and_reports_attempt(self):
+        client = MagicMock()
+        client.chat.completions.create.return_value = fake_response(
+            "Secret text do-not-print-this"
+        )
+        output = io.StringIO()
+        with patch.object(pilot, "ROOT", self.root), patch.object(
+            pilot, "load_case", return_value=self.run_case()
+        ), patch.object(
+            pilot, "load_dotenv"
+        ), patch.dict(os.environ, {"ZAI_API_KEY": "test-placeholder"}), patch.object(
+            pilot, "OpenAI", return_value=client
+        ):
+            with redirect_stdout(output):
+                code = pilot.main(["--live", "--confirm-three-requests", "--run-id", "004"])
+        self.assertEqual(code, 2)
+        self.assertEqual(client.chat.completions.create.call_count, 1)
+        reported = json.loads(output.getvalue())
+        self.assertEqual(reported["error_type"], "ValueError")
+        self.assertEqual(reported["stage"], "response_validation")
+        self.assertEqual(reported["completion_attempts"], 1)
+        self.assertEqual(reported["reply_class"], "non_yes_no_text")
+        self.assertFalse(reported["human_labels_sent"])
+        self.assertNotIn("Secret text", output.getvalue())
+        self.assertNotIn("do-not-print-this", output.getvalue())
+        self.assertFalse(pilot.prediction_path("004", self.root).exists())
+
+
 if __name__ == "__main__":
     unittest.main()
