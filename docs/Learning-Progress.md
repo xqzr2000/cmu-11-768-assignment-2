@@ -398,8 +398,11 @@ Never commit secrets, generated jobs, copied environment files or transient arti
 | `uv run python -m unittest discover -s tests -p 'test_offline_*.py' -v` | **5 tests passed**, 0.009s | Offline fixture/schema checks behave as expected. |
 | `uv run python -m workflow --help` | All seven workflow commands shown | CLI dispatcher is importable. |
 | Read-only Python script extracting matching agent tool-call lines from `artifacts/004/result.json` and `artifacts/008/result.json` | Matching source code printed as below | Confirms exact trajectory evidence, independent of a model call. |
+| `Run.load()` for `001`, `004`, `008` (user-run Python heredoc) | 001: `figure=None`, 0 input files, 10 messages, instructions length 785; 004: figure path present, 0 inputs, 10 messages, length 1034; 008: figure path present, 1 input (`data.csv`), 23 messages, length 714 | Real dataset can be loaded as `Run` instances without a model; absence of a figure is distinct from parser failure. |
 
 **Human seed label inventory** (these are not validator predictions): `execution_failure=12`, `wrong_chart=71`, `wrong_data=25`, `hard_to_read=39`. Categories overlap, except that terminal `execution_failure` stands alone. No MCC or macro-MCC was calculated.
+
+**Codespace synchronization:** `git fetch origin`, `git branch --set-upstream-to=origin/feature/session-002-offline-preflight`, and `git pull --ff-only` fast-forwarded from `43fb242` to `586849b`; `git status --short --branch` showed the local branch tracking the remote and no uncommitted changes. The user then executed the `Run.load()` inspection above. No model or cloud call occurred.
 
 **Case study — run `004`: mathematical function subplots.** The user inspected `artifacts/004/figure.png` and extracted the script text from the recorded `bash` tool call.
 
@@ -425,7 +428,7 @@ Never commit secrets, generated jobs, copied environment files or transient arti
 
 **Current blockers / limits:** No image-capable judge endpoint verified, no baseline predictions or MCC, no Docker-backed generation runner, no Harbor oracle/nop tests. The baseline has not been executed in this session. This session has so far been read-only for Python and fixture files.
 
-**Next exercises:** (a) Run `Run.load()` on `001`, `004`, `008` and inspect its attributes; (b) trace `validator/runner.py` from `runs()` to `validate(run)` and output schema; (c) review how `validator/baseline.py` asks four category questions and handles context overflow. Record observed outputs and problems in the next update to this session.
+**Next exercises:** (a) **Completed:** loading `001`, `004`, `008` with `Run.load()`. (b) Trace `validator/runner.py` from `runs()` to `validate(run)` and output schema; (c) review how `validator/baseline.py` asks four category questions and handles context overflow. Record observed outputs and problems in the next update to this session.
 
 ### Template for future sessions
 
