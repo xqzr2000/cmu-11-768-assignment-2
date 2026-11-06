@@ -74,7 +74,7 @@ The original course setup fixes the validator to **Qwen/Qwen3-VL-30B-A3B-Instruc
 - **Agent generation:** `workflow/generate.py` still calls Modal; it has **not** been migrated to the Assignment 1 Docker runtime. Do not run it expecting local Docker behavior.
 - **Harbor:** example and template exist; our own packaged tasks do not yet exist. Docker execution and reward tests were **not performed in this session**.
 - **Documentation:** this journal is the session 001 deliverable. GitHub source inspection and branch creation are verified; **no code execution, model calls, score computation, or CI result is claimed by this journal-writing session**.
-- **Git:** PRs [#2](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/2), [#3](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/3), [#4](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/4), and [#5](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/5) are merged into `main`. Session 005 develops on `feature/session-005-seed-evaluation`; offline pilot code is committed, but tests and any live seed-model calls are pending.
+- **Git:** PRs [#2](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/2), [#3](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/3), [#4](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/4), and [#5](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/5) are merged into `main`. Session 005 develops on `feature/session-005-seed-evaluation` with draft PR #6; offline pilot preview, tests and CI have passed. No live seed-model calls have been made.
 
 ## How information flows through the code
 
@@ -692,6 +692,26 @@ git status --short --branch
 - Updated the mock test to patch `pilot.ROOT` to the same temporary directory as the fake output files, commit `ceacaef`.
 - Follow-up CI run **42167757712** completed **success**: **32/32 validator tests**, **5/5 structural tests**, dataset offline preflight **PASSED**. CI made **no model/cloud inference calls**.
 - CI success verifies the integration and isolation under the synthetic tests; **user Codespace verification remains pending**. No live seed predictions or MCC exist yet.
+
+**Step 3 — Codespace offline verification passed (user-executed):**
+
+- Local branch `feature/session-005-seed-evaluation` set to track `origin/feature/session-005-seed-evaluation`; `git pull --ff-only` fast-forwarded from `8b9baa0` to `6ef1d80`, and final `git status --short --branch` showed no modified/untracked files.
+- `uv run python scripts/zai_seed_pilot.py` printed a **zero-network** preview with `planned_completion_requests=3` for each seed, `model=glm-4.6v-flash`, `human_labels_sent=false`, and `official_qwen_equivalent=false`. Run 004: 1200×1000 PNG, 137,276 bytes, 1034 instruction characters, 10 trajectory messages, no input CSV, and three multimodal text prompt lengths **13,042 / 13,048 / 13,033** characters. Run 008: 1500×1050 PNG, 160,555 bytes, 714 instruction characters, 23 messages, one `data.csv` input (14,475 bytes), and prompt lengths **37,126 / 37,132 / 37,117** characters.
+- `uv run python -m unittest discover -s tests -p 'test_validator_*_offline.py' -v` **32/32 passed** (0.113 seconds); `uv run python -m unittest discover -s tests -p 'test_offline_*.py' -v` **5/5 passed** (0.007 seconds). Argparse usage output in a deliberately invalid-flag test is expected; test was marked `ok`.
+- Dataset preflight **PASSED**, reporting 110 runs, 98 figures, 110 labels, 16 acceptable and human label counts: `execution_failure=12`, `hard_to_read=39`, `wrong_chart=71`, `wrong_data=25`. This is ground-truth inventory, **not** Z.ai predictions.
+- **Interpretation:** The pilot is ready for a separately authorized, single-run live call, beginning with 004; run 008's longer prompt and CSV are deferred. No live requests were made in these commands. Human labels must remain out of inference requests; `--compare` reads them only after a saved prediction exists.
+
+**Proposed next step, only after reviewing the public seed payload and consenting to its transmission to Z.ai:**
+
+~~~bash
+git pull --ff-only
+uv run python scripts/zai_seed_pilot.py --run-id 004 --live --confirm-three-requests
+# If this created a prediction file successfully, compare offline:
+uv run python scripts/zai_seed_pilot.py --run-id 004 --compare
+git status --short --branch
+~~~
+
+There are **at most three** model completion attempts per live invocation with no automatic retries and a 60-second per-request timeout. Stop if authentication, rate limits or prompt-size errors occur; never share credentials or raw API error bodies. A two-case pilot cannot yield a statistically meaningful generalization claim or official Qwen score.
 
 **No live seed-data requests were made** while writing this code. No actual GLM seed-chart judgments or MCC are claimed.
 
