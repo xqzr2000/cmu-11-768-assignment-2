@@ -428,6 +428,16 @@ Never commit secrets, generated jobs, copied environment files or transient arti
 
 **Current blockers / limits:** No image-capable judge endpoint verified, no baseline predictions or MCC, no Docker-backed generation runner, no Harbor oracle/nop tests. The baseline has not been executed in this session. This session has so far been read-only for Python and fixture files.
 
+**Step 6 — code walkthrough (user-verified):**
+
+- The user ran `git pull --ff-only`, which fast-forwarded local `feature/session-002-offline-preflight` from `586849b` to `47cae2f`, retaining the documentation-only branch changes.
+- The user printed numbered source lines of `validator/runner.py` (33–146) and `validator/baseline.py` (164–199). **This was source inspection only**, not a validator/model execution.
+- `Run.load()` parses `result.json`, resolves task input file paths, rejects missing referenced inputs, and stores `figure=None` when `figure.png` is missing. `runs()` enumerates all `*/result.json` records in sorted order.
+- `runner.main()` imports `validate` from the selected module (default `validator.solution`); calls `errors = validate(run)`; wraps successful results in `Prediction(run_id=..., errors=...)`; writes checkpointed `PredictionFile` JSON. The `--resume` option skips predictions already in the output file.
+- Exception behavior: exceptions **inside** `validate(run)` are collected for retry. The initial attempt plus two retries imply delays of 30 and 60 seconds before remaining failures terminate; schema validation in `Prediction(...)` is *outside* that `try` block and does not receive this retry treatment. Avoid invoking the still-unimplemented `validator.solution` from the full runner.
+- The baseline's `validate(run)` first asks about `execution_failure`. On a predicted failure it returns immediately, avoiding the other three checks. Otherwise it asks separately about `wrong_data`, `wrong_chart`, and `hard_to_read` and concatenates their errors. This is a model-based judgment, **not an infallible determination**.
+- Normal nonterminal baseline processing calls the model once per category, for **four model requests per run**. What actually gets sent and how context overflow is handled will be examined next in `baseline._ask` and `validator/model.py`.
+
 **Next exercises:** (a) **Completed:** loading `001`, `004`, `008` with `Run.load()`. (b) Trace `validator/runner.py` from `runs()` to `validate(run)` and output schema; (c) review how `validator/baseline.py` asks four category questions and handles context overflow. Record observed outputs and problems in the next update to this session.
 
 ### Template for future sessions
