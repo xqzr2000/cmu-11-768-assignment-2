@@ -70,11 +70,11 @@ The original course setup fixes the validator to **Qwen/Qwen3-VL-30B-A3B-Instruc
 - **Seed inventory:** 110 released `result.json` trajectories; 98 final `figure.png` files; 19 committed CSV input files; `seed_labels.json` contains 110 human labels. Some runs legitimately have no figure.
 - **Reported Phase 0 label counts (not validator predictions):** 12 `execution_failure`, 25 `wrong_data`, 71 `wrong_chart`, 39 `hard_to_read`, and 16 fully acceptable runs; refer to [PHASE-0.md](PHASE-0.md) and rerun the preflight before relying on a local environment.
 - **Session 002 offline preflight:** Verified in Codespace on 2026-11-05: 111 resolved packages, 110 seed runs / 98 figures / 110 labels, and 5/5 unit tests passed. Visual/trajectory case studies for runs 004 and 008 recorded below; no model judging performed.
-- **Validator status:** The first offline-first layer of `validator/solution.py` checks for missing/non-file/corrupt/wrong-format/truncated final PNGs and returns terminal `execution_failure` evidence. On structurally decodable PNGs, semantic data/chart/readability judges remain **explicitly unimplemented** (`NotImplementedError`), pending a verified vision endpoint. Seven new synthetic tests have been committed and **all passed in Codespaces**; GitHub Actions also passed for code commit `5f79d76`. The supplied baseline has not been scored.
+- **Validator status:** The first offline-first layer of `validator/solution.py` checks for missing/non-file/corrupt/wrong-format/truncated final PNGs and returns terminal `execution_failure` evidence. On structurally decodable PNGs, semantic data/chart/readability judges remain **explicitly unimplemented** (`NotImplementedError`), pending a verified vision endpoint. Seven new synthetic tests have been committed and **all passed in Codespaces**; GitHub Actions also passed for the merged Session 002 PR. The supplied baseline has not been scored.
 - **Agent generation:** `workflow/generate.py` still calls Modal; it has **not** been migrated to the Assignment 1 Docker runtime. Do not run it expecting local Docker behavior.
 - **Harbor:** example and template exist; our own packaged tasks do not yet exist. Docker execution and reward tests were **not performed in this session**.
 - **Documentation:** this journal is the session 001 deliverable. GitHub source inspection and branch creation are verified; **no code execution, model calls, score computation, or CI result is claimed by this journal-writing session**.
-- **Git:** Learning journal PR [#2](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/2) has merged to `main`. Session 002 uses `feature/session-002-offline-preflight`; review its changes by PR before merging.
+- **Git:** Learning journal PR [#2](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/2) and Session 002 PR [#3](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/3) have merged into `main`. Session 003 uses `feature/session-003-semantic-validator`; changes should be tested and reviewed through a new PR before merging.
 
 ## How information flows through the code
 
@@ -494,6 +494,25 @@ git status --short --branch
 **What we'll learn next:** Interpret real unit-test output and any errors; distinguish "a well-formed PNG" from "a correct readable figure"; then establish the requirements for a genuinely image-capable semantic judge. **Do not run the full `validator.runner` with the partial solution yet**: valid PNG cases intentionally raise `NotImplementedError` and trigger retries.
 
 **Next exercises:** (a) **Completed:** loading `001`, `004`, `008` with `Run.load()`. (b) **Completed:** runner import, call, retry and checkpoint source walkthrough. (c) **Completed:** baseline request construction, model adapter, response parser and context-overflow fallback source walkthrough. (d) **Completed:** offline mock of `baseline.complete()` verified four text+image calls and two parsed errors. (e) **Implemented, tests pending:** deterministic execution checks plus seven synthetic tests. (f) **Completed:** all local tests and dataset preflight passed; GitHub CI passed for code commit. (g) **Next:** review the draft PR for scope, merge if desired, and plan a separate milestone for a real image-capable semantic judge.
+
+### Session 003 — 2026-11-05 (America/Vancouver) — Semantic validator design
+
+**Starting point:** PR [#3](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/3) from Session 002 was merged into `main` at `c3b0189` (2026-11-06 UTC). The user pulled `main`, deleted the old local branch, and created a clean local `feature/session-003-semantic-validator` branch. A matching remote branch is created for this journal entry; synchronize the local branch before editing further.
+
+**Goal:** Extend the structurally verified `validator/solution.py` so normal PNG-bearing runs can be judged for `wrong_data`, `wrong_chart`, and `hard_to_read` while retaining testability without paid API or cloud infrastructure.
+
+**Design review and source constraints (not yet an executed implementation):**
+
+- The official `ASSIGNMENT.md` fixes the evaluator model to `Qwen/Qwen3-VL-30B-A3B-Instruct-FP8`, requires the existing `validate(run) -> list[Error]` contract, and scores per-family MCC and macro-MCC on human-labeled seed runs and private held-out trajectories. Do not quietly substitute another LLM or assume a text-only endpoint can inspect PNG images.
+- `judge_execution(run)` already handles absent, corrupt, or misformatted PNG artifacts deterministically and returns the exclusive terminal family. It **does not establish semantic correctness** for a decodable image.
+- The three remaining semantic error families require reasoning over `run.instructions`, `run.inputs`, `run.messages`, and `run.figure`. `validator/baseline.py` already implements separate VLM questions with text and image content, response parsing, and a vLLM-oriented context-overflow fallback.
+- Proposed **minimal integration**: keep deterministic `judge_execution`, and delegate the other categories to the provided baseline semantic judges as the first functional implementation. Keep `validator/model.py` and the fixed category schema unchanged. This is an integration baseline, **not a claimed semantic accuracy improvement**.
+- Test the integration by mocking model completion; assert that a valid PNG leads to three semantic model requests (one each for data, chart and readability), expected `Error` objects and JSON-safe schema, while missing/invalid PNGs lead to an immediate terminal error and **zero** model requests. Add cases for model response errors and for no semantic errors. Never import `seed_labels.json` into the validator or use task IDs in decision logic.
+- Later, after a real image-capable endpoint is verified, measure the untouched baseline against the seeds and document two recurring validator failures before claiming assignment-style improvements. **Part 1's baseline measurement is not yet complete** and cannot be replaced by mocked scores.
+
+**Current observations:** Git branch creation and source review have been reported/verified; no Session 003 unit tests, live model requests, score computation, or semantic implementation are yet claimed.
+
+**Next:** Synchronize the new branch; review the detailed definitions and ambiguous boundaries in `ASSIGNMENT.md` lines 35–108; then implement the minimal integration and its offline tests. Record observed test outputs before any merge recommendation.
 
 ### Template for future sessions
 
