@@ -599,7 +599,23 @@ PY
 git status --short --branch
 ~~~
 
-**Current results:** Verified source and public documentation inspection plus remote branch creation only. No Codespace GPU inventory/config audit returned yet, no live API call, no model score, no new software tests. Do not state that a hosting provider is currently available or cheap without checking its terms.
+**First Codespace audit — user-executed:**
+
+- `git fetch origin`, `git branch --set-upstream-to=origin/feature/session-004-vision-evaluation` and `git pull --ff-only` succeeded; local branch advanced from `4bfcd74` to journal commit `147f811`. `git status --short --branch` showed a clean tracking branch.
+- `command -v nvidia-smi >/dev/null && nvidia-smi -L || echo "No NVIDIA GPU inventory available"` printed **No NVIDIA GPU inventory available**. This shows no accessible NVIDIA inventory via that command, **not** a proof that no alternative accelerator exists. Avoid relying on Codespaces for the 30B FP8 inference deployment.
+- The attempted `uv run python - <<'PY'` configuration audit raised `AssertionError` from `dotenv.find_dotenv`, at `assert frame.f_back is not None`, because `load_dotenv()` attempted automatic script-based discovery from Python executed via stdin. **Environment-variable status remains unknown.** This is a script-discovery issue; it is not evidence that a token or endpoint is missing.
+- Safer next audit: `load_dotenv(dotenv_path=Path.cwd() / ".env")` with `from pathlib import Path`, and print only whether `VALIDATOR_BASE_URL` and `VALIDATOR_API_KEY` are configured, not their values. The actual repository's `validator/model.py` is imported from a normal file and need not be modified solely because the heredoc failed.
+- No live requests, GPU deployment, model downloads, costs, or MCC scores occurred.
+
+**Hosted-model selection discussion (verified public model/provider docs; deployment untested):**
+
+- **Official exact-checkpoint route:** Qwen's `Qwen/Qwen3-VL-30B-A3B-Instruct-FP8` from https://huggingface.co/Qwen/Qwen3-VL-30B-A3B-Instruct-FP8 served with GPU-backed vLLM/SGLang. This provides the strongest fidelity to the official model requirement if checkpoint/revision and serving configuration are recorded. Codespaces would be the API client, not the inference host.
+- **Lower-operations same-family prototype:** A hosted API model named `qwen3-vl-30b-a3b-instruct` is listed by Alibaba Model Studio and Novita; its exact FP8 checkpoint, image behavior, and vLLM tokenizer extensions **must be verified** and cannot be assumed from the marketing/model ID. Novita's advertised standard pricing is approximately USD `$0.20 / 1M input tokens` and `$0.70 / 1M output tokens` at https://novita.ai/pricing; these are price-page figures, **not quoted job costs**, and availability may change.
+- **Lower-cost pilot with a different model:** Alibaba Model Studio lists `qwen3-vl-flash` with low token rates (e.g. `$0.05 / 1M input` and `$0.40 / 1M output` for a Singapore region tier; source https://www.alibabacloud.com/help/en/model-studio/model-pricing). Its semantics/checkpoint differ from the assignment's required model, so results would be engineering experiments only, never official-equivalent baseline scores.
+- Avoid using Assignment 1's previously tested **text-only GLM** chat endpoint for chart judging: its successful text/tool calls do not demonstrate vision.
+- Before any model request, distinguish hardware setup (GPU hosting billable), provider API billing (token/image-dependent), and model accuracy. The old baseline's vLLM `/tokenize` fallback may not work on generic third-party chat endpoints.
+
+**Current results:** Git/GPU-command audit and dotenv script-discovery failure confirmed. No reliable environment-variable configuration status, live endpoint, vision probe, model inference, score, or new code test yet. **Decision deferred to user:** prioritize exact official checkpoint fidelity versus cheap hosted exploration before writing a live probe.
 
 **Next after offline inventory:** Select exact-checkpoint deployment route based on actual hardware/access and budget, create a tiny opt-in image probe with mocked tests, run it once only after approval, and if successful pilot two seed trajectories before a full baseline sweep.
 
