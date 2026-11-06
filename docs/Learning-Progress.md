@@ -70,7 +70,7 @@ The original course setup fixes the validator to **Qwen/Qwen3-VL-30B-A3B-Instruc
 - **Seed inventory:** 110 released `result.json` trajectories; 98 final `figure.png` files; 19 committed CSV input files; `seed_labels.json` contains 110 human labels. Some runs legitimately have no figure.
 - **Reported Phase 0 label counts (not validator predictions):** 12 `execution_failure`, 25 `wrong_data`, 71 `wrong_chart`, 39 `hard_to_read`, and 16 fully acceptable runs; refer to [PHASE-0.md](PHASE-0.md) and rerun the preflight before relying on a local environment.
 - **Session 002 offline preflight:** Verified in Codespace on 2026-11-05: 111 resolved packages, 110 seed runs / 98 figures / 110 labels, and 5/5 unit tests passed. Visual/trajectory case studies for runs 004 and 008 recorded below; no model judging performed.
-- **Validator status:** The first offline-first layer of `validator/solution.py` checks for missing/non-file/corrupt/wrong-format/truncated final PNGs and returns terminal `execution_failure` evidence. On structurally decodable PNGs, semantic data/chart/readability judges remain **explicitly unimplemented** (`NotImplementedError`), pending a verified vision endpoint. Seven new synthetic tests have been committed and **all passed in Codespaces**; GitHub Actions also passed for the merged Session 002 PR. The supplied baseline has not been scored.
+- **Validator status:** Session 002 deterministic execution checks passed 7/7 tests, with 5/5 existing preflight tests and green GitHub CI. In Session 003, structurally valid PNGs now delegate data/chart/readability decisions to the supplied baseline model logic, with seven **new** mock integration tests committed **but not yet run in Codespaces**. No verified live image-capable endpoint or measured baseline/solution MCC.
 - **Agent generation:** `workflow/generate.py` still calls Modal; it has **not** been migrated to the Assignment 1 Docker runtime. Do not run it expecting local Docker behavior.
 - **Harbor:** example and template exist; our own packaged tasks do not yet exist. Docker execution and reward tests were **not performed in this session**.
 - **Documentation:** this journal is the session 001 deliverable. GitHub source inspection and branch creation are verified; **no code execution, model calls, score computation, or CI result is claimed by this journal-writing session**.
@@ -510,9 +510,32 @@ git status --short --branch
 - Test the integration by mocking model completion; assert that a valid PNG leads to three semantic model requests (one each for data, chart and readability), expected `Error` objects and JSON-safe schema, while missing/invalid PNGs lead to an immediate terminal error and **zero** model requests. Add cases for model response errors and for no semantic errors. Never import `seed_labels.json` into the validator or use task IDs in decision logic.
 - Later, after a real image-capable endpoint is verified, measure the untouched baseline against the seeds and document two recurring validator failures before claiming assignment-style improvements. **Part 1's baseline measurement is not yet complete** and cannot be replaced by mocked scores.
 
-**Current observations:** Git branch creation and source review have been reported/verified; no Session 003 unit tests, live model requests, score computation, or semantic implementation are yet claimed.
+**Step 1 — verified source review and branch sync (user-executed):** The user ran `git fetch origin`, attached local `feature/session-003-semantic-validator` to `origin/feature/session-003-semantic-validator`, and fast-forwarded from `c3b0189` to journal commit `e77e037`. `git status --short --branch` showed a clean tracking branch. Inspected `ASSIGNMENT.md` lines 78–108 (all four error families and label boundaries) and `validator/solution.py` lines 42–74 (incomplete semantic functions). No model or validation call was made.
 
-**Next:** Synchronize the new branch; review the detailed definitions and ambiguous boundaries in `ASSIGNMENT.md` lines 35–108; then implement the minimal integration and its offline tests. Record observed test outputs before any merge recommendation.
+**Step 2 — minimal semantic integration committed, Codespace verification pending:**
+
+- Updated `validator/solution.py`: preserve image existence and PNG integrity checks for exclusive terminal `execution_failure`; for valid PNGs, `judge_data_and_chart` delegates to `validator.baseline.judge_data_and_chart` (two separate prompts), and `judge_readability` delegates to `validator.baseline.judge_readability` (one prompt). The final `validate(run)` contract is unchanged.
+- This **reuses** the supplied judge; it is **not a measured improvement** on wrong-data, wrong-chart or readability accuracy and does not modify the official fixed model policy.
+- Added `tests/test_validator_semantic_offline.py` with **seven synthetic mock tests**, covering three multimodal prompt payloads (task, CSV, trajectory, PNG), expected families + serialized schema, all-NO, all-YES, missing and corrupt PNG skipping the model, propagated model exceptions, and malformed response handling.
+- Tests patch `validator.baseline.complete`, so no live endpoint is required and no label information is passed into the validator. The existing CI glob `test_validator_*_offline.py` is already configured to discover both the seven preexisting execution tests and these seven new tests.
+- Updated `README.md` to distinguish the new end-to-end wiring from actual image-capable evaluation. Current code commits on this branch: `62164c8` (integration), `eb6619d` (new mock tests), `2235376` (README).
+- **Pending verification:** run these new tests in Codespaces and check GitHub Actions. No model judged real images; no MCC scores have been computed. The full runner should not be invoked without a compatible image-capable endpoint because errors will propagate.
+
+**What to run next from Codespaces:**
+
+~~~bash
+git pull --ff-only
+uv run python -m unittest discover -s tests -p 'test_validator_*_offline.py' -v
+uv run python -m unittest discover -s tests -p 'test_offline_*.py' -v
+uv run python scripts/offline_preflight.py
+git status --short --branch
+~~~
+
+**What is not established:** correct model judgments on real charts, context fallback with an actual vLLM server, model credential deployment, per-family accuracy and macro-MCC.
+
+
+
+**Next:** The integration and tests have been committed, but are not yet marked passing. Run the offline test commands in Codespaces, inspect failures if any, and record results. Verify CI before recommending a PR merge.
 
 ### Template for future sessions
 
