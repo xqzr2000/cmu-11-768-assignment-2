@@ -65,6 +65,43 @@ The live probe sends **at most one chat completion attempt** to `https://api.z.a
 
 **Do not use Z.ai results as official Qwen-equivalent scores.** Running the full seed validator with a different provider would require separate provider configuration and compatibility tests (the baseline's context-overflow fallback uses vLLM-only tokenizer routes). Keep model provenance on any experimental predictions.
 
+## Session 005 — First real seed-figure evaluation (two-case pilot)
+
+The independent Z.ai pilot sends **one selected seed run** to `glm-4.6v-flash`, not the official Qwen3-VL checkpoint. Its default command is an offline preview; it will never read human labels or make network calls. Pilot selection is limited to released runs `004` and `008` to bound the experiment, not to hardcode any prediction.
+
+**1. Offline first (zero network requests):**
+
+```bash
+uv run python scripts/zai_seed_pilot.py
+uv run python -m unittest discover -s tests -p 'test_validator_*_offline.py' -v
+uv run python scripts/offline_preflight.py
+```
+
+The preview loads the authentic `Run` objects and exercises `validator.solution.validate` with fake completions. Its metadata shows **three potential multimodal requests per run**, instructions/trajectory lengths, filenames and byte counts of embedded CSV/PNG data. It does **not** send request content anywhere. To inspect these existing public fixtures yourself, use `artifacts/004/result.json`, `artifacts/008/result.json`, `inputs/008/data.csv`, and their associated `figure.png` files.
+
+**2. Optional live mode, after inspecting the preview and consenting to send the public run's instructions, full agent trajectory, input file contents and figure to Z.ai:**
+
+```bash
+# At most 3 completions for run 004. Requires ZAI_API_KEY.
+uv run python scripts/zai_seed_pilot.py --run-id 004 --live --confirm-three-requests
+
+# Run 008 only as a separate, deliberate later invocation:
+uv run python scripts/zai_seed_pilot.py --run-id 008 --live --confirm-three-requests
+```
+
+The Z.ai host and model are fixed in the script. OpenAI client automatic retries are off, timeout is 60s, output is capped at 250 tokens per request, and the code blocks a fourth attempt, including baseline overflow retries that expect the upstream vLLM tokenizer. The code also refuses to overwrite existing per-run output files to prevent accidental paid reruns. HTTP failures or ambiguous non-YES/NO answers abort without pretending that the run was acceptable. The provider's GLM-4.6V-Flash pricing currently lists a free tier, but access and rate limits can change.
+
+Successful live predictions are stored locally in ignored files `output/session005_zai_<run_id>_predictions.json` and `output/session005_zai_<run_id>_metadata.json`, using the exact official `PredictionFile` schema. **Human labels are not loaded during inference.**
+
+**3. Compare offline, only after the predictions exist:**
+
+```bash
+uv run python scripts/zai_seed_pilot.py --run-id 004 --compare
+uv run python scripts/zai_seed_pilot.py --run-id 008 --compare
+```
+
+The compare command has no model client or network access; it reads `seed_labels.json` post-hoc and reports predicted families, human families, missed errors and false alarms. **Two preselected runs are not representative and should not be presented as a meaningful MCC.** Neither these independent GLM results nor the API-reported model ID establishes official Qwen3-VL equivalence. The general `validator/model.py` remains unchanged.
+
 ## Development phases
 
 1. **Phase 0 (this PR):** preserve upstream, pin sandbox dependency, validate offline dataset, establish Docker-ready Codespace and CI.
@@ -81,4 +118,4 @@ See [docs/PHASE-0.md](docs/PHASE-0.md), [docs/ARCHITECTURE.md](docs/ARCHITECTURE
 
 **Secrets:** set `ZAI_API_KEY` through Codespaces Secrets for later phases. No API key is needed for Phase 0. Never commit `.env` or pass credentials into an agent task container.
 
-**Review workflow:** develop on `feature/phase-0-offline-evaluation`, review the pull request, and merge manually when ready.
+**Review workflow:** develop each learning milestone on its own `feature/session-...` branch, review the pull request and offline CI, then merge manually when ready.
