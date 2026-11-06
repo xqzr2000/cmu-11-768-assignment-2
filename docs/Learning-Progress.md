@@ -617,6 +617,35 @@ git status --short --branch
 
 **Current results:** Git/GPU-command audit and dotenv script-discovery failure confirmed. No reliable environment-variable configuration status, live endpoint, vision probe, model inference, score, or new code test yet. **Decision deferred to user:** prioritize exact official checkpoint fidelity versus cheap hosted exploration before writing a live probe.
 
+**User decision — Z.ai vision first:** The user chose `glm-4.6v-flash` for **offline-first, cost-controlled independent exploration** instead of exact official-checkpoint scoring. This does **not** change the course's required Qwen3-VL validator or establish its accuracy.
+
+**Provider evidence rechecked (2026-11-05 America/Vancouver):**
+
+- https://docs.z.ai/guides/vlm/glm-4.6v lists GLM-4.6V-Flash as an image/text input model; https://docs.z.ai/guides/overview/quick-start documents the OpenAI-compatible client at `https://api.z.ai/api/paas/v4/`.
+- https://docs.z.ai/guides/overview/pricing currently lists `GLM-4.6V-Flash` as **Free** for input, cached input, storage, and output; this is public pricing, not verified account entitlements or absence of rate limits.
+- Z.ai API docs document `image_url` multimodal content, output token limits and the optional `thinking` setting: https://docs.z.ai/api-reference/llm/chat-completion . The live **data-URL/base64** form is plausible, but its acceptance by this exact hosted account has **not** been tested yet.
+- Successful GLM-4.7-Flash **text** calls in Assignment 1 do not establish GLM-4.6V-Flash vision access; the model names and modalities differ.
+
+**Step 2 — probe and mock tests committed, Codespace execution pending:**
+
+- `scripts/zai_vision_probe.py`: creates a 256×256 synthetic bar chart (BLUE visibly taller than ORANGE), builds a text + PNG `image_url` data-URL request, and **defaults to offline mode with no network call**. Any live call needs **both** `--live` and `--confirm-one-request`, an existing `ZAI_API_KEY`, and uses the fixed Z.ai endpoint, `glm-4.6v-flash`, 64 max output tokens, disabled thinking, 45-second timeout, and **zero automatic retries**. Only one completion can be attempted per invocation. Prints minimal answer/usage without exposing API key or raw HTTP response body. Distinguishes a wrong/ambiguous answer from transport failure. Never touches seed artifacts, labels, or `validator/model.py`.
+- `tests/test_validator_vision_probe_offline.py`: adds **eight synthetic tests** covering PNG pixel content and height, encoded image payload, zero-request dry run, double opt-in, missing-key short circuit, one fake request with fixed host/no retries, wrong answer handling, and provider failure handling. CI's existing `test_validator_*_offline.py` glob should discover all **22** validator tests (7 structural execution, 7 semantic integration, 8 probe) if this suite passes.
+- `README.md`: includes usage, opt-in safeguards, cost/rate-limit caveats, and official-checkpoint non-equivalence.
+- **Pending:** Codespace output for `uv run python scripts/zai_vision_probe.py`, 22 validator tests, five existing structural tests, and dataset preflight; GitHub Actions CI. No live Z.ai request was made in this session yet.
+
+**Updated next exercise:**
+
+~~~bash
+git pull --ff-only
+uv run python scripts/zai_vision_probe.py
+uv run python -m unittest discover -s tests -p 'test_validator_*_offline.py' -v
+uv run python -m unittest discover -s tests -p 'test_offline_*.py' -v
+uv run python scripts/offline_preflight.py
+git status --short --branch
+~~~
+
+**Only after these pass and the user explicitly approves one live attempt:** `uv run python scripts/zai_vision_probe.py --live --confirm-one-request`. Check that `ZAI_API_KEY` is configured without printing its value. Do not launch live as part of CI or the offline test suite.
+
 **Next after offline inventory:** Select exact-checkpoint deployment route based on actual hardware/access and budget, create a tiny opt-in image probe with mocked tests, run it once only after approval, and if successful pilot two seed trajectories before a full baseline sweep.
 
 ### Template for future sessions
