@@ -2,7 +2,7 @@
 
 An independent, non-credit adaptation of [CMU 11-768 Assignment 2: Evaluating a Data-Visualization Agent](https://github.com/cmu-agents/assignment-2).
 
-**Status:** Phase 1 (early) — reproducible offline exploration, deterministic execution checks, and mock-tested semantic integration; live vision validation remains unverified. We retained the **entire pinned official starter**, including the released agent trajectories, figures, human labels, evaluator, and Harbor examples. We do **not** use Modal for execution or model hosting.
+**Status:** Phase 1 (early) — offline evaluation infrastructure, mock-tested validator integration, and one verified Z.ai synthetic image probe. Real seed judgments and official-model-equivalent scoring remain unverified. We retained the **entire pinned official starter**, including the released agent trajectories, figures, human labels, evaluator, and Harbor examples. We do **not** use Modal for execution or model hosting.
 
 ## Our learning goals
 
@@ -101,6 +101,49 @@ uv run python scripts/zai_seed_pilot.py --run-id 008 --compare
 ```
 
 The compare command has no model client or network access; it reads `seed_labels.json` post-hoc and reports predicted families, human families, missed errors and false alarms. **Two preselected runs are not representative and should not be presented as a meaningful MCC.** Neither these independent GLM results nor the API-reported model ID establishes official Qwen3-VL equivalence. The general `validator/model.py` remains unchanged.
+
+## Session 005: optional OpenAI API integration (separate provider)
+
+We diagnosed the first real Z.ai GLM-4.6V-Flash seed-004 reply: the API returned one response, but the model used all 250 output tokens and did not begin with the expected YES/NO prefix. Instead of replacing the course validator or Z.ai provider, we added an **independent OpenAI pilot** using `gpt-5.4-mini`, a model with vision and [Structured Outputs](https://developers.openai.com/api/docs/guides/structured-outputs). This is **not** the assignment-required `Qwen/Qwen3-VL-30B-A3B-Instruct-FP8`.
+
+**OpenAI API credentials for Codespaces:**
+
+1. Create an API key in the [OpenAI API dashboard](https://platform.openai.com/api-keys), and set a suitable usage budget in the API platform. **ChatGPT subscriptions do not automatically fund API calls**.
+2. In [GitHub Codespaces secrets](https://github.com/settings/codespaces), create `OPENAI_API_KEY` and grant repository access to `xqzr2000/cmu-11-768-assignment-2`. **Do not** paste the key into source code or the chat.
+3. **Stop and restart your existing Codespace** to inject the new secret. A full Rebuild Container is **not needed** for just a new Codespaces secret. Alternatively, put the key in a local, untracked `.env` file; `.gitignore` already excludes it.
+4. Check secret status without exposing the key:
+
+```bash
+uv run python scripts/openai_seed_pilot.py
+```
+
+The default command sends **zero requests** and previews the exact selected public run/family (by default seed `004`, `wrong_data`). No new packages are necessary: `openai==2.54.0` was already pinned by the official starter. This change does not modify `.devcontainer/devcontainer.json`, `validator/model.py`, `ZAI_API_KEY`, the Qwen model setting, or the seed fixtures.
+
+**Offline verification, before any API call:**
+
+```bash
+uv run python -m unittest discover -s tests -p 'test_validator_*_offline.py' -v
+uv run python scripts/openai_seed_pilot.py --run-id 004 --family wrong_data
+```
+
+**One opt-in live OpenAI question**, only after reviewing the preview and API usage/billing:
+
+```bash
+uv run python scripts/openai_seed_pilot.py --run-id 004 --family wrong_data \
+  --live --confirm-one-request
+```
+
+The API client uses **only** `https://api.openai.com/v1/`, the fixed `gpt-5.4-mini` model, an image+text Chat Completions request, a strict `{has_error: boolean, evidence: string}` JSON schema, `reasoning_effort="none"`, at most 400 completion tokens, a 60-second timeout and **no automatic retries**. At most **one** model request can be attempted per invocation. It rejects non-JSON replies, refusals, truncated outputs and type/schema violations. Never send raw provider error bodies or keys to the console.
+
+Successful output is an **individual family decision**, stored only in ignored `output/session005_openai_004_wrong_data_decision.json`, not a complete official `PredictionFile`. The program refuses to overwrite that file and reports the model/usage for provenance. The prompt contains task instructions, original trajectory, optional input-file contents and a PNG. It **never loads human labels in live or dry-run mode**.
+
+**Compare offline after a successful saved decision only:**
+
+```bash
+uv run python scripts/openai_seed_pilot.py --run-id 004 --family wrong_data --compare
+```
+
+The independent `--compare` path reads human labels locally, reports a single family decision's TP/FP/FN/TN, and makes no model requests. A single selected example is not evidence of MCC or model generalization. The existing Z.ai pilot and official Qwen3-VL configuration remain intact.
 
 ## Development phases
 
