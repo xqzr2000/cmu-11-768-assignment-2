@@ -69,11 +69,12 @@ The original course setup fixes the validator to **Qwen/Qwen3-VL-30B-A3B-Instruc
 - **Existing code:** imported full pinned official starter; offline preflight, its unit tests, GitHub Actions CI, development-container setup, and supporting Phase 0 docs.
 - **Seed inventory:** 110 released `result.json` trajectories; 98 final `figure.png` files; 19 committed CSV input files; `seed_labels.json` contains 110 human labels. Some runs legitimately have no figure.
 - **Reported Phase 0 label counts (not validator predictions):** 12 `execution_failure`, 25 `wrong_data`, 71 `wrong_chart`, 39 `hard_to_read`, and 16 fully acceptable runs; refer to [PHASE-0.md](PHASE-0.md) and rerun the preflight before relying on a local environment.
-- **Validator status:** `validator/solution.py` is deliberately a stub with `NotImplementedError`. The working `validator/baseline.py` is supplied but its performance is **not verified in this session**.
+- **Session 002 offline preflight:** Verified in Codespace on 2026-11-05: 111 resolved packages, 110 seed runs / 98 figures / 110 labels, and 5/5 unit tests passed. Visual/trajectory case studies for runs 004 and 008 recorded below; no model judging performed.
+- **Validator status:** The first offline-first layer of `validator/solution.py` checks for missing/non-file/corrupt/wrong-format/truncated final PNGs and returns terminal `execution_failure` evidence. On structurally decodable PNGs, semantic data/chart/readability judges remain **explicitly unimplemented** (`NotImplementedError`), pending a verified vision endpoint. Seven new synthetic tests have been committed and **all passed in Codespaces**; GitHub Actions also passed for code commit `5f79d76`. The supplied baseline has not been scored.
 - **Agent generation:** `workflow/generate.py` still calls Modal; it has **not** been migrated to the Assignment 1 Docker runtime. Do not run it expecting local Docker behavior.
 - **Harbor:** example and template exist; our own packaged tasks do not yet exist. Docker execution and reward tests were **not performed in this session**.
 - **Documentation:** this journal is the session 001 deliverable. GitHub source inspection and branch creation are verified; **no code execution, model calls, score computation, or CI result is claimed by this journal-writing session**.
-- **Git:** only `main` existed at inspection; branch `feature/learning-progress-journal` was created from `main` specifically for this documentation change. A PR should be reviewed before merging.
+- **Git:** Learning journal PR [#2](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/2) has merged to `main`. Session 002 uses `feature/session-002-offline-preflight`; review its changes by PR before merging.
 
 ## How information flows through the code
 
@@ -377,6 +378,122 @@ Never commit secrets, generated jobs, copied environment files or transient arti
 5. Preserving official source and recording deliberate deviations makes an independent reproduction interpretable.
 
 **Next session:** Run and log offline commands in the Assignment 2 Codespace; open several real public trajectories and compare their figures with instructions and human labels. Then design a reproducible **baseline vision-endpoint validation plan** without pretending text-only GLM tests prove image-evaluation ability.
+
+### Session 002 — 2026-11-05 (America/Vancouver) — Offline preflight and real trajectory evidence
+
+**Goal:** Validate the Codespace environment, inspect representative seed runs and figures, and learn to connect visible errors with agent tool calls before building an evaluator.
+
+**Starting point:** The previous learning-journal PR [#2](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/2) was merged into `main` on 2026-11-05. The user created a clean local branch `feature/session-002-offline-preflight` after `git pull --ff-only origin main`. The GitHub documentation update is committed on a same-named remote branch; synchronize with `git fetch origin && git pull --ff-only origin feature/session-002-offline-preflight` before making more local edits.
+
+**Verified Codespace commands and observations:**
+
+| Command | Observed result | What this establishes |
+| --- | --- | --- |
+| `git switch main && git pull --ff-only origin main` | Already up to date | Merged journal is present on `main`. |
+| `git switch -c feature/session-002-offline-preflight` | New local feature branch | Work is isolated from `main`. |
+| `git status --short --branch` | `## feature/session-002-offline-preflight` | Clean status at start of session. |
+| `ls -l docs/Learning-Progress.md` | File exists | Journal is available locally. |
+| `uv sync --locked` | Resolved **111 packages**; rebuilt/reinstalled local `hw2-validator==0.1.0` | Dependency lock is usable in Codespaces. |
+| `uv run python scripts/offline_preflight.py` | **PASSED**; **110** runs, **98** figures, **110** labels, **16** acceptable | Structural integrity of released dataset; **not** validator accuracy. |
+| `uv run python -m unittest discover -s tests -p 'test_offline_*.py' -v` | **5 tests passed**, 0.009s | Offline fixture/schema checks behave as expected. |
+| `uv run python -m workflow --help` | All seven workflow commands shown | CLI dispatcher is importable. |
+| Read-only Python script extracting matching agent tool-call lines from `artifacts/004/result.json` and `artifacts/008/result.json` | Matching source code printed as below | Confirms exact trajectory evidence, independent of a model call. |
+| `Run.load()` for `001`, `004`, `008` (user-run Python heredoc) | 001: `figure=None`, 0 input files, 10 messages, instructions length 785; 004: figure path present, 0 inputs, 10 messages, length 1034; 008: figure path present, 1 input (`data.csv`), 23 messages, length 714 | Real dataset can be loaded as `Run` instances without a model; absence of a figure is distinct from parser failure. |
+
+**Human seed label inventory** (these are not validator predictions): `execution_failure=12`, `wrong_chart=71`, `wrong_data=25`, `hard_to_read=39`. Categories overlap, except that terminal `execution_failure` stands alone. No MCC or macro-MCC was calculated.
+
+**Codespace synchronization:** `git fetch origin`, `git branch --set-upstream-to=origin/feature/session-002-offline-preflight`, and `git pull --ff-only` fast-forwarded from `43fb242` to `586849b`; `git status --short --branch` showed the local branch tracking the remote and no uncommitted changes. The user then executed the `Run.load()` inspection above. No model or cloud call occurred.
+
+**Case study — run `004`: mathematical function subplots.** The user inspected `artifacts/004/figure.png` and extracted the script text from the recorded `bash` tool call.
+
+- The code sets `y4 = 15 ** x4`. Human reviewers label `wrong_data` because panel 4 omits a required cubing step. We have evidence for **what code executed** and for the reviewer judgment; do not infer a more specific intended formula without reconciling the assignment wording.
+- The code sets `axs[1, 1].set_yscale('log')` but does not set the bottom-right subplot's x-axis to logarithmic. The image shows evenly spaced x ticks. This is a human-labeled `wrong_chart` error, not an execution failure.
+- Other subplots contain `set_xscale('log')` where applicable, demonstrating why a broad search for "log" is insufficient: the validator must associate each instruction with the correct subplot.
+
+**Case study — run `008`: Sankey diagram.** The user inspected `artifacts/008/figure.png` and the actual tool-call code.
+
+- `pd.read_csv(...).query("source != 'orange'")` discards requested orange **source** rows, leaving no orange source node; human `wrong_data`.
+- Both source and target `ax.text(..., color="#f4f4f4")` labels use near-white text on white; human `hard_to_read`. The image visually corroborates low contrast.
+- An orange **target** node or a legend entry is not a substitute for a missing orange **source** node.
+
+**Control example — run `001`:** Its human seed label is `execution_failure` and the released tree has no `artifacts/001/figure.png`. This was identified from source records, but the user has **not** yet reported running `Run.load()` interactively for this case.
+
+**Concepts learned:**
+
+1. A successful `figure.png` write proves that an image file exists, not that values, chart design or readability are correct.
+2. The *task* defines expectations, the *trajectory* shows what the agent did, the *figure* reveals visual outcomes, and *human labels* let us measure evaluator predictions after the fact.
+3. A defect in agent code is an **agent failure**; a missed or wrongly assigned category in our judge is a **validator failure**. We have studied agent failures, not measured validator failures.
+4. `Run.load()` will turn raw JSON/PNG/input paths into a `Run` object; `validator.runner` invokes `validate(run)` and writes prediction JSON; `workflow score` compares those predictions with human labels.
+5. Offline preflight and unit tests are meaningful reproducibility evidence, but do not establish any vision model's performance.
+
+**Current blockers / limits:** No image-capable judge endpoint verified, no baseline predictions or MCC, no Docker-backed generation runner, no Harbor oracle/nop tests. The baseline has not been executed in this session. This session has so far been read-only for Python and fixture files.
+
+**Step 6 — code walkthrough (user-verified):**
+
+- The user ran `git pull --ff-only`, which fast-forwarded local `feature/session-002-offline-preflight` from `586849b` to `47cae2f`, retaining the documentation-only branch changes.
+- The user printed numbered source lines of `validator/runner.py` (33–146) and `validator/baseline.py` (164–199). **This was source inspection only**, not a validator/model execution.
+- `Run.load()` parses `result.json`, resolves task input file paths, rejects missing referenced inputs, and stores `figure=None` when `figure.png` is missing. `runs()` enumerates all `*/result.json` records in sorted order.
+- `runner.main()` imports `validate` from the selected module (default `validator.solution`); calls `errors = validate(run)`; wraps successful results in `Prediction(run_id=..., errors=...)`; writes checkpointed `PredictionFile` JSON. The `--resume` option skips predictions already in the output file.
+- Exception behavior: exceptions **inside** `validate(run)` are collected for retry. The initial attempt plus two retries imply delays of 30 and 60 seconds before remaining failures terminate; schema validation in `Prediction(...)` is *outside* that `try` block and does not receive this retry treatment. Avoid invoking the still-unimplemented `validator.solution` from the full runner.
+- The baseline's `validate(run)` first asks about `execution_failure`. On a predicted failure it returns immediately, avoiding the other three checks. Otherwise it asks separately about `wrong_data`, `wrong_chart`, and `hard_to_read` and concatenates their errors. This is a model-based judgment, **not an infallible determination**.
+- Normal nonterminal baseline processing calls the model once per category, for **four model requests per run**. What actually gets sent and how context overflow is handled will be examined next in `baseline._ask` and `validator/model.py`.
+
+**Step 7 — source walkthrough of multimodal model requests (user-verified):**
+
+- User fast-forwarded the feature branch to commit `f2a8bb7` and printed `validator/baseline.py` lines 99–163, `validator/model.py` lines 1–65, and `validator/prediction.py` lines 1–46.
+- `baseline._ask(run, family, question)` reads each named input file's text, stringifies the complete trajectory, and reads PNG bytes if a figure exists; `make_prompt` adds task instructions and requests a **YES/NO with brief explanation**.
+- `ask()` builds a multimodal chat request: `text` content plus, when available, a PNG encoded as a base64 `data:image/png` URL. It calls `validator.model.complete()` with `MAX_OUTPUT_TOKENS=250`. The endpoint must actually support image understanding.
+- `validator/model.py` uses `VALIDATOR_BASE_URL`, `VALIDATOR_API_KEY`, and optional `VALIDATOR_MODEL` (default `validator`) to construct an OpenAI-compatible client. Client timeout is 300 seconds, SDK `max_retries=3`, and requests default to `temperature=0`. No live endpoint was contacted in this exercise.
+- The baseline parses only the beginning of the response text: if it starts with `YES` (case-insensitive), it creates `Error(family=..., evidence=...)`; every other response becomes an empty list. `prediction.py` permits only the four `ErrorFamily` values and requires nonempty evidence. `PredictionFile` stores an array of `Prediction` records.
+- On a context-length `BadRequestError`, the baseline tries shorter trajectory and input excerpts using compatible vLLM tokenizer endpoints, then progressively downscales the figure if needed. Non-context 400 errors are propagated. This **changes the evidence available to the judge**.
+- Hypotheses to evaluate in future work (**not measured findings**): response-prefix parsing is brittle; asking separately for four families resends long evidence; truncation may lose decisive tool calls; reducing resolution can obscure readability defects; execution evidence could be handled partly with deterministic checks rather than only model judgment.
+- Distinguish the `openai` client's internal request retries, the baseline's **context-overflow fallback**, and the outer runner's **per-run retries**—they are three separate mechanisms.
+
+**Step 8 — offline mock of the baseline model (user-executed, passed):**
+
+- Synchronized the branch via `git pull --ff-only`, fast-forwarding `f2a8bb7..bbc8b80`.
+- Loaded run `008` using `Run.load(Path("artifacts/008"), Path.cwd())` and temporarily replaced `validator.baseline.complete` with a local `fake_complete()`. The original function was restored in a `finally` block.
+- The mock returned four artificial messages in order: `NO` for execution failure, `YES` for wrong data, `NO` for wrong chart, and `YES` for readability.
+- Observed exactly **four model-request payloads** with prompts asking the four expected questions. Every payload had content types `['text', 'image_url']`, confirming that the baseline included the run's PNG with each question.
+- Observed **two parsed Pydantic `Error` objects**, with families `wrong_data` and `hard_to_read` and the exact mocked evidence strings. Printing `error.model_dump()` showed the Python `ErrorFamily` enum instance; `model_dump(mode="json")` would emit plain string values.
+- **Result: PASS for local call-order, request-shape and answer-parsing control flow.** No real model request was made, no network API credits used, and no validator accuracy/macro-MCC can be inferred. The mock was run as a terminal heredoc, not committed as a reusable test.
+
+**Design implication:** Separate deterministic artifact/execution checks from semantic chart judgments when designing `validator/solution.py`, but confirm what counts as a valid figure. A file's mere existence and PNG header are insufficient evidence of correctness. Build independent unit tests for the new logic before any live multimodal evaluation.
+
+**What is not established yet:** No live-model execution test of `_ask()`, no verified vision endpoint, no actual validator predictions on the labeled dataset, no confusion matrix, and no MCC or macro-MCC result.
+
+**Step 9 — first incremental implementation committed; execution checks pending in Codespaces:**
+
+- Modified `validator/solution.py`: `judge_execution(run)` now gives a single evidence-backed terminal `execution_failure` when the final image is missing, points to a directory/non-file, isn't a PNG, or fails PNG structural verification/pixel decoding with Pillow. It does not inspect semantic plotted data and does not use any public labels or model calls.
+- `validate(run)` short-circuits on that terminal execution failure, following the baseline's call sequence. If the PNG decodes, `judge_data_and_chart()` and `judge_readability()` still raise explicit `NotImplementedError`. This intentionally prevents false "acceptable" predictions.
+- Added `tests/test_validator_solution_offline.py`: **seven synthetic cases**, covering None, nonexistent path, directory, garbage data, JPEG disguised as PNG, truncated PNG, and valid PNG (with mocked downstream judges proving execution continues).
+- Updated `.github/workflows/offline-ci.yml` to execute these tests **after** `uv sync --locked`, leaving the original dependency-free preflight tests intact. Updated `README.md` to document the scope and command.
+- Commit sequence: `3089b18` (implementation), `8641c16` (tests), `b77fbee` (CI), `2464c81` (README); this journal entry records the change as a separate documentation commit.
+- **Verified after this initial implementation note:** seven tests passed in Codespaces, five original tests passed, dataset preflight passed, and the code commit's GitHub CI passed. **Not yet done:** image-model request, dataset accuracy metric, or full validator run.
+
+**Step 10 — local verification passed (user-executed):**
+
+- The user ran `git pull --ff-only`, fast-forwarding the local branch from `4ec99c0` to `5f79d76`. The changed files were `.github/workflows/offline-ci.yml`, `README.md`, `docs/Learning-Progress.md`, `tests/test_validator_solution_offline.py`, and `validator/solution.py`.
+- New offline unit suite: `uv run python -m unittest discover -s tests -p 'test_validator_*_offline.py' -v` yielded **7 tests, 7 passed, 0 failures/errors** (0.265 seconds). Cases covered directory, garbage bytes, misnamed JPEG, `None`, nonexistent path, truncated PNG, and structurally valid PNG with downstream semantic mocks.
+- Original offline unit suite: `uv run python -m unittest discover -s tests -p 'test_offline_*.py' -v` yielded **5 tests, 5 passed, 0 failures/errors** (0.006 seconds).
+- Dataset structural preflight: **PASSED**, reporting 110 runs, 98 figures, 110 labeled runs, 16 acceptable runs; category counts `execution_failure=12`, `hard_to_read=39`, `wrong_chart=71`, `wrong_data=25`. No model or cloud infrastructure was called.
+- Git status: `## feature/session-002-offline-preflight...origin/feature/session-002-offline-preflight`, with no modified/untracked file lines.
+- GitHub Actions workflow `Offline dataset checks` for code commit `5f79d76` was also observed **completed/success** (workflow run 42162196977). A subsequent documentation-only commit may trigger another workflow run that needs its own status checked.
+- **Interpretation:** Deterministic execution checks and synthetic offline tests are reproducibly passing; the semantic validator is still unimplemented. None of these successes measures MCC or chart-judge accuracy.
+
+**Reproduce in Codespaces (after `git pull --ff-only`):**
+
+~~~bash
+uv run python -m unittest discover -s tests -p 'test_offline_*.py' -v
+uv run python -m unittest discover -s tests -p 'test_validator_*_offline.py' -v
+uv run python scripts/offline_preflight.py
+git diff --check
+git status --short --branch
+~~~
+
+**What we'll learn next:** Interpret real unit-test output and any errors; distinguish "a well-formed PNG" from "a correct readable figure"; then establish the requirements for a genuinely image-capable semantic judge. **Do not run the full `validator.runner` with the partial solution yet**: valid PNG cases intentionally raise `NotImplementedError` and trigger retries.
+
+**Next exercises:** (a) **Completed:** loading `001`, `004`, `008` with `Run.load()`. (b) **Completed:** runner import, call, retry and checkpoint source walkthrough. (c) **Completed:** baseline request construction, model adapter, response parser and context-overflow fallback source walkthrough. (d) **Completed:** offline mock of `baseline.complete()` verified four text+image calls and two parsed errors. (e) **Implemented, tests pending:** deterministic execution checks plus seven synthetic tests. (f) **Completed:** all local tests and dataset preflight passed; GitHub CI passed for code commit. (g) **Next:** review the draft PR for scope, merge if desired, and plan a separate milestone for a real image-capable semantic judge.
 
 ### Template for future sessions
 

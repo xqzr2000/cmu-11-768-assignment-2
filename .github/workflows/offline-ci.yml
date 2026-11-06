@@ -23,3 +23,5 @@ jobs:
           python-version: "3.12"
       - name: Install official project and pinned sandbox
         run: uv sync --locked
+      - name: Test deterministic validator checks without any model calls
+        run: uv run python -m unittest discover -s tests -p "test_validator_*_offline.py" -v
