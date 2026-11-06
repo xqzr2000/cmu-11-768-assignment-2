@@ -74,7 +74,7 @@ The original course setup fixes the validator to **Qwen/Qwen3-VL-30B-A3B-Instruc
 - **Agent generation:** `workflow/generate.py` still calls Modal; it has **not** been migrated to the Assignment 1 Docker runtime. Do not run it expecting local Docker behavior.
 - **Harbor:** example and template exist; our own packaged tasks do not yet exist. Docker execution and reward tests were **not performed in this session**.
 - **Documentation:** this journal is the session 001 deliverable. GitHub source inspection and branch creation are verified; **no code execution, model calls, score computation, or CI result is claimed by this journal-writing session**.
-- **Git:** Learning journal PR [#2](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/2) and Session 002 PR [#3](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/3) have merged into `main`. Session 003 uses `feature/session-003-semantic-validator`; changes should be tested and reviewed through a new PR before merging.
+- **Git:** Learning journal PR [#2](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/2), Session 002 PR [#3](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/3), and Session 003 PR [#4](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/4) are merged into `main`. Session 004 uses `feature/session-004-vision-evaluation`; test and review its changes via PR before merging.
 
 ## How information flows through the code
 
@@ -547,6 +547,61 @@ git status --short --branch
 
 
 **Next:** Review [draft PR #4](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/4), verify CI on its latest head, and decide whether to merge this explicitly limited, mock-tested integration milestone. Next learning goal: verify a permitted real vision-model endpoint and establish actual baseline and solution scores without using human labels to generate predictions.
+
+### Session 004 — 2026-11-05 (America/Vancouver) — Planning exact-checkpoint vision evaluation
+
+**Goal:** Establish a real, evidence-based route to the official `Qwen/Qwen3-VL-30B-A3B-Instruct-FP8` multimodal evaluator without Modal, then measure baseline and solution predictions against held-out-by-construction seed human labels. Do not call a paid model or mislabel mock responses as accuracy measurements.
+
+**Starting Git state (user-confirmed):** Session 003 PR [#4](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/4) was merged into `main` at `4bfcd74`. The user fast-forwarded local `main`, deleted the old local feature branch, and created a clean `feature/session-004-vision-evaluation` branch with `git status --short --branch` showing no changes. A same-named remote branch now stores this journal entry. Sync it before making local edits.
+
+**Verified source review:**
+
+- `ASSIGNMENT.md` mandates **exact checkpoint** `Qwen/Qwen3-VL-30B-A3B-Instruct-FP8` for official validator comparisons, rather than an arbitrary vision-language or text-only model. The scorer expects `validate(run) -> list[Error]` and four families; `seed_labels.json` is for *scoring*, not for producing predictions.
+- `validator/model.py` already supports OpenAI-compatible `VALIDATOR_BASE_URL`, `VALIDATOR_API_KEY`, and `VALIDATOR_MODEL` (default service alias `validator`). An alias alone does **not** demonstrate which weights back the endpoint.
+- `.env.example` remains the canonical **Modal-oriented** template; its example URL and token are placeholders, not a working endpoint. Do **not** put secrets into git, terminal logs, or assistant messages.
+- `validator.baseline` retries context overflow by calling vLLM-like `tokenize` / `detokenize` routes outside `/v1`. Thus ordinary OpenAI-compatible chat completion support **does not guarantee** that all existing context-overflow fallbacks work.
+- The validator's Session 003 semantic integration is mock-tested (14 validator + 5 original offline tests and green CI), but **no image-bearing response from an actual VLM has been observed**, and no MCC is measured.
+
+**External documentation reviewed on 2026-11-05:**
+
+1. Official FP8 checkpoint: https://huggingface.co/Qwen/Qwen3-VL-30B-A3B-Instruct-FP8 — publishes weights and documents `vllm serve "Qwen/Qwen3-VL-30B-A3B-Instruct-FP8"` plus OpenAI-compatible image requests.
+2. Qwen official deployment docs: https://github.com/QwenLM/Qwen3-VL — recommend vLLM (v0.11+) or SGLang for multimodal serving.
+3. vLLM recipes: https://docs.vllm.ai/projects/recipes/en/stable/Qwen/Qwen3-VL.html — serving and OpenAI-compatible clients, including GPU requirements and practical limitations. Do **not** confuse a different 235B-model hardware example with an exact 30B requirement.
+
+**Deployment approaches (investigation only; availability, cost and identity are NOT yet verified):**
+
+- **Remotely host the exact FP8 checkpoint on a GPU VM / dedicated inference endpoint**, run vLLM or a compatible image-serving stack, use the Codespace only as an API client. This is a feasible technical route; deployment, GPU VRAM sufficiency, token handling, costs and checkpoint provenance require verification.
+- **Use an already-hosted OpenAI-compatible provider only if the provider can attest to the exact FP8 checkpoint**, image support and authentication. Similar model names, a "Qwen3-VL" generic API, or an API model alias alone do not establish checkpoint identity.
+- **Codespaces-only local inference** is not assumed possible. Verify whether this particular Codespace has CUDA GPUs and appropriate GPU memory before considering it. Installing Python libraries alone does not provide GPU access.
+
+**Safety and reproducibility guardrails:** Offline discovery first. Before any `--live` or image-bearing request, record the provider, deployed checkpoint/revision, transport URL without credentials, request limits, billing/timeout policy, and how to avoid leaking secrets. A two-image *controlled content* probe is stronger evidence of actual vision support than a successful HTTP 200 from a text endpoint; it still cannot independently prove the model's weight identity. Do not claim a private-grade-equivalent score if the deployment or model differs.
+
+**First Codespace exercise (offline, no model requests):**
+
+~~~bash
+git fetch origin
+git branch --set-upstream-to=origin/feature/session-004-vision-evaluation
+git pull --ff-only
+command -v nvidia-smi >/dev/null && nvidia-smi -L || echo "No nvidia-smi GPU inventory available"
+uv run python - <<'PY'
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+for key in ("VALIDATOR_BASE_URL", "VALIDATOR_API_KEY", "VALIDATOR_MODEL"):
+    value = os.getenv(key)
+    if key == "VALIDATOR_MODEL":
+        print(f"{key}: {value if value else '(unset; code defaults to validator)'}")
+    else:
+        print(f"{key}: {'configured' if value else 'not configured'}")
+print("No network or model call made.")
+PY
+git status --short --branch
+~~~
+
+**Current results:** Verified source and public documentation inspection plus remote branch creation only. No Codespace GPU inventory/config audit returned yet, no live API call, no model score, no new software tests. Do not state that a hosting provider is currently available or cheap without checking its terms.
+
+**Next after offline inventory:** Select exact-checkpoint deployment route based on actual hardware/access and budget, create a tiny opt-in image probe with mocked tests, run it once only after approval, and if successful pilot two seed trajectories before a full baseline sweep.
 
 ### Template for future sessions
 
