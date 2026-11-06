@@ -74,7 +74,7 @@ The original course setup fixes the validator to **Qwen/Qwen3-VL-30B-A3B-Instruc
 - **Agent generation:** `workflow/generate.py` still calls Modal; it has **not** been migrated to the Assignment 1 Docker runtime. Do not run it expecting local Docker behavior.
 - **Harbor:** example and template exist; our own packaged tasks do not yet exist. Docker execution and reward tests were **not performed in this session**.
 - **Documentation:** this journal is the session 001 deliverable. GitHub source inspection and branch creation are verified; **no code execution, model calls, score computation, or CI result is claimed by this journal-writing session**.
-- **Git:** PRs [#2](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/2), [#3](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/3), [#4](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/4), and [#5](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/5) are merged into `main`. Session 005 is on `feature/session-005-seed-evaluation`, draft PR #6. Z.ai's real seed 004 attempt failed due to output formatting/truncation; the separate OpenAI structured-output pilot subsequently **succeeded** on seed 004 `wrong_data` and matched the human binary label (TP), although the model's justification was imperfect. No MCC has been measured.
+- **Git:** PRs [#2](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/2), [#3](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/3), [#4](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/4), and [#5](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/5) are merged into `main`. Session 005 remains on `feature/session-005-seed-evaluation`, draft PR #6. The independent OpenAI structured-output pilot has completed three semantic judgments on seed 004: `wrong_data` TP, `wrong_chart` TP, `hard_to_read` TN; **three binary matches on one run**, but `wrong_data` evidence was imperfect. Z.ai's real run-004 attempt failed due to output formatting/truncation. No reliable MCC has been measured.
 
 ## How information flows through the code
 
@@ -810,22 +810,27 @@ When a Codespaces secret has been added, verify `"key_configured": true` in the 
 - **Conclusions:** The OpenAI structured-output integration now works for two distinct error families of a real figure, with two correct binary results but differing explanatory quality. This is not an estimate of overall accuracy, not a statistically meaningful MCC, and not equivalent to the assignment-required Qwen3-VL checkpoint. The two local decision files remain ignored by Git and PR #6 remains draft.
 - **Next recommendation:** finish a controlled same-run 004 `hard_to_read` test (a possible true-negative case) only if the user explicitly opts into one more potentially billed request; compare offline afterward. Alternatively stop the live pilot here and review PR #6 as an integration milestone. Do not launch a broad sweep or run 008 automatically.
 
-**Next exercise:**
+**Step 12 — OpenAI seed 004 `hard_to_read` evaluation completes all three semantic families (user-executed, SUCCESS):**
+
+- User fast-forwarded the feature branch from `7033c56` to `8710a6f`. The default **offline** `--run-id 004 --family hard_to_read` preview reported `network_requests=0`, `planned_completion_requests=1`, `key_configured=true`, a 13,417-character prompt, 10 trajectory messages, a 1200×1000 PNG (137,276 bytes), and `human_labels_sent=false`.
+- User explicitly opted into one live request: `uv run python scripts/openai_seed_pilot.py --run-id 004 --family hard_to_read --live --confirm-one-request`. It **succeeded** with one completion attempt, `model_reported=gpt-5.4-mini-2026-03-17`, `has_error=false`, usage **5,647 prompt tokens + 60 completion tokens = 5,707 total tokens**, and saved local ignored `output/session005_openai_004_hard_to_read_decision.json`. No label was supplied during inference.
+- Model evidence: "The figure is legible overall: all four subplots, titles, axes, and curves are visible and readable. Some dense oscillations/error bars make parts busy, but not difficult or impossible to read."
+- The separately executed offline `--compare` command reported `predicted_error=false`, `human_error=false`, `match=true`, `outcome=TN`. This is a **true negative** for the run's `hard_to_read` family; the evidence is consistent with the human label.
+- **Completed seed 004 summary:** `wrong_data` = **TP** (5,750 tokens; explanation did **not** identify missing cubing operation); `wrong_chart` = **TP** (5,754 tokens; identified the human-noted missing logarithmic x-axis); `hard_to_read` = **TN** (5,707 tokens; legibility explanation aligned). **3/3 binary family decisions matched**, across exactly **3 separately authorized OpenAI API completions**, using **17,211 total reported tokens** (16,946 prompt + 265 completion). The case is still **one selected run**, not a statistical performance estimate. There is no valid macro-MCC from these three family decisions, and the official Qwen3-VL model was not used.
+- The three `session005_openai_004_<family>_decision.json` files exist **only in the user's ignored Codespace `output/` directory**. The GitHub repo has source code, tests and this factual summary, but does not contain those raw response artifacts.
+- **Recommended stopping point:** The run-004 pilot meets the goal of verifying OpenAI structured output on a real seed with independent post-hoc labels. Either close Session 005 as a reproducible integration milestone after CI and PR review, or separately opt into **run 008** (a longer trajectory plus 14,475-byte `data.csv`) as an additional case; do not auto-run three new billed questions or report MCC. Keep draft PR #6 unmerged until review.
+
+**Next offline review commands (no model calls):**
 
 ~~~bash
-git fetch origin
-git branch --set-upstream-to=origin/feature/session-005-seed-evaluation
 git pull --ff-only
-
-# Zero-request previews of exact planned model payloads
-uv run python scripts/zai_seed_pilot.py
 uv run python -m unittest discover -s tests -p 'test_validator_*_offline.py' -v
 uv run python -m unittest discover -s tests -p 'test_offline_*.py' -v
 uv run python scripts/offline_preflight.py
 git status --short --branch
 ~~~
 
-**Stop before live inference:** Inspect the offline request-size preview, the source fixture payloads, and the current Z.ai account limits. If all offline tests pass, start with only `004` and compare **after** the prediction was written. `008` should be a second, separately authorized step rather than an automatic continuation. Keep GitHub PR in draft until the results and constraints are reviewed.
+**Next decision:** Review draft PR #6 as an integration milestone or independently authorize an additional single-family test on seed 008. Any seed 008 live request will send its task, 23 trajectory messages, `data.csv` contents and PNG to OpenAI, and is separate from the three completed seed 004 calls.
 
 ### Template for future sessions
 
