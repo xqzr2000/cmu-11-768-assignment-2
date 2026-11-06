@@ -70,7 +70,7 @@ The original course setup fixes the validator to **Qwen/Qwen3-VL-30B-A3B-Instruc
 - **Seed inventory:** 110 released `result.json` trajectories; 98 final `figure.png` files; 19 committed CSV input files; `seed_labels.json` contains 110 human labels. Some runs legitimately have no figure.
 - **Reported Phase 0 label counts (not validator predictions):** 12 `execution_failure`, 25 `wrong_data`, 71 `wrong_chart`, 39 `hard_to_read`, and 16 fully acceptable runs; refer to [PHASE-0.md](PHASE-0.md) and rerun the preflight before relying on a local environment.
 - **Session 002 offline preflight:** Verified in Codespace on 2026-11-05: 111 resolved packages, 110 seed runs / 98 figures / 110 labels, and 5/5 unit tests passed. Visual/trajectory case studies for runs 004 and 008 recorded below; no model judging performed.
-- **Validator status:** `validator/solution.py` is deliberately a stub with `NotImplementedError`. The working `validator/baseline.py` is supplied but its performance is **not verified in this session**.
+- **Validator status:** The first offline-first layer of `validator/solution.py` checks for missing/non-file/corrupt/wrong-format/truncated final PNGs and returns terminal `execution_failure` evidence. On structurally decodable PNGs, semantic data/chart/readability judges remain **explicitly unimplemented** (`NotImplementedError`), pending a verified vision endpoint. Seven new synthetic tests have been committed; their Codespace/CI execution is **pending verification**. The supplied baseline has not been scored.
 - **Agent generation:** `workflow/generate.py` still calls Modal; it has **not** been migrated to the Assignment 1 Docker runtime. Do not run it expecting local Docker behavior.
 - **Harbor:** example and template exist; our own packaged tasks do not yet exist. Docker execution and reward tests were **not performed in this session**.
 - **Documentation:** this journal is the session 001 deliverable. GitHub source inspection and branch creation are verified; **no code execution, model calls, score computation, or CI result is claimed by this journal-writing session**.
@@ -462,7 +462,28 @@ Never commit secrets, generated jobs, copied environment files or transient arti
 
 **What is not established yet:** No live-model execution test of `_ask()`, no verified vision endpoint, no actual validator predictions on the labeled dataset, no confusion matrix, and no MCC or macro-MCC result.
 
-**Next exercises:** (a) **Completed:** loading `001`, `004`, `008` with `Run.load()`. (b) **Completed:** runner import, call, retry and checkpoint source walkthrough. (c) **Completed:** baseline request construction, model adapter, response parser and context-overflow fallback source walkthrough. (d) **Completed:** offline mock of `baseline.complete()` verified four text+image calls and two parsed errors. (e) **Next:** design a narrow deterministic first layer for `validator/solution.py` (missing/invalid figure handling), unit-test it offline, and keep any semantic chart decisions deferred until a verified vision endpoint exists.
+**Step 9 — first incremental implementation committed; execution checks pending in Codespaces:**
+
+- Modified `validator/solution.py`: `judge_execution(run)` now gives a single evidence-backed terminal `execution_failure` when the final image is missing, points to a directory/non-file, isn't a PNG, or fails PNG structural verification/pixel decoding with Pillow. It does not inspect semantic plotted data and does not use any public labels or model calls.
+- `validate(run)` short-circuits on that terminal execution failure, following the baseline's call sequence. If the PNG decodes, `judge_data_and_chart()` and `judge_readability()` still raise explicit `NotImplementedError`. This intentionally prevents false "acceptable" predictions.
+- Added `tests/test_validator_solution_offline.py`: **seven synthetic cases**, covering None, nonexistent path, directory, garbage data, JPEG disguised as PNG, truncated PNG, and valid PNG (with mocked downstream judges proving execution continues).
+- Updated `.github/workflows/offline-ci.yml` to execute these tests **after** `uv sync --locked`, leaving the original dependency-free preflight tests intact. Updated `README.md` to document the scope and command.
+- Commit sequence: `3089b18` (implementation), `8641c16` (tests), `b77fbee` (CI), `2464c81` (README); this journal entry records the change as a separate documentation commit.
+- **Not yet verified:** the seven tests, CI status, and how the code behaves in the user's Codespace. No image-model request, dataset accuracy metric, or full validator run has been performed.
+
+**Reproduce in Codespaces (after `git pull --ff-only`):**
+
+~~~bash
+uv run python -m unittest discover -s tests -p 'test_offline_*.py' -v
+uv run python -m unittest discover -s tests -p 'test_validator_*_offline.py' -v
+uv run python scripts/offline_preflight.py
+git diff --check
+git status --short --branch
+~~~
+
+**What we'll learn next:** Interpret real unit-test output and any errors; distinguish "a well-formed PNG" from "a correct readable figure"; then establish the requirements for a genuinely image-capable semantic judge. **Do not run the full `validator.runner` with the partial solution yet**: valid PNG cases intentionally raise `NotImplementedError` and trigger retries.
+
+**Next exercises:** (a) **Completed:** loading `001`, `004`, `008` with `Run.load()`. (b) **Completed:** runner import, call, retry and checkpoint source walkthrough. (c) **Completed:** baseline request construction, model adapter, response parser and context-overflow fallback source walkthrough. (d) **Completed:** offline mock of `baseline.complete()` verified four text+image calls and two parsed errors. (e) **Implemented, tests pending:** deterministic execution checks plus seven synthetic tests. (f) **Next:** run those tests and the existing preflight in Codespaces, and record the actual output before claiming a pass.
 
 ### Template for future sessions
 
