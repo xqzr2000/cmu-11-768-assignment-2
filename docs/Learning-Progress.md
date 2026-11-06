@@ -70,7 +70,7 @@ The original course setup fixes the validator to **Qwen/Qwen3-VL-30B-A3B-Instruc
 - **Seed inventory:** 110 released `result.json` trajectories; 98 final `figure.png` files; 19 committed CSV input files; `seed_labels.json` contains 110 human labels. Some runs legitimately have no figure.
 - **Reported Phase 0 label counts (not validator predictions):** 12 `execution_failure`, 25 `wrong_data`, 71 `wrong_chart`, 39 `hard_to_read`, and 16 fully acceptable runs; refer to [PHASE-0.md](PHASE-0.md) and rerun the preflight before relying on a local environment.
 - **Session 002 offline preflight:** Verified in Codespace on 2026-11-05: 111 resolved packages, 110 seed runs / 98 figures / 110 labels, and 5/5 unit tests passed. Visual/trajectory case studies for runs 004 and 008 recorded below; no model judging performed.
-- **Validator status:** Session 002 deterministic execution checks passed 7/7 tests, with 5/5 existing preflight tests and green GitHub CI. In Session 003, structurally valid PNGs now delegate data/chart/readability decisions to the supplied baseline model logic, with seven **new** mock integration tests committed **but not yet run in Codespaces**. No verified live image-capable endpoint or measured baseline/solution MCC.
+- **Validator status:** Session 002 deterministic execution checks passed 7/7 tests, with 5/5 existing preflight tests and green GitHub CI. In Session 003, structurally valid PNGs now delegate data/chart/readability decisions to the supplied baseline model logic, with seven **new** mock integration tests **passed in Codespaces (14/14 combined validator tests)**. No verified live image-capable endpoint or measured baseline/solution MCC.
 - **Agent generation:** `workflow/generate.py` still calls Modal; it has **not** been migrated to the Assignment 1 Docker runtime. Do not run it expecting local Docker behavior.
 - **Harbor:** example and template exist; our own packaged tasks do not yet exist. Docker execution and reward tests were **not performed in this session**.
 - **Documentation:** this journal is the session 001 deliverable. GitHub source inspection and branch creation are verified; **no code execution, model calls, score computation, or CI result is claimed by this journal-writing session**.
@@ -512,6 +512,17 @@ git status --short --branch
 
 **Step 1 — verified source review and branch sync (user-executed):** The user ran `git fetch origin`, attached local `feature/session-003-semantic-validator` to `origin/feature/session-003-semantic-validator`, and fast-forwarded from `c3b0189` to journal commit `e77e037`. `git status --short --branch` showed a clean tracking branch. Inspected `ASSIGNMENT.md` lines 78–108 (all four error families and label boundaries) and `validator/solution.py` lines 42–74 (incomplete semantic functions). No model or validation call was made.
 
+**Step 3 — verification passed in Codespaces (user-executed):**
+
+- `git pull --ff-only` fast-forwarded local `feature/session-003-semantic-validator` from `e77e037` to `20cc0f6`. Git reported exactly four changed files: `README.md`, `docs/Learning-Progress.md`, `tests/test_validator_semantic_offline.py`, and `validator/solution.py`.
+- `uv run python -m unittest discover -s tests -p 'test_validator_*_offline.py' -v`: **14 tests passed, 0 failures/errors**, in 0.053 seconds. The seven semantic-integration mocks and seven earlier deterministic-execution cases all passed.
+- `uv run python -m unittest discover -s tests -p 'test_offline_*.py' -v`: **five tests passed, 0 failures/errors**, in 0.017 seconds.
+- `uv run python scripts/offline_preflight.py`: **PASSED**, with 110 runs, 98 figures, 110 labeled runs, 16 acceptable; label category counts: execution_failure 12, hard_to_read 39, wrong_chart 71, wrong_data 25. No model/cloud inference occurred.
+- `git status --short --branch`: `## feature/session-003-semantic-validator...origin/feature/session-003-semantic-validator` with no modified or untracked file lines.
+- GitHub Actions `Offline dataset checks` succeeded for implementation head `20cc0f6` (run 42163734524). CI should be checked again for the later journal-only commit before merge.
+
+**Interpretation:** The first end-to-end semantic plumbing is verified with mocks and obeys the expected schema and short-circuit behavior. This is **not** evidence of real chart-judging accuracy; the supplied baseline semantics are reused rather than improved. No real predictions, per-family MCC, or macro-MCC yet.
+
 **Step 2 — minimal semantic integration committed, Codespace verification pending:**
 
 - Updated `validator/solution.py`: preserve image existence and PNG integrity checks for exclusive terminal `execution_failure`; for valid PNGs, `judge_data_and_chart` delegates to `validator.baseline.judge_data_and_chart` (two separate prompts), and `judge_readability` delegates to `validator.baseline.judge_readability` (one prompt). The final `validate(run)` contract is unchanged.
@@ -519,7 +530,7 @@ git status --short --branch
 - Added `tests/test_validator_semantic_offline.py` with **seven synthetic mock tests**, covering three multimodal prompt payloads (task, CSV, trajectory, PNG), expected families + serialized schema, all-NO, all-YES, missing and corrupt PNG skipping the model, propagated model exceptions, and malformed response handling.
 - Tests patch `validator.baseline.complete`, so no live endpoint is required and no label information is passed into the validator. The existing CI glob `test_validator_*_offline.py` is already configured to discover both the seven preexisting execution tests and these seven new tests.
 - Updated `README.md` to distinguish the new end-to-end wiring from actual image-capable evaluation. Current code commits on this branch: `62164c8` (integration), `eb6619d` (new mock tests), `2235376` (README).
-- **Pending verification:** run these new tests in Codespaces and check GitHub Actions. No model judged real images; no MCC scores have been computed. The full runner should not be invoked without a compatible image-capable endpoint because errors will propagate.
+- **Verified:** all seven new semantic mock tests plus seven earlier execution tests passed in Codespaces, five structural tests passed, seed preflight passed, and Actions on the implementation head passed. **Still not verified:** a live image-capable judge and actual semantic accuracy. The full runner should not be invoked without a compatible image-capable endpoint because errors will propagate.
 
 **What to run next from Codespaces:**
 
@@ -535,7 +546,7 @@ git status --short --branch
 
 
 
-**Next:** The integration and tests have been committed, but are not yet marked passing. Run the offline test commands in Codespaces, inspect failures if any, and record results. Verify CI before recommending a PR merge.
+**Next:** Review [draft PR #4](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/4), verify CI on its latest head, and decide whether to merge this explicitly limited, mock-tested integration milestone. Next learning goal: verify a permitted real vision-model endpoint and establish actual baseline and solution scores without using human labels to generate predictions.
 
 ### Template for future sessions
 
