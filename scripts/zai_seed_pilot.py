@@ -108,11 +108,19 @@ def describe_case(run: Run) -> dict[str, Any]:
 
 
 def send_one_run(
-    run: Run, client: Any, *, max_completions: int = MAX_COMPLETIONS
+    run: Run, client: Any, *, max_completions: int = MAX_COMPLETIONS,
+    diagnostics: dict[str, Any] | None = None,
 ) -> tuple[Prediction, dict[str, Any]]:
-    """Reuse solution's prompts, with a hard cap and no vLLM-only fallback."""
+    """Reuse solution's prompts; report safe progress, never raw model replies."""
     attempted = 0
     usage_records: list[dict[str, Any]] = []
+    if diagnostics is not None:
+        diagnostics.update({
+            "stage": "preparing_request",
+            "completion_attempts": 0,
+            "responses_received": 0,
+            "validated_replies": 0,
+        })
 
     def complete(messages: list[dict[str, Any]], **kwargs: Any) -> dict[str, Any]:
         nonlocal attempted
@@ -124,6 +132,9 @@ def send_one_run(
         if len(parts[0]["text"]) > MAX_PROMPT_CHARS:
             raise ValueError("Prompt is too long for this pilot.")
         attempted += 1  # Count before the call, including transport failures.
+        if diagnostics is not None:
+            diagnostics["completion_attempts"] = attempted
+            diagnostics["stage"] = "api_request"
         response = client.chat.completions.create(
             model=MODEL,
             messages=messages,
@@ -132,11 +143,38 @@ def send_one_run(
             temperature=0,
             extra_body={"thinking": {"type": "disabled"}},
         )
+        if diagnostics is not None:
+            diagnostics["responses_received"] += 1
+            diagnostics["stage"] = "response_validation"
         content = response.choices[0].message.content if response.choices else None
         if not isinstance(content, str) or not re.match(
             r"^\s*(YES|NO)\b", content, flags=re.IGNORECASE
         ):
+            # Safe diagnostics: only shape, length and allowlisted finish
+            # reason. Do not print any reply text, request/CSV, or provider
+            # exception body (which could echo the request or credentials).
+            if diagnostics is not None:
+                diagnostics["reply_class"] = (
+                    "empty" if content is None or content == ""
+                    else "non_yes_no_text" if isinstance(content, str)
+                    else "non_text"
+                )
+                if isinstance(content, str):
+                    diagnostics["reply_characters"] = len(content)
+                reason = (
+                    getattr(response.choices[0], "finish_reason", None)
+                    if response.choices else None
+                )
+                if reason in ("stop", "length", "content_filter", "tool_calls"):
+                    diagnostics["finish_reason"] = reason
+                else:
+                    diagnostics["finish_reason"] = "unknown"
+                usage = getattr(response, "usage", None)
+                diagnostics["completion_tokens"] = getattr(usage, "completion_tokens", None)
             raise ValueError("Vision reply must start with YES or NO; result not scored.")
+        if diagnostics is not None:
+            diagnostics["validated_replies"] += 1
+            diagnostics["stage"] = "baseline_parse"
         usage = response.usage
         usage_records.append({
             "model_reported": response.model,
@@ -156,6 +194,8 @@ def send_one_run(
 
     if attempted != MAX_COMPLETIONS:
         raise RuntimeError("The successful pilot must make exactly three completions.")
+    if diagnostics is not None:
+        diagnostics["stage"] = "building_prediction"
     prediction = Prediction(run_id=run.run_id, errors=errors)
     meta = {
         "provider": "Z.ai",
@@ -259,17 +299,22 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps({"mode": "live", "error": "ZAI_API_KEY not configured."}))
         return 2
 
-    client = OpenAI(
-        base_url=BASE_URL,
-        api_key=api_key,
-        timeout=TIMEOUT_SECONDS,
-        max_retries=0,
-    )
+    diagnostics: dict[str, Any] = {"stage": "creating_client", "completion_attempts": 0}
     try:
-        prediction, meta = send_one_run(load_case(args.run_id), client)
+        client = OpenAI(
+            base_url=BASE_URL,
+            api_key=api_key,
+            timeout=TIMEOUT_SECONDS,
+            max_retries=0,
+        )
+        diagnostics["stage"] = "loading_run"
+        run = load_case(args.run_id)
+        prediction, meta = send_one_run(run, client, diagnostics=diagnostics)
+        diagnostics["stage"] = "saving_prediction"
         write_one_run(args.run_id, prediction, meta)
     except Exception as error:
-        # Never print raw provider payloads, CSV, or accidental secret strings.
+        # Exception messages and raw provider replies may contain private
+        # data. Report only allowlisted diagnostic fields, not those strings.
         print(json.dumps({
             "mode": "live",
             "run_id": args.run_id,
@@ -278,6 +323,8 @@ def main(argv: list[str] | None = None) -> int:
             "http_status": getattr(error, "status_code", None),
             "automatic_retries": 0,
             "max_completion_attempts": MAX_COMPLETIONS,
+            **diagnostics,
+            "human_labels_sent": False,
         }, indent=2))
         return 2
 
