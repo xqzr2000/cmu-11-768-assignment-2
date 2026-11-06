@@ -70,7 +70,7 @@ The original course setup fixes the validator to **Qwen/Qwen3-VL-30B-A3B-Instruc
 - **Seed inventory:** 110 released `result.json` trajectories; 98 final `figure.png` files; 19 committed CSV input files; `seed_labels.json` contains 110 human labels. Some runs legitimately have no figure.
 - **Reported Phase 0 label counts (not validator predictions):** 12 `execution_failure`, 25 `wrong_data`, 71 `wrong_chart`, 39 `hard_to_read`, and 16 fully acceptable runs; refer to [PHASE-0.md](PHASE-0.md) and rerun the preflight before relying on a local environment.
 - **Session 002 offline preflight:** Verified in Codespace on 2026-11-05: 111 resolved packages, 110 seed runs / 98 figures / 110 labels, and 5/5 unit tests passed. Visual/trajectory case studies for runs 004 and 008 recorded below; no model judging performed.
-- **Validator status:** Session 002 deterministic execution checks passed 7/7 tests, with 5/5 existing preflight tests and green GitHub CI. In Session 003, structurally valid PNGs now delegate data/chart/readability decisions to the supplied baseline model logic, with seven **new** mock integration tests **passed in Codespaces (14/14 combined validator tests)**. No verified live image-capable endpoint or measured baseline/solution MCC.
+- **Validator status:** Session 002's structural execution checks and Session 003's baseline semantic wiring passed their offline tests. In Session 004, **22/22 validator tests, 5/5 structural tests, seed preflight and a one-request live Z.ai `glm-4.6v-flash` controlled image probe all passed**. The live test confirms only basic image-input capability for Z.ai, **not official Qwen equivalence or any per-family/macro-MCC**.
 - **Agent generation:** `workflow/generate.py` still calls Modal; it has **not** been migrated to the Assignment 1 Docker runtime. Do not run it expecting local Docker behavior.
 - **Harbor:** example and template exist; our own packaged tasks do not yet exist. Docker execution and reward tests were **not performed in this session**.
 - **Documentation:** this journal is the session 001 deliverable. GitHub source inspection and branch creation are verified; **no code execution, model calls, score computation, or CI result is claimed by this journal-writing session**.
@@ -645,6 +645,20 @@ git status --short --branch
 ~~~
 
 **Only after these pass and the user explicitly approves one live attempt:** `uv run python scripts/zai_vision_probe.py --live --confirm-one-request`. Check that `ZAI_API_KEY` is configured without printing its value. Do not launch live as part of CI or the offline test suite.
+
+**Step 3 — offline checks and live Z.ai vision probe verified (user-executed):**
+
+- The user ran `git pull --ff-only` from `147f811` to `603b3fc` and confirmed a clean `feature/session-004-vision-evaluation...origin/feature/session-004-vision-evaluation` tracking branch.
+- Default `uv run python scripts/zai_vision_probe.py` reported `mode=offline`, `network_requests=0`, `api_key_configured=true`, synthetic image `256×256`, `image_bytes=827`, request parts `[text,image_url]`, expected answer BLUE, and `official_qwen_equivalent=false`. No credential value was printed.
+- `uv run python -m unittest discover -s tests -p 'test_validator_*_offline.py' -v` completed **22/22 tests passing** in 0.091 seconds (7 original execution + 7 semantic integration + 8 vision probe). The usage messages in the double-opt-in test are expected argparse error output; that test passed.
+- `uv run python -m unittest discover -s tests -p 'test_offline_*.py' -v` completed **5/5** in 0.008 seconds.
+- `uv run python scripts/offline_preflight.py` **PASSED** (110 runs, 98 figures, 110 labeled runs, 16 acceptable; execution_failure 12, hard_to_read 39, wrong_chart 71, wrong_data 25). Offline checks called no model or cloud resources.
+- The user voluntarily invoked the one-request live command `uv run python scripts/zai_vision_probe.py --live --confirm-one-request` **after offline validation**. Z.ai response: `model_requested=glm-4.6v-flash`, `model_reported=glm-4.6v-flash`, `answer=BLUE`, `expected=BLUE`, `vision_smoke_test_passed=true`, `completion_attempts=1`, usage **118 prompt tokens + 4 completion tokens = 122 total tokens**, and `official_qwen_equivalent=false`.
+- GitHub Actions on code head `603b3fc`, workflow run `42165860956`, also completed **success**. Job logs show **22/22 validator tests and 5/5 structural tests passing**.
+- **Interpretation:** We now have concrete evidence of account access to Z.ai GLM-4.6V-Flash and at least one correct image-grounded simple response using the actual OpenAI-compatible endpoint. This does **not** establish robust chart correctness, model checkpoint provenance beyond the API-reported ID, cost charged, or any MCC accuracy.
+- **Next experiment:** A strictly bounded independent two-run pilot on real public data-visualization trajectories, with baseline and solution evaluated separately and existing human labels used only afterward for scoring. Design offline mocked plumbing, rate limits and output separation before sending larger or sensitive contents. The released trajectories may include task/user data, so review the specific pilot payload before upload to an external provider. Keep Z.ai results explicitly separate from official Qwen metrics. Do not run an unbounded sweep.
+
+**Review state:** [Draft PR #5](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/5) is open and unmerged. Its purpose is solely the safe single-image capability probe. Review and merge this small milestone independently before expanding to multi-run scoring.
 
 **Next after offline inventory:** Select exact-checkpoint deployment route based on actual hardware/access and budget, create a tiny opt-in image probe with mocked tests, run it once only after approval, and if successful pilot two seed trajectories before a full baseline sweep.
 
