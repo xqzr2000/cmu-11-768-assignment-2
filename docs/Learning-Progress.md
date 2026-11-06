@@ -759,6 +759,28 @@ git status --short --branch
 - **Engineering recommendation:** Do **not** simply swap the client/model in the current `YES/NO` parser. Add a provider-isolated adapter with a strict machine-readable schema (e.g. `has_error: bool`, `evidence: str`), bounded token budget and one-call test, preserve label-free inference and output provenance, and add offline mock tests before running OpenAI. Current advertised pricing is USD `$0.75 / 1M` input and `$4.50 / 1M` output tokens for GPT-5.4 Mini, including billed image tokens; actual cost depends on usage and requires separately funded API access. Do not presume a ChatGPT subscription supplies API access.
 - **Status:** Provider switch is a recommendation, **not yet approved or implemented**; no OpenAI request made, no API key requested or exposed, and draft PR #6 remains unmerged. Z.ai may still be worth revisiting later with different prompting/output limits.
 
+**Step 8 — user approved OpenAI API integration (coding only; no live calls):**
+
+- User explicitly asked to **add OpenAI API support to the repository**, noting that their existing Codespace may need refreshing. We did not ask the user to share credentials or assert their API account has billing enabled. The official Qwen checkpoint remains unchanged. Do not claim OpenAI experimental scores are official or equivalent to Z.ai/Qwen.
+- Current OpenAI [GPT-5.4 Mini model documentation](https://developers.openai.com/api/docs/models/gpt-5.4-mini) lists `gpt-5.4-mini` with **image inputs**, Chat Completions, and **Structured Outputs**. [Structured Outputs documentation](https://developers.openai.com/api/docs/guides/structured-outputs) explains a strict JSON schema and the need to handle refusal/incomplete output. Published token rates are currently USD **$0.75 per 1M input** and **$4.50 per 1M output** tokens, with images contributing billed input tokens; actual bills and availability depend on the API account. These were verified during this session; no API request or paid test has been initiated.
+- Added standalone `scripts/openai_seed_pilot.py`: default **offline-only** preview, single selected `004` or `008` run and one semantic family (`wrong_data` by default), with **no human labels read**. Live mode requires **both** `--live --confirm-one-request` and `OPENAI_API_KEY`. The host is fixed at `https://api.openai.com/v1/`, model at `gpt-5.4-mini`, 400 max completion tokens, reasoning effort `none`, 60s timeout and `max_retries=0`. It requests exactly `has_error: boolean` and `evidence: string` via strict `json_schema` response format, with no vLLM tokenizer fallback and no response-prefix parsing.
+- The new adapter **does not** modify `validator.model`, `validator.solution`, or `scripts/zai_seed_pilot.py`. The result is **one family decision**, not a full `PredictionFile`, stored in ignored `output/session005_openai_<run>_<family>_decision.json`. It prevents overwriting, validates response completion, JSON field types, and nonempty evidence, and prints only safe failure metadata rather than model exception strings or untrusted raw payloads.
+- **Only** the separate `--compare` command can load `seed_labels.json`, after a decision file exists; it produces a single-family TP/FP/FN/TN observation, not MCC. Each API call includes real public task instructions, trajectory, relevant input-file contents and PNG, but **no human labels**. Preview outputs metadata only.
+- Added `tests/test_validator_openai_seed_offline.py` with **13 mocked tests**, covering payload preparation, zero-network preview, strict schema, refused and truncated response rejection, exact call parameters, exception redaction, double opt-in, no key/no output overwrite, local output, and post-hoc label isolation. Alongside the previously passing 36 validator tests, CI should discover **49** tests; **this count is an expectation until CI verifies it**.
+- Updated `README.md` and `.env.example` with separate OpenAI API setup and Codespaces instructions. No new Python packages were added (the starter already pins `openai==2.54.0`), and **no `.devcontainer` config was altered**. Configure `OPENAI_API_KEY` as a GitHub **Codespaces Secret**, scoped to this repo; a **stop/restart** of an existing Codespace activates new secrets, rather than rebuilding the whole container. Official source: https://docs.github.com/en/codespaces/managing-your-codespaces/managing-your-account-specific-secrets-for-github-codespaces .
+- No user-entered API key is recorded in GitHub source, journal, CI, or this conversation. Code and tests are committed on draft PR #6; **CI and user Codespace tests remain to be confirmed**. No OpenAI model inference was performed.
+
+**Next commands (offline; no model request):**
+
+~~~bash
+git pull --ff-only
+uv run python scripts/openai_seed_pilot.py
+uv run python -m unittest discover -s tests -p 'test_validator_*_offline.py' -v
+git status --short --branch
+~~~
+
+When a Codespaces secret has been added, verify `"key_configured": true` in the offline preview. If false, **stop and restart the existing Codespace**, not Rebuild Container. Only once offline tests and API budget checks pass should the user independently consent to the one-request opt-in. Keep PR #6 draft until that evidence is reviewed.
+
 **Next exercise:**
 
 ~~~bash
