@@ -74,7 +74,7 @@ The original course setup fixes the validator to **Qwen/Qwen3-VL-30B-A3B-Instruc
 - **Agent generation:** `workflow/generate.py` still calls Modal; it has **not** been migrated to the Assignment 1 Docker runtime. Do not run it expecting local Docker behavior.
 - **Harbor:** example and template exist; our own packaged tasks do not yet exist. Docker execution and reward tests were **not performed in this session**.
 - **Documentation:** this journal is the session 001 deliverable. GitHub source inspection and branch creation are verified; **no code execution, model calls, score computation, or CI result is claimed by this journal-writing session**.
-- **Git:** PRs [#2](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/2), [#3](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/3), [#4](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/4), and [#5](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/5) are merged into `main`. Session 005 develops on `feature/session-005-seed-evaluation` with draft PR #6; offline pilot preview, tests and CI have passed. No live seed-model calls have been made.
+- **Git:** PRs [#2](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/2), [#3](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/3), [#4](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/4), and [#5](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/5) are merged into `main`. Session 005 is on `feature/session-005-seed-evaluation`, draft PR #6. After offline checks passed, the first live seed 004 pilot **failed with `ValueError`** and no prediction was saved; diagnostics/test recovery is in progress. No MCC is measured.
 
 ## How information flows through the code
 
@@ -713,7 +713,34 @@ git status --short --branch
 
 There are **at most three** model completion attempts per live invocation with no automatic retries and a 60-second per-request timeout. Stop if authentication, rate limits or prompt-size errors occur; never share credentials or raw API error bodies. A two-case pilot cannot yield a statistically meaningful generalization claim or official Qwen score.
 
-**No live seed-data requests were made** while writing this code. No actual GLM seed-chart judgments or MCC are claimed.
+**Step 4 — first attempted live seed 004 evaluation failed (user-executed):**
+
+- On clean local feature branch, `git pull --ff-only` succeeded and fast-forwarded to journal commit `0878a88`.
+- The user explicitly invoked `uv run python scripts/zai_seed_pilot.py --run-id 004 --live --confirm-three-requests`. The program returned `mode=live`, `run_id=004`, `success=false`, `error_type=ValueError`, `http_status=null`, `automatic_retries=0`, `max_completion_attempts=3`. **Do not infer that three requests occurred**; this was the cap, not an observed request count.
+- A subsequent `--run-id 004 --compare` returned `FileNotFoundError`, consistent with no complete saved `output/session005_zai_004_predictions.json`. This is a *missing output*, not a comparison score.
+- The previous error reporting suppressed the exact `ValueError` source, so we cannot establish from the user-visible terminal whether the problem occurred before a request, in the model response format (e.g. reply not beginning YES/NO), or while storing results. **Do not claim a model-quality failure or a provider outage.** Z.ai had previously passed a simpler controlled image test.
+- **Learning:** Mocked integration tests and successful HTTP vision probes cannot guarantee that a real multi-thousand-character chart-judging prompt elicits the required machine-parsable response. Future failures need secure structural telemetry without printing raw provider responses, input data or secrets.
+
+**Step 5 — safe diagnostic changes added, local verification pending:**
+
+- `scripts/zai_seed_pilot.py` now tracks `stage`, `completion_attempts` (incremented before any API request), `responses_received`, and `validated_replies` on the live path. When the returned answer does not begin with YES or NO, it reports only `reply_class`, character count, allowlisted `finish_reason`, and `completion_tokens`. Exception strings and raw model-generated content remain suppressed; no human label is read during inference.
+- `tests/test_validator_seed_pilot_offline.py` adds four synthetic tests of safe reporting for malformed replies, second-call failure, transport errors, and main's redacted error JSON; these run with **mock clients only**, without Z.ai.
+- No provider retry has occurred as part of this code change. Since the earlier failed live response was not preserved, the new diagnostics cannot retrospectively identify its root cause. A further live attempt would be a **new** invocation with up to three potential model requests; obtain deliberate user opt-in only after the updated offline tests pass.
+- The pilot remains independent, labeled `official_qwen_equivalent=false`. No actual model predictions or MCC exist yet.
+
+**Next investigation commands (offline, no Z.ai request):**
+
+~~~bash
+git pull --ff-only
+uv run python -m unittest discover -s tests -p 'test_validator_*_offline.py' -v
+uv run python -m unittest discover -s tests -p 'test_offline_*.py' -v
+uv run python scripts/zai_seed_pilot.py --run-id 004
+git status --short --branch
+~~~
+
+**Do not yet rerun `--live`**. Inspect new diagnostics and authorization policy first. A fresh `--compare` remains pointless until a complete prediction file exists.
+
+
 
 **Next exercise:**
 
