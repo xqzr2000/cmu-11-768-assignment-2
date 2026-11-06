@@ -686,7 +686,14 @@ git status --short --branch
 - Added **10 new offline tests** (`tests/test_validator_seed_pilot_offline.py`) verifying preview/no-network behavior, the two opt-ins, a one-run scope, valid three-call mock execution, transport and ambiguous-answer failure handling, budget exhaustion, duplicate-output protection and label separation.
 - Updated `README.md` with the exact commands and limitations. Existing CI discovers these tests via the `test_validator_*_offline.py` glob, so it should run **32 validator tests** if all pass (22 previous + 10 new); the five structural tests should remain separate.
 
-**No live seed-data requests were made** while writing this code. No model score, CI pass or Codespace test is claimed for the new pilot yet.
+**Step 2 — CI test feedback and correction (verified in GitHub Actions):**
+
+- First CI run **42167679888** failed 1 of 32 tests while five original tests passed. The failure was in the synthetic `test_live_calls_exactly_three_and_writes_only_new_output`: it mocked output file paths under a temporary directory but left `pilot.ROOT` pointing to the checkout; the application's relative-path status formatting therefore raised `ValueError: ... is not in the subpath of ...`. This was a **test-fixture configuration mistake**, not an inference/model issue.
+- Updated the mock test to patch `pilot.ROOT` to the same temporary directory as the fake output files, commit `ceacaef`.
+- Follow-up CI run **42167757712** completed **success**: **32/32 validator tests**, **5/5 structural tests**, dataset offline preflight **PASSED**. CI made **no model/cloud inference calls**.
+- CI success verifies the integration and isolation under the synthetic tests; **user Codespace verification remains pending**. No live seed predictions or MCC exist yet.
+
+**No live seed-data requests were made** while writing this code. No actual GLM seed-chart judgments or MCC are claimed.
 
 **Next exercise:**
 
