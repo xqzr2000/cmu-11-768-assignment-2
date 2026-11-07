@@ -869,6 +869,26 @@ git status --short --branch
 
 **Next step:** Stop live testing for Session 006; no more paid calls are needed for the two preselected runs. Review this documentation-only milestone in a PR after rerunning the offline tests/CI. For a later session, design a narrowly scoped general `wrong_chart` improvement and evaluate it on additional independent cases rather than hard-coding run 008's answer. No validator behavior or official Qwen setting was changed in this session.
 
+### Session 008 — 2026-11-07 (America/Vancouver) — Three generation providers and Terra judge adapter foundation (implementation pending verification)
+
+**Starting Git state:** User verified `docs/Progress-Explained-20261107.md` was identical on `main` and `feature/session-007-wrong-chart-precision`, then fast-forward synchronized both. Local `main` tracked `origin/main` at `252140e`, working tree clean. User created and pushed `feature/session-008-provider-adapters` from that commit with a clean working tree. Session 007 remains unmerged at its own branch (`939b01f`) and its v1/v2 conclusions are not changed.
+
+**User-approved independent research architecture and safety policy:** three plotting agent roles — DeepSeek `deepseek-flash`, OpenAI `gpt-5.6-luna`, Z.ai `glm-4.7-flash`; experimental visual judge — OpenAI `gpt-6.1-terra`. User has credentials for all three services and explicitly chose staged provider adapters before agent runner integration. Offline-first; **ask for approval before every potentially billed API request**. This changes the independent adaptation only, not the official course requirement for Qwen3-VL.
+
+**Initial implementation on Session 008 feature branch (GitHub commits; Codespace tests pending):**
+
+- `integrations/models.py` defines four immutable model role configurations with explicit provider, direct API ID, request API style, secret env var and endpoint. Requested and reported model versions are distinct; unknown roles fail.
+- `integrations/providers/` implements pure, provider-specific request preparation: DeepSeek stateless Responses, OpenAI Responses, and Z.ai Chat Completions. A shared parser returns text, function-call IDs/names/JSON args, token usage, reported model and continuation items. Malformed, refused, truncated or unsupported outputs fail; tool calls are **data**, never executed.
+- `execute_one` requires explicit `live=True` and `confirm_one_request=True` plus the relevant provider credential before creating a network client. It caps a compatibility completion at 512 output tokens, 60s timeout and 0 SDK retries. **No new live CLI is exposed or invoked.**
+- `integrations/judge.py` defines a strict four-family Terra judgment JSON schema and an encoded/validated PNG input helper, without accessing labels or wiring into `validator.solution`.
+- `scripts/provider_preflight.py` prints a safe four-role preview with `network_requests=0`; new `tests/test_provider_*_offline.py` use mocked replies and clients to check routing, tool-response formats, refusal/incomplete handling, authorization, and judge decoding.
+- `pyproject.toml` includes `integrations` in the package build. `.github/workflows/offline-ci.yml` now discovers provider tests and runs the preview on PRs; `.env.example`, README and `docs/Provider-Migration-Plan.md` explain the environment and boundaries.
+- Neither `validator/solution.py`, `validator/baseline.py`, `workflow/generate.py`, released artifacts, seed human labels, nor Session 007 pilot files was modified. The prior Modal runner and Qwen/vLLM baseline remain available, but no Modal service is deployed by these changes.
+
+**Verified so far:** Branch creation/push and prior Git history; public provider documentation for API format. **Not verified yet:** Codespace `uv sync --locked`, provider offline unit-test results, GitHub Actions CI, user-account model access, live API replies, tool integration, figures from new agents, Terra judge predictions or MCC. No live request was made for Session 008.
+
+**Next actions:** User runs `git pull --ff-only`, provider mock tests, zero-network preview, existing validator/structural tests and dataset preflight in Codespaces; share full output and resolve any failures before a reviewed PR. Only after independent approval should one carefully bounded live request per provider/model be considered. Subsequent milestones: Docker agent controller, independent plotting runs, human review, judge comparison and Harbor verifier tasks. Never infer semantic quality from mocked tests.
+
 ### Template for future sessions
 
 Copy this entire section to the bottom for each new session. Do not backfill invented results.
