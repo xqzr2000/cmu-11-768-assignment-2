@@ -145,6 +145,36 @@ uv run python scripts/openai_seed_pilot.py --run-id 004 --family wrong_data --co
 
 The independent `--compare` path reads human labels locally, reports a single family decision's TP/FP/FN/TN, and makes no model requests. A single selected example is not evidence of MCC or model generalization. The existing Z.ai pilot and official Qwen3-VL configuration remain intact.
 
+## Session 008 — offline-only multi-provider adapters (in progress)
+
+This is an **independent research adaptation**. The course requires its Qwen3-VL validator and fixed generation models; we have **not replaced or re-scored** the official validator. Session 007's wrong-chart v1/v2 findings remain separate on their feature branch.
+
+Four experimental roles are configured under `integrations/models.py`:
+
+| Role | Provider | Requested API model | Request style |
+| --- | --- | --- | --- |
+| Agent A | DeepSeek | `deepseek-flash` | Stateless Responses |
+| Agent B | OpenAI | `gpt-5.6-luna` | Responses |
+| Agent C | Z.ai | `glm-4.7-flash` | Chat Completions |
+| Experimental judge | OpenAI | `gpt-6.1-terra` | Responses + image + JSON schema |
+
+This phase adds provider request builders and normalizers, an opt-in one-request transport helper, an inert function-call representation, and strict local judge-response checking. It **does not yet run agents, execute model tool calls, host models, or make live API requests**. Existing `workflow/generate.py` remains a Modal runner; a future task will integrate the pinned Assignment 1 Docker sandbox.
+
+**Verify offline (no provider credentials required, no network requests from test code):**
+
+```bash
+uv sync --locked
+uv run python -m unittest discover -s tests -p 'test_provider_*_offline.py' -v
+uv run python scripts/provider_preflight.py
+uv run python -m unittest discover -s tests -p 'test_validator_*_offline.py' -v
+uv run python -m unittest discover -s tests -p 'test_offline_*.py' -v
+uv run python scripts/offline_preflight.py
+```
+
+All live transport calls require `live=True`, `confirm_one_request=True`, an appropriate provider API key, and a separate deliberate caller. The adapters never run tools automatically. **No live CLI command is provided or authorized in this phase.**
+
+See [docs/Provider-Migration-Plan.md](docs/Provider-Migration-Plan.md) for API details, output formats, security constraints, and the first PR acceptance checklist. Offline test results remain **unverified until executed in Codespaces or CI**.
+
 ## Development phases
 
 1. **Phase 0 (this PR):** preserve upstream, pin sandbox dependency, validate offline dataset, establish Docker-ready Codespace and CI.
