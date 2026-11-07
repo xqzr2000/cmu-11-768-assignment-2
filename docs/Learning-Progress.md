@@ -904,7 +904,25 @@ git status --short --branch
 - Historical v1 seed-008 `wrong_chart` judgment was **FP** (predicted true, human false; 13,597 reported tokens). The new v2 judgment is **TN** (predicted false, human false; 13,763 tokens). Both results remain separate; no old result was overwritten.
 - **Interpretation:** v2 fixes this **known, prompt-development example** and gives a better-grounded explanation. Because seed 008 was the original failure analyzed to design v2, this is **not blind/held-out validation** and does not justify improvement-rate or MCC claims. The rubric could still miss genuine wrong-chart examples.
 
-**Next step:** Run an **offline preview** of seed 004 `wrong_chart` with v2, then (only if separately approved) a single live v2 call to check whether the known-positive logarithmic-axis violation is still detected. Compare that saved response offline and audit the explanation. Subsequently design independent positive and negative cases before any broader performance claim or promotion into the official validator. No additional live request is authorized by this entry.
+**Controlled v2 live positive-regression check — seed 004 / `wrong_chart` (user-executed, 2026-11-07):**
+
+- User fast-forwarded clean feature branch to `32abc51` and completed a **zero-request** v2 preview: 14,381 prompt characters, 10 trajectory messages, 1200×1000 PNG (137,276 bytes), no inputs, `human_labels_sent=false`.
+- User separately invoked **one potentially billed** `--prompt-version v2 --live --confirm-one-request` request. It succeeded in one completion attempt with model `gpt-5.4-mini-2026-03-17`: **5,820 prompt + 63 completion = 5,883 total tokens**. This is token usage, not a monetary cost estimate.
+- The saved, ignored output `output/session007_openai_004_wrong_chart_v2_decision.json` contains `has_error=false` and says that all requested logarithmic axes are present. `human_labels_sent=false` and `official_qwen_equivalent=false`.
+- Only afterward, the user ran `--compare` offline. It returned `predicted_error=false`, `human_error=true`, `match=false`, **FN**. The released human evidence identifies **the fourth subplot's x-axis (axes[3]) as linear despite a requested log scale**.
+- Source check of `artifacts/004/result.json`: instructions explicitly require **both axes of the third and fourth subplots logarithmic** and **third subplot x-axis base-3 log**. The recorded script sets `axs[1, 1].set_yscale('log')` but never sets `axs[1, 1].set_xscale('log')`, confirming the fourth-panel x-axis defect. It also calls `axs[1, 0].set_xscale('log')` with no `base=3` argument, another potential chart-design mismatch. The separate released `wrong_data` reference identifies missing cubing in panel four. The v2 model's claim of correct logarithmic axes was therefore contradicted by the recorded script and human review.
+- Historical seed-004 v1 `wrong_chart` result was **TP**; v2 regressed to **FN**. The experimental result files for both versions remain separate and unchanged. Two completed v2 calls across seeds 008 and 004 used **13,763 + 5,883 = 19,646 tokens**.
+
+**Paired development-case summary:**
+
+| Seed | Human wrong_chart | v1 judgment | v2 judgment | Observed change |
+| --- | --- | --- | --- | --- |
+| 008 | false | FP | TN | Corrected earlier false positive |
+| 004 | true | TP | FN | Introduced false negative |
+
+**Interpretation:** The stricter v2 rubric reduced an unsupported accusation but missed a concrete, verifiable axis-scale violation. These are **the same two previously analyzed development cases**, not new blind cases. On this tiny sample, v1 and v2 each match 1/2 cases; no valid MCC or generalization claims follow. This also illustrates that a model can invent the presence of a requested design element while appearing to follow an evidence-first rubric. **Do not promote v2 or claim a measured validator improvement.** All tests still only establish plumbing; no official Qwen evaluator was run.
+
+**Next step:** Stop live tests, preserve the v1/v2 outputs and failure evidence, and plan a v3 diagnostic rubric centered on an explicit **requirement-to-observation checklist**, particularly axes, scales, and log bases, while still accepting alternative visual implementations. First design offline tests and independent positive/negative cases. Require separate approval for any future billed inference; do not edit `validator/solution.py` based on this two-case comparison alone.
 
 ### Template for future sessions
 
