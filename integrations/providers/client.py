@@ -10,7 +10,7 @@ from __future__ import annotations
 import os
 from typing import Any
 
-from integrations.models import ModelSpec
+from integrations.models import MODELS, ModelSpec
 from . import deepseek, openai as openai_adapter, zai
 from .base import NormalizedReply, parse_reply
 
@@ -43,6 +43,8 @@ def prepare_request(
     max_output_tokens: int = MAX_OUTPUT_TOKENS,
 ) -> dict[str, Any]:
     """Build one provider-native request; no SDK or credential is accessed."""
+    if not isinstance(spec, ModelSpec) or MODELS.get(spec.role) != spec:
+        raise ValueError("Unregistered model/provider configuration.")
     if not isinstance(items, list) or not items or not all(
         isinstance(x, dict) for x in items
     ):
