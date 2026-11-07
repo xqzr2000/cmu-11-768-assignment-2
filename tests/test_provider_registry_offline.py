@@ -5,6 +5,7 @@ from __future__ import annotations
 import io
 import json
 import unittest
+from dataclasses import replace
 from contextlib import redirect_stdout
 from dataclasses import FrozenInstanceError
 
@@ -35,6 +36,18 @@ class ProviderRegistryOfflineTests(unittest.TestCase):
             get_model("agent_a").model_id = "other"
         with self.assertRaises(ValueError):
             get_model("unknown-role")
+
+    def test_cannot_dispatch_to_silent_model_or_endpoint_substitution(self):
+        original = get_model("agent_b")
+        items = [{"role": "user", "content": "Make a graph."}]
+        for replaced in (
+            replace(original, model_id="gpt-unapproved"),
+            replace(original, base_url="https://untrusted.invalid"),
+        ):
+            with self.subTest(replaced=replaced), self.assertRaisesRegex(
+                ValueError, "Unregistered"
+            ):
+                prepare_request(replaced, items)
 
     def test_key_and_base_url_are_provider_specific(self):
         self.assertEqual(get_model("agent_a").key_env, "DEEPSEEK_API_KEY")
