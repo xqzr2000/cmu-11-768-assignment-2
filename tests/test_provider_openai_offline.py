@@ -131,6 +131,27 @@ class OpenAIProviderOfflineTests(unittest.TestCase):
                             confirm_one_request=True, client=client)
         client.responses.create.assert_not_called()
 
+    def test_sdk_factory_is_gated_and_uses_pinned_endpoint_without_retries(self):
+        with patch("openai.OpenAI") as factory, patch.dict(
+            os.environ, {"OPENAI_API_KEY": "placeholder-not-real"}
+        ):
+            client = factory.return_value
+            client.responses.create.return_value = response_for(
+                "Plan a graph.", model="gpt-5.6-luna"
+            )
+            with self.assertRaises(PermissionError):
+                execute_one(self.luna, self.items, live=True)
+            factory.assert_not_called()
+            reply = execute_one(self.luna, self.items, live=True,
+                                confirm_one_request=True)
+        self.assertEqual(reply.text, "Plan a graph.")
+        factory.assert_called_once()
+        kwargs = factory.call_args.kwargs
+        self.assertEqual(kwargs["base_url"], "https://api.openai.com/v1")
+        self.assertEqual(kwargs["max_retries"], 0)
+        self.assertEqual(kwargs["timeout"], 60.0)
+        self.assertEqual(client.responses.create.call_count, 1)
+
     def test_one_mocked_terra_request_and_normalized_usage(self):
         client = MagicMock()
         client.responses.create.return_value = response_for(
