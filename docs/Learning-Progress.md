@@ -887,7 +887,19 @@ git status --short --branch
 
 **Verified so far:** Branch creation/push and prior Git history; public provider documentation for API format. **Not verified yet:** Codespace `uv sync --locked`, provider offline unit-test results, GitHub Actions CI, user-account model access, live API replies, tool integration, figures from new agents, Terra judge predictions or MCC. No live request was made for Session 008.
 
-**Next actions:** User runs `git pull --ff-only`, provider mock tests, zero-network preview, existing validator/structural tests and dataset preflight in Codespaces; share full output and resolve any failures before a reviewed PR. Only after independent approval should one carefully bounded live request per provider/model be considered. Subsequent milestones: Docker agent controller, independent plotting runs, human review, judge comparison and Harbor verifier tasks. Never infer semantic quality from mocked tests.
+**User Codespace verification — 2026-11-07 (completed, zero model API requests):**
+
+- `git pull --ff-only` fast-forwarded `feature/session-008-provider-adapters` from `252140e` to `7e04d59` with 20 modified/added files and a clean working tree. `uv sync --locked` resolved 111 packages and rebuilt/reinstalled the local `hw2-validator` package with `integrations` included.
+- `uv run python -m unittest discover -s tests -p 'test_provider_*_offline.py' -v`: **27/27 passed**. This tests provider registry, request routing, mock tool calls/replies, strict Terra judgment decoding, no-retry and double-consent gate paths.
+- `uv run python scripts/provider_preflight.py`: **passed**, prints all four selected models and their correct API styles; global and individual `network_requests=0`, Terra alone marked as structured judgment, all `official_qwen_equivalent=false`.
+- `uv run python -m unittest discover -s tests -p 'test_validator_*_offline.py' -v`: **49/49 passed**. (Session 008 branches from main rather than unmerged Session 007; the six Session 007-only tests are intentionally absent here.) The existing argument-parser rejection output is expected during a passing test.
+- `uv run python -m unittest discover -s tests -p 'test_offline_*.py' -v`: **5/5 passed**.
+- `uv run python scripts/offline_preflight.py`: **PASSED**, confirming **110 runs, 98 figure PNGs, 110 labels**, with 12 execution_failure, 39 hard_to_read, 71 wrong_chart, 25 wrong_data and 16 acceptable labels. These are human-label counts, not model predictions.
+- Final `git status --short --branch`: **clean and synchronized** with `origin/feature/session-008-provider-adapters`. Aggregate **81 passing offline tests** across all suites. No live network/model call, no generated figures, no Terra quality or MCC evaluation.
+
+**Interpretation:** Phase A–C provider adapter scaffolding passes local mocked/synthetic verification. The configured API IDs are not yet confirmed accessible through the user's live accounts, and no agent tool loop, Docker integration, or actual judge inference has occurred. No claim of official equivalence.
+
+**Next actions:** Sync this journal-only commit into the Codespace, review the 20-file branch diff and open a PR only after user approval. GitHub Actions runs on pull_request, so CI should be confirmed before merging. Keep Session 007 independent. All live provider smoke tests require separate explicit user approval after the reviewed offline PR.
 
 ### Template for future sessions
 
