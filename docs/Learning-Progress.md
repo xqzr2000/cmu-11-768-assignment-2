@@ -64,17 +64,17 @@ Range: **−1 to 1**, where 1 is perfect, 0 is no measured correlation, and nega
 
 The original course setup fixes the validator to **Qwen/Qwen3-VL-30B-A3B-Instruct-FP8** and the chart-generating agents to **Qwen/Qwen2.5-Coder-3B-Instruct**, **mistralai/Ministral-3-14B-Instruct-2512**, and **zai-org/GLM-4.7-Flash**, with student-owned Modal deployments. Our repository explicitly takes a separate **non-credit, no-Modal** route: keep the upstream starter, reuse the Assignment 1 Docker sandbox pinned at `0cb0534c2fffb67ddfff619100057fad0be90a3c`, and experiment with hosted Z.ai `glm-4.7-flash` for generation. A hosted endpoint is **not automatically equivalent** to the official checkpoint/runtime. The multimodal validator endpoint is still **to be verified**. We must record every substitution and never present independently measured scores as official private-set scores. See [docs/UPSTREAM.md](UPSTREAM.md) and [docs/ARCHITECTURE.md](ARCHITECTURE.md).
 
-## Current state — 2026-11-05
+## Current state — 2026-11-07
 
 - **Existing code:** imported full pinned official starter; offline preflight, its unit tests, GitHub Actions CI, development-container setup, and supporting Phase 0 docs.
 - **Seed inventory:** 110 released `result.json` trajectories; 98 final `figure.png` files; 19 committed CSV input files; `seed_labels.json` contains 110 human labels. Some runs legitimately have no figure.
 - **Reported Phase 0 label counts (not validator predictions):** 12 `execution_failure`, 25 `wrong_data`, 71 `wrong_chart`, 39 `hard_to_read`, and 16 fully acceptable runs; refer to [PHASE-0.md](PHASE-0.md) and rerun the preflight before relying on a local environment.
 - **Session 002 offline preflight:** Verified in Codespace on 2026-11-05: 111 resolved packages, 110 seed runs / 98 figures / 110 labels, and 5/5 unit tests passed. Visual/trajectory case studies for runs 004 and 008 recorded below; no model judging performed.
-- **Validator status:** Session 002's structural execution checks and Session 003's baseline semantic wiring passed their offline tests. In Session 004, **22/22 validator tests, 5/5 structural tests, seed preflight and a one-request live Z.ai `glm-4.6v-flash` controlled image probe all passed**. The live test confirms only basic image-input capability for Z.ai, **not official Qwen equivalence or any per-family/macro-MCC**.
+- **Validator status:** Session 002 structural checks and Session 003 baseline semantic wiring remain mock-tested; 49/49 validator tests and 5/5 structural tests passed in Codespaces on 2026-11-07. The independent one-request Z.ai synthetic image probe passed in Session 004, but the later real-seed Z.ai attempt failed. OpenAI structured-output judgments on seeds 004 and 008 work independently of the official validator path. No full baseline sweep, official Qwen-equivalent score, or per-family/macro-MCC has been verified.
 - **Agent generation:** `workflow/generate.py` still calls Modal; it has **not** been migrated to the Assignment 1 Docker runtime. Do not run it expecting local Docker behavior.
 - **Harbor:** example and template exist; our own packaged tasks do not yet exist. Docker execution and reward tests were **not performed in this session**.
 - **Documentation:** this journal is the session 001 deliverable. GitHub source inspection and branch creation are verified; **no code execution, model calls, score computation, or CI result is claimed by this journal-writing session**.
-- **Git:** PRs [#2](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/2), [#3](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/3), [#4](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/4), and [#5](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/5) are merged into `main`. Session 005 remains on `feature/session-005-seed-evaluation`, draft PR #6. The independent OpenAI structured-output pilot has completed three semantic judgments on seed 004: `wrong_data` TP, `wrong_chart` TP, `hard_to_read` TN; **three binary matches on one run**, but `wrong_data` evidence was imperfect. Z.ai's real run-004 attempt failed due to output formatting/truncation. No reliable MCC has been measured.
+- **Git:** PRs #1–#6, including [Session 005 PR #6](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/6), are merged into `main` (merge `d76e7e2`). Session 006 runs on pushed `feature/session-006-controlled-evaluation`; no PR or merge is claimed yet. The user verified 49/49 validator tests, 5/5 structural tests, and the 110-run/98-figure preflight on clean `main`. Independent OpenAI seed `004` produced `wrong_data` TP (imperfect localization), `wrong_chart` TP, `hard_to_read` TN. Seed `008` has `wrong_data` TP and `hard_to_read` TP, with evidence aligned to the released human explanations; `wrong_chart` is **not yet run**. Five selected family judgments across two seed runs do not support MCC or official Qwen-equivalent claims.
 
 ## How information flows through the code
 
@@ -831,6 +831,42 @@ git status --short --branch
 ~~~
 
 **Next decision:** Review draft PR #6 as an integration milestone or independently authorize an additional single-family test on seed 008. Any seed 008 live request will send its task, 23 trajectory messages, `data.csv` contents and PNG to OpenAI, and is separate from the three completed seed 004 calls.
+
+### Session 006 — 2026-11-07 (America/Vancouver) — Controlled seed-008 evaluation
+
+**Starting point:** The user resumed after merging [Session 005 PR #6](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/6) into `main` at `d76e7e2`. In the restarted Codespace, 49/49 validator tests, 5/5 offline preflight tests, the 110-run/98-figure dataset check, and a clean `main` status were verified. The user created and pushed clean branch `feature/session-006-controlled-evaluation`.
+
+**Goal:** Evaluate the released Sankey case `008` with a bounded OpenAI structured-output pilot. Inspect the data and figure independently; generate predictions **without human labels**; compare only after each response is saved. This is independent `gpt-5.4-mini` experimentation, **not** a run of the assignment-required Qwen3-VL judge.
+
+**Offline preparation (user-executed):**
+
+- `uv run python scripts/openai_seed_pilot.py --run-id 008 --family wrong_data` returned an offline preview with **0 requests**, **1 planned request**, `key_configured=true`, `prompt_chars=37508`, 23 trajectory messages, a 1500×1050 PNG of 160,555 bytes, and a 14,475-byte `data.csv`. `human_labels_sent=false`.
+- `uv run python scripts/zai_seed_pilot.py --run-id 008` returned a separate **0-request** preview of 3 possible `glm-4.6v-flash` semantic requests. No live Z.ai request was made in Session 006.
+- Independent CSV inspection found **1,000 input records**, five fruit labels, and **80** rows whose source is orange (targets: orange 53, banana 15, blueberry 8, apple 3, lime 1). The final plot script in `artifacts/008/result.json` uses `.query("source != 'orange'")`; the rendered figure shows four source nodes and total source weight **920**, consistent with the omitted 8% of rows. The original task did not authorize this filtering.
+- Raw `csv.reader` using default UTF-8 gave **26** seemingly distinct source–target pairs because the first value contains a UTF-8 BOM (`\ufeffblueberry`). Re-reading with `encoding="utf-8-sig"` gave **25 normalized pairs** and exactly five labels: apple, banana, blueberry, lime, orange. The final plotting script itself already uses `utf-8-sig`. This is a data-inspection pitfall, not a second plotted-data defect.
+- Visual inspection of the user-opened released `figure.png` showed pale, low-contrast node labels on white. The figure has an appropriate title and fruit-color legend; chart-design compliance was **not yet judged**. The released PNG is 160,555 bytes, whereas the final trajectory's file-check message reported 41,233 bytes; this discrepancy was noted but not resolved. Do not claim provenance of the released image beyond the released artifact.
+
+**Bounded live judgments (user explicitly invoked each, separately):**
+
+| Run/family | Model reported | API attempts | Tokens (prompt + completion = total) | Predicted error | Offline human label | Outcome |
+| --- | --- | ---: | --- | --- | --- | --- |
+| 008 / `wrong_data` | `gpt-5.4-mini-2026-03-17` | 1 | 13,508 + 73 = **13,581** | true | true | **TP** |
+| 008 / `hard_to_read` | `gpt-5.4-mini-2026-03-17` | 1 | 13,506 + 60 = **13,566** | true | true | **TP** |
+| 008 / `wrong_chart` | **Not run** | 0 | N/A | N/A | Not compared | **Pending** |
+
+**Model evidence vs human evidence:**
+
+- `wrong_data`: the model stated that the agent filtered out `source=orange`, altering Sankey flows/counts and leaving only four source nodes. The released human explanation identifies the missing orange source node. The explanation is aligned with the human-reviewed defect **and** the independent 80-row check. Offline `--compare` returned `match=true`, `outcome=TP`.
+- `hard_to_read`: the model identified faint light-gray labels on white and also mentioned crowded overlapping ribbons. The released human explanation specifically identifies near-white `#f4f4f4` value labels on white. Label contrast aligns with the reference evidence; ribbon overlap is an additional observation, not a human-confirmed root cause. Offline `--compare` returned `match=true`, `outcome=TP`.
+- Both successful responses reported `human_labels_sent=false` and `official_qwen_equivalent=false`. Across the **two** independently authorized live calls, usage totaled **27,014 prompt + 133 completion = 27,147 tokens**. Token counts are usage, **not** monetary costs.
+- The successful decision artifacts are local, ignored Codespace files `output/session005_openai_008_wrong_data_decision.json` and `output/session005_openai_008_hard_to_read_decision.json`. Their `session005` prefix comes from reusing the Session 005 script; it does not mean those calls occurred in Session 005. **No raw decision file or API key is committed.**
+- This is **2/2 selected binary family matches on one selected run**, not an accuracy estimate. A third family remains untested, and no per-family MCC or macro-MCC is justified by these observations.
+
+**Commands executed and results:** Branch creation/push and `git status --short --branch` passed, both offline previews passed, independent CSV checks passed, two one-attempt `--live --confirm-one-request` invocations succeeded, and both subsequent `--compare` invocations returned TP. The previously verified 49+5 tests and preflight preceded Session 006's branch creation; **no new tests or CI claim** is made for this documentation checkpoint.
+
+**What we learned:** A model's correct binary answer is not enough: fault localization matters. Run `008` `wrong_data` provides both a model diagnosis and a deterministic cross-check, unlike the weaker `wrong_data` explanation on run `004`. Low contrast is a separate semantic failure. BOM handling can produce spurious raw CSV categories. Repeated evaluation of a few selected cases does not establish statistical performance.
+
+**Next step:** Decide whether to spend **one more separately approved** OpenAI request on `008` / `wrong_chart` (first run the default offline preview). Alternatively stop here, review this documentation-only Session 006 checkpoint and open a PR. Do not infer `wrong_chart=false` from an absent prediction, send human labels during inference, or report a full-run verdict or MCC.
 
 ### Template for future sessions
 
