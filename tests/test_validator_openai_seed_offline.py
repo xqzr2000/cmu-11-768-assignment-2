@@ -254,5 +254,110 @@ class OpenAISeedPilotOfflineTests(unittest.TestCase):
         self.assertEqual(comparison["outcome"], "TP")
 
 
+    def test_wrong_chart_v2_rubric_is_requirement_based_and_v1_unchanged(self):
+        v1 = pilot.make_messages(self.case(), "wrong_chart")
+        v2 = pilot.make_messages(self.case(), "wrong_chart", prompt_version="v2")
+        v1_text = v1[1]["content"][0]["text"]
+        v2_text = v2[1]["content"][0]["text"]
+        self.assertNotIn("Chart-design assessment criteria:", v1_text)
+        self.assertIn("Chart-design assessment criteria:", v2_text)
+        self.assertIn("specific requested design requirement", v2_text)
+        self.assertIn("custom plotting technique", v2_text)
+        self.assertIn("wrong_data", v2_text)
+        self.assertIn("hard_to_read", v2_text)
+        self.assertNotIn("seed_labels.json", v2_text)
+        self.assertEqual(v1[1]["content"][1]["image_url"], v2[1]["content"][1]["image_url"])
+        self.assertEqual(v1[0], v2[0])
+
+    def test_v2_output_is_separate_from_preserved_v1_files(self):
+        old = pilot.result_path("008", "wrong_chart", self.root)
+        new = pilot.result_path("008", "wrong_chart", self.root, prompt_version="v2")
+        self.assertEqual(old.name, "session005_openai_008_wrong_chart_decision.json")
+        self.assertEqual(new.name, "session007_openai_008_wrong_chart_v2_decision.json")
+        self.assertNotEqual(old, new)
+        with self.assertRaises(ValueError):
+            pilot.make_messages(self.case(), "hard_to_read", prompt_version="v2")
+        with self.assertRaises(ValueError):
+            pilot.result_path("008", "wrong_data", self.root, prompt_version="v2")
+
+    def test_v2_requires_wrong_chart_and_keeps_double_live_opt_in(self):
+        invalid = (
+            ["--prompt-version", "v2", "--family", "wrong_data"],
+            ["--prompt-version", "v2", "--family", "wrong_chart", "--live"],
+            ["--prompt-version", "v2", "--family", "wrong_chart", "--confirm-one-request"],
+            ["--prompt-version", "v2", "--family", "wrong_chart",
+             "--live", "--confirm-one-request", "--compare"],
+        )
+        with patch.object(pilot, "OpenAI") as factory:
+            for args in invalid:
+                with self.subTest(args=args), redirect_stderr(io.StringIO()):
+                    with self.assertRaises(SystemExit) as raised:
+                        pilot.main(args)
+                    self.assertEqual(raised.exception.code, 2)
+        factory.assert_not_called()
+
+    def test_v2_default_preview_is_offline_and_does_not_load_labels(self):
+        out = io.StringIO()
+        with patch.object(pilot, "load_case", return_value=self.case()), patch.object(
+            pilot, "OpenAI"
+        ) as factory, patch.object(pilot, "key_configured", return_value=False):
+            with redirect_stdout(out):
+                code = pilot.main(["--run-id", "008", "--family", "wrong_chart",
+                                   "--prompt-version", "v2"])
+        self.assertEqual(code, 0)
+        data = json.loads(out.getvalue())
+        self.assertEqual(data["network_requests"], 0)
+        self.assertEqual(data["prompt_version"], "v2")
+        self.assertFalse(data["human_labels_sent"])
+        factory.assert_not_called()
+
+    def test_v2_mock_live_saves_versioned_decision_and_compares_offline(self):
+        client = MagicMock()
+        client.chat.completions.create.return_value = fake_response()
+        output = io.StringIO()
+        with patch.object(pilot, "ROOT", self.root), patch.object(
+            pilot, "load_case", return_value=self.case()
+        ), patch.object(pilot, "key_configured", return_value=True), patch.dict(
+            os.environ, {"OPENAI_API_KEY": "mock-key-not-real"}
+        ), patch.object(pilot, "OpenAI", return_value=client) as factory:
+            with redirect_stdout(output):
+                code = pilot.main(["--run-id", "004", "--family", "wrong_chart",
+                                   "--prompt-version", "v2",
+                                   "--live", "--confirm-one-request"])
+        self.assertEqual(code, 0)
+        factory.assert_called_once()
+        self.assertEqual(client.chat.completions.create.call_count, 1)
+        v2file = pilot.result_path("004", "wrong_chart", self.root, prompt_version="v2")
+        self.assertTrue(v2file.exists())
+        self.assertFalse(pilot.result_path("004", "wrong_chart", self.root).exists())
+        record = json.loads(v2file.read_text())
+        self.assertEqual(record["prompt_version"], "v2")
+        self.assertFalse(record["human_labels_sent"])
+        prompt = client.chat.completions.create.call_args.kwargs["messages"][1]["content"][0]["text"]
+        self.assertIn("Chart-design assessment criteria:", prompt)
+
+        (self.root / "seed_labels.json").write_text(json.dumps({
+            "labels": [{"run_id": "004", "errors": []}]
+        }))
+        with patch.object(pilot, "OpenAI") as factory:
+            result = pilot.compare_result("004", "wrong_chart", self.root,
+                                          prompt_version="v2")
+        factory.assert_not_called()
+        self.assertEqual(result["outcome"], "FP")
+        self.assertEqual(result["prompt_version"], "v2")
+
+    def test_v2_compare_rejects_wrong_version_and_missing_prior_result(self):
+        with self.assertRaises(FileNotFoundError):
+            pilot.compare_result("004", "wrong_chart", self.root, prompt_version="v2")
+        p = pilot.result_path("004", "wrong_chart", self.root, prompt_version="v2")
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(json.dumps({
+            "run_id": "004", "family": "wrong_chart", "prompt_version": "v1",
+            "model_requested": pilot.MODEL, "has_error": False,
+        }))
+        with self.assertRaisesRegex(ValueError, "different prompt version"):
+            pilot.compare_result("004", "wrong_chart", self.root, prompt_version="v2")
+
+
 if __name__ == "__main__":
     unittest.main()
