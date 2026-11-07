@@ -306,7 +306,7 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.compare:
         try:
-            print(json.dumps(compare_result(args.run_id, args.family,
+            print(json.dumps(compare_result(args.run_id, args.family, ROOT,
                                             prompt_version=args.prompt_version), indent=2))
             return 0
         except (OSError, ValueError, KeyError) as error:
@@ -325,7 +325,7 @@ def main(argv: list[str] | None = None) -> int:
                                  prompt_version=args.prompt_version), indent=2))
         return 0
 
-    out = result_path(args.run_id, args.family, prompt_version=args.prompt_version)
+    out = result_path(args.run_id, args.family, ROOT, prompt_version=args.prompt_version)
     if out.exists():
         print(json.dumps({"mode": "live", "error": "Existing decision file; no API calls."}))
         return 2
