@@ -869,6 +869,24 @@ git status --short --branch
 
 **Next step:** Stop live testing for Session 006; no more paid calls are needed for the two preselected runs. Review this documentation-only milestone in a PR after rerunning the offline tests/CI. For a later session, design a narrowly scoped general `wrong_chart` improvement and evaluate it on additional independent cases rather than hard-coding run 008's answer. No validator behavior or official Qwen setting was changed in this session.
 
+### Session 007 — 2026-11-07 (America/Vancouver) — Wrong-chart rubric precision experiment (started)
+
+**Starting point:** User merged [Session 006 PR #7](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/7) into `main` at `91bd01c`, then verified clean `main`, deleted the local Session 006 branch and pruned old remote refs. User created/pushed clean `feature/session-007-wrong-chart-precision` and inspected `validator/solution.py`, `validator/baseline.py`, and `scripts/openai_seed_pilot.py`.
+
+**Research question:** Can a more requirement-specific `wrong_chart` rubric reduce unsupported chart-design accusations without hiding real chart-type, layout, axis/scale, or required design-element failures? The known seed-008 false positive was produced by **independent `gpt-5.4-mini`**, not the official Qwen model. We therefore start by testing **experimental** prompt changes separately, rather than treating them as proven improvements to `validator/solution.py`.
+
+**Initial implementation (on feature branch; awaiting user Codespace verification):**
+
+- `scripts/openai_seed_pilot.py` now supports `--prompt-version v1|v2` with **v1 default unchanged**. `v2` is permitted **only** for `wrong_chart`. The rubric asks for a specific requested design constraint and visual mismatch, allows alternative plotting techniques when compliant, and separates wrong data from unreadable visuals.
+- All previously saved v1 per-family decisions remain at their original ignored `output/session005_openai_<run>_<family>_decision.json` paths. The new v2 decision uses ignored `output/session007_openai_<run>_wrong_chart_v2_decision.json`. `--compare --prompt-version v2` selects the v2 result and checks its version; it cannot silently compare an old v1 result.
+- Live requests remain **single call, double opt-in** with `--live --confirm-one-request`, fixed OpenAI provider, strict response schema, disabled retries and no labels during inference. Neither preview nor unit tests contact OpenAI.
+- Added **six offline tests** to `tests/test_validator_openai_seed_offline.py` for rubric specificity and unchanged v1, isolated output paths, invalid version/family combinations and double opt-in, zero-network preview, one mocked v2 live completion plus isolated post-hoc comparison, and rejection of absent/mismatched v2 result files. The passing count is **not claimed** until user Codespace or CI execution.
+- Updated README with the v2 experiment's usage, model provenance, cost/consent boundary, and the necessity of independent held-out judgments. No changes were made to `validator/solution.py`, `validator/baseline.py`, `validator/model.py`, released fixtures, or official evaluator settings.
+
+**Evaluation plan:** First run all existing offline tests and a zero-network seed-008 v2 preview in the Codespace. After separately approving a potentially charged model call, seed 008 may be used **only as a previously observed development case**, not blind evidence of improvement; seed 004 is also known. Before claiming generalization, select additional positive and negative chart-design cases without using their labels in inference, preserve provenance of the exact prompt and model, compare only post-hoc, and audit new false negatives. No v2 live request has been performed or authorized by this journal entry.
+
+**Next step:** User executes the offline test suite and preview on the newly committed branch. Review results before any more live judging, further feature changes, or PR merge.
+
 ### Template for future sessions
 
 Copy this entire section to the bottom for each new session. Do not backfill invented results.
