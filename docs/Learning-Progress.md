@@ -896,7 +896,15 @@ git status --short --branch
 
 **Interpretation:** All **60 offline tests** passed; they validate structural behavior and safeguards, not semantic accuracy. No v2 live request or human-label comparison occurred in this verification.
 
-**Next step:** If the user separately opts into a potentially billed request, use run 008 `wrong_chart` v2 only as a **known development-case diagnostic** and compare it after saving the result. Then consider seed 004 `wrong_chart` as a known-positive regression check (a second separately authorized request). Do not claim improved accuracy on held-out data from these reused seeds. Before any PR merge, preserve old v1 results, inspect v2 evidence and failures, and run or check CI.
+**Controlled v2 live development check — seed 008 / `wrong_chart` (user-executed, 2026-11-07):**
+
+- User fast-forwarded clean feature branch to `0d17898`, then explicitly invoked **one potentially billed** `--prompt-version v2 --live --confirm-one-request` evaluation. One completion attempt succeeded with requested `gpt-5.4-mini`, reported model `gpt-5.4-mini-2026-03-17`; usage: **13,679 prompt + 84 completion = 13,763 total tokens**. This is usage, not a monetary cost estimate.
+- The saved, ignored decision is `output/session007_openai_008_wrong_chart_v2_decision.json`, with `has_error=false`, `human_labels_sent=false`, `official_qwen_equivalent=false`. The model reported that the Sankey-style image has left-side sources, right-side targets, title, legend and appropriate visual roles, with no specific chart-design mismatch. Its additional claim about the exported 10×7-inch figure is **not independently established from pixel dimensions alone**; it is not needed for the negative verdict.
+- Only **after** the saved prediction, user ran the offline `--compare` path, which reported `predicted_error=false`, `human_error=false`, `match=true`, and **TN**.
+- Historical v1 seed-008 `wrong_chart` judgment was **FP** (predicted true, human false; 13,597 reported tokens). The new v2 judgment is **TN** (predicted false, human false; 13,763 tokens). Both results remain separate; no old result was overwritten.
+- **Interpretation:** v2 fixes this **known, prompt-development example** and gives a better-grounded explanation. Because seed 008 was the original failure analyzed to design v2, this is **not blind/held-out validation** and does not justify improvement-rate or MCC claims. The rubric could still miss genuine wrong-chart examples.
+
+**Next step:** Run an **offline preview** of seed 004 `wrong_chart` with v2, then (only if separately approved) a single live v2 call to check whether the known-positive logarithmic-axis violation is still detected. Compare that saved response offline and audit the explanation. Subsequently design independent positive and negative cases before any broader performance claim or promotion into the official validator. No additional live request is authorized by this entry.
 
 ### Template for future sessions
 
