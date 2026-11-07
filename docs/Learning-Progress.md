@@ -885,7 +885,18 @@ git status --short --branch
 
 **Evaluation plan:** First run all existing offline tests and a zero-network seed-008 v2 preview in the Codespace. After separately approving a potentially charged model call, seed 008 may be used **only as a previously observed development case**, not blind evidence of improvement; seed 004 is also known. Before claiming generalization, select additional positive and negative chart-design cases without using their labels in inference, preserve provenance of the exact prompt and model, compare only post-hoc, and audit new false negatives. No v2 live request has been performed or authorized by this journal entry.
 
-**Next step:** User executes the offline test suite and preview on the newly committed branch. Review results before any more live judging, further feature changes, or PR merge.
+**User Codespace verification — 2026-11-07 (offline, no API calls):**
+
+- Fast-forward pull brought feature branch to `5397c9d`, updating only `README.md`, `docs/Learning-Progress.md`, `scripts/openai_seed_pilot.py`, and `tests/test_validator_openai_seed_offline.py`.
+- `uv run python -m unittest discover -s tests -p 'test_validator_*_offline.py' -v`: **55/55 passed**. This includes all six new versioned-prompt mock tests. The expected argument-parser rejection text printed by the existing test is not a suite failure.
+- `uv run python -m unittest discover -s tests -p 'test_offline_*.py' -v`: **5/5 passed**.
+- `uv run python scripts/offline_preflight.py`: **passed**, verifying 110 released runs, 98 PNGs, and 110 labels.
+- `uv run python scripts/openai_seed_pilot.py --run-id 008 --family wrong_chart --prompt-version v2`: zero-request offline preview passed. It reported `key_configured=true`, `prompt_chars=38465`, 23 trajectory messages, 1500×1050 PNG (160,555 bytes), one `data.csv` (14,475 bytes), `planned_completion_requests=1`, `human_labels_sent=false`, and `official_qwen_equivalent=false`.
+- `git status --short --branch`: feature branch clean and synchronized with `origin/feature/session-007-wrong-chart-precision` at that time.
+
+**Interpretation:** All **60 offline tests** passed; they validate structural behavior and safeguards, not semantic accuracy. No v2 live request or human-label comparison occurred in this verification.
+
+**Next step:** If the user separately opts into a potentially billed request, use run 008 `wrong_chart` v2 only as a **known development-case diagnostic** and compare it after saving the result. Then consider seed 004 `wrong_chart` as a known-positive regression check (a second separately authorized request). Do not claim improved accuracy on held-out data from these reused seeds. Before any PR merge, preserve old v1 results, inspect v2 evidence and failures, and run or check CI.
 
 ### Template for future sessions
 
