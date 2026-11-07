@@ -79,7 +79,7 @@ def decode_judgment(reply: NormalizedReply) -> list[dict[str, str]]:
         if not isinstance(item, dict) or set(item) != {"family", "evidence"}:
             raise AdapterProtocolError("Judge error item shape is invalid.")
         family, evidence = item["family"], item["evidence"]
-        if family not in FAMILIES or family in seen:
+        if not isinstance(family, str) or family not in FAMILIES or family in seen:
             raise AdapterProtocolError("Unknown or duplicated judge family.")
         if not isinstance(evidence, str) or not evidence.strip():
             raise AdapterProtocolError("Judge evidence must be a nonempty string.")
