@@ -145,6 +145,33 @@ uv run python scripts/openai_seed_pilot.py --run-id 004 --family wrong_data --co
 
 The independent `--compare` path reads human labels locally, reports a single family decision's TP/FP/FN/TN, and makes no model requests. A single selected example is not evidence of MCC or model generalization. The existing Z.ai pilot and official Qwen3-VL configuration remain intact.
 
+## Session 007 — experimental wrong-chart precision rubric (v2)
+
+The `wrong_chart` false positive observed on released seed 008 came from the **optional OpenAI pilot**, not an official Qwen3-VL run. Session 007 adds a **versioned, opt-in hypothesis** to `scripts/openai_seed_pilot.py`, not an asserted validator improvement. The `v2` rubric asks for a concrete mismatch with the requested chart design; it distinguishes data omissions and readability defects from actual design violations, and does not reject a functionally correct custom plotting method just because it is unfamiliar.
+
+The old `v1` prompt is still the default; all prior files `output/session005_openai_*_decision.json` remain unchanged. Version `v2` supports **only** `wrong_chart` for public runs 004 and 008. Results are independently saved to ignored `output/session007_openai_<run>_wrong_chart_v2_decision.json`. Comparing `v2` requires its **own** saved decision, and never falls back to an older v1 prediction.
+
+**Offline first (zero requests and no labels):**
+
+```bash
+uv run python -m unittest discover -s tests -p 'test_validator_*_offline.py' -v
+uv run python scripts/openai_seed_pilot.py --run-id 008 --family wrong_chart --prompt-version v2
+```
+
+An optional **one-call**, possibly billed experiment requires an explicit independent decision to send the public run's task, full trajectory, CSV (if any), and PNG to OpenAI. Only after that decision, add both live flags:
+
+```bash
+uv run python scripts/openai_seed_pilot.py --run-id 008 --family wrong_chart --prompt-version v2 --live --confirm-one-request
+```
+
+The **separate offline-only** comparison after successful inference is:
+
+```bash
+uv run python scripts/openai_seed_pilot.py --run-id 008 --family wrong_chart --prompt-version v2 --compare
+```
+
+The prior incorrect seed-008 judgment has already been analyzed and its human label is known: repeating it is **development-set diagnosis**, not held-out evidence. A serious validation of prompt precision requires additional, independently selected positive and negative `wrong_chart` examples, blind predictions, post-hoc label comparison and regression analysis. Mocked unit tests validate routing and safety, **not** judge quality. No code in `validator/solution.py`, `validator/baseline.py`, or `validator/model.py` is modified by this initial experiment.
+
 ## Development phases
 
 1. **Phase 0 (this PR):** preserve upstream, pin sandbox dependency, validate offline dataset, establish Docker-ready Codespace and CI.
