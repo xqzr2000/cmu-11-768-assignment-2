@@ -952,7 +952,17 @@ git status --short --branch
 - **Next diagnosis without model calls:** inspect Z.ai account dashboard for key type/billing plan, available balance or credits, quota, concurrency/rate-limit counters, and recent failed-request logs; distinguish account quota/access failure from temporary throttling if the dashboard exposes a safe numeric business error code. Never paste API keys, bearer tokens or full provider errors containing sensitive account metadata. Any follow-up GLM request needs fresh user consent.
 - **Current status:** Agent A DeepSeek one-turn function call passed; Agent B Luna one-turn function call passed; Agent C GLM blocked with `RateLimitError`; experimental Terra judge has not been called.
 
-**Next:** Sync the documentation-only commit. We can investigate the Z.ai dashboard without a model call, or separately ask approval for **one OpenAI `gpt-6.1-terra` synthetic-PNG structured-output compatibility probe**; neither GLM retry nor Terra call is authorized by the earlier approvals.
+**Session 009 follow-up — Agent C paid-model replacement decision (2026-11-07, America/Vancouver):**
+
+- User asked: **switch from the free Z.ai model to `glm-5.3-flash` and test**. We interpret the change as a newly configured model, not a retry of the failed `glm-4.7-flash` probe; the earlier attempt's `RateLimitError` and its ignored `output/provider_compat_agent_c.json` must remain unchanged.
+- Agent C's current configured model is now `glm-5.3-flash` (Chat Completions, standard `https://api.z.ai/api/paas/v4`, `ZAI_API_KEY`). The prior code/tests `glm-4.7-flash` are now historical. Other roles unchanged.
+- GLM-5.3-Flash defaults to substantial mandatory reasoning; we send `reasoning_effort=low` using the OpenAI SDK's `extra_body` for a bounded 512-output-token one-turn tool-call probe. This is deliberately **not a benchmark of default model quality**.
+- The compatibility CLI now saves model-scoped results such as `output/provider_compat_agent_c_glm-5.3-flash.json`, preserving the earlier role-only `output/provider_compat_agent_c.json`. It refuses a repeated model test if either a new model-scoped file or an old same-model legacy record already exists; malformed legacy files also block conservatively.
+- Updated mocked unit tests pin `glm-5.3-flash` and verify correct Z.ai request, low reasoning effort, no network by default, preservation of `glm-4.7-flash` failure record, and rejection of same-model attempts. Existing official model settings, runner, judge, labels and pinned Docker dependency are untouched.
+- Public model documentation and model-card material establish `glm-5.3-flash` as an API/model identifier, not the user's account entitlement. A previous rate-limit failure might affect the new model if caused by a shared account quota or insufficient balance.
+- **Current state:** Source changes and documentation pushed to the Session 009 feature branch; **Codespace offline tests and a GLM-5.3-Flash live API call have not yet been performed or verified**. Per-request user approval remains mandatory before any possibly billed model request; no automatic retry, fallback or shell execution.
+
+**Next:** User pulls remote Session 009 changes into Codespaces and runs mocked provider tests, offline agent_c preview and preflight, plus existing validator regression tests. Share output before authorizing/providing the exact single potentially billed `glm-5.3-flash` live command. Terra probe remains separate and unapproved.
 
 ### Template for future sessions
 
