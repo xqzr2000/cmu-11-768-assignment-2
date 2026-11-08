@@ -66,6 +66,7 @@ The original course setup fixes the validator to **Qwen/Qwen3-VL-30B-A3B-Instruc
 
 ## Current state — 2026-11-07
 
+- **Session 010 in progress:** PR #9 merged at `65b0a49` and its feature branch was deleted. New branch `feature/session-010-chart-agent-controller` tracks origin. An offline-only `ChartController`, mock tests, CI step and safety design are committed; **Codespaces verification is pending**. No live model or Docker execution in this session.
 - **Latest verified milestone — Session 009:** All four current hosted models passed a separately approved **one-turn live API transport/schema probe**: DeepSeek `deepseek-flash`, OpenAI `gpt-5.6-luna`, paid Z.ai `glm-5.3-flash` (inert function calls parsed), and experimental visual judge OpenAI `gpt-6.1-terra` (synthetic PNG and strict JSON parsed). The free Z.ai `glm-4.7-flash` attempt failed with `RateLimitError` and zero retries; its output is preserved. **37/37 provider and 49/49 validator offline tests** passed in Codespaces, and no agent controller, Docker plotting run, Terra accuracy/MCC benchmark or official Qwen equivalence is claimed. Session 009 feature branch is ready for a draft PR and CI review; **not yet merged**. All five one-request live authorizations are consumed.
 - **Git (superseding the older point-in-time snapshot below):** PR #8 merged Session 008 at `5833b2b`; Session 007 was archived to tag `archive/session-007-20261107` at `939b01f`. Both old feature branches were deleted. Session 009 is on `feature/session-009-provider-compatibility`, with documentation updates after the verified Codespace tests; original course runner and validator remain unchanged.
 - **Existing code:** imported full pinned official starter; offline preflight, its unit tests, GitHub Actions CI, development-container setup, and supporting Phase 0 docs.
@@ -1000,6 +1001,35 @@ git status --short --branch
 - **Not implemented:** a multi-turn agent controller, any model-generated chart inside Docker, a real Terra `validate(run)` integration, a human-label accuracy experiment, MCC analysis, authored-task suite, or the official course model setup.
 
 **Next:** Pull the documentation-only completion commits, run one final offline regression/preflight and review the Session 009 branch diff; open a **draft PR to `main`** and check CI before considering merge. No further paid API calls are required for Session 009 or authorized by earlier consents. Plan the bounded Docker chart-agent controller as a **new feature branch** after Session 009 is merged.
+
+### Session 010 — 2026-11-07 (America/Vancouver) — Starting a bounded chart-agent controller
+
+**Goal:** Begin transforming Session 009's verified one-turn API adapters into a real chart-making agent architecture, without immediately sending model requests or executing shell commands.
+
+**Starting point and Git hygiene (user Codespace transcript):**
+
+- User verified merged PR #9 on `main`, which was clean/synchronized at merge commit `65b0a49`. Then `git fetch origin --prune` confirmed the remote Session 009 feature branch had been deleted, and `git branch -d feature/session-009-provider-compatibility` safely removed the local merged branch.
+- User ran `git switch -c feature/session-010-chart-agent-controller` from clean `main`, followed by `git push -u origin feature/session-010-chart-agent-controller`. The new branch now tracks its matching remote; no model calls occurred.
+- Previous four-model live compatibility milestone remains closed; its five separately approved one-request API attempts have all been consumed. Session 010 requires independent fresh per-request approval for any new model call.
+
+**Source interfaces inspected before implementation:**
+
+- Assignment 2 `integrations.providers`: `NormalizedReply`, `ToolCall`, `make_tool_result`, `prepare_request`, and `execute_one`; `execute_one` remains separately gated and never runs model-proposed tools.
+- Pinned Assignment 1 `agent_sandbox_runtime` at `0cb0534c2fffb67ddfff619100057fad0be90a3c`: `Sandbox(image, network="none", ports=(), deployment_timeout=..., runtime_timeout=..., cpus=..., memory=...)`; `execute(..., timeout=..., env=...)`; context-manager `stop()`; `DockerImage.add_local_file` supports image-build-time file injection. The pinned package warns Docker is not a hardened VM security boundary. A real Docker launch and safe figure extraction are not yet verified.
+- The existing `workflow/generate.py` remains Modal-based and points to the original official models; we will not quietly replace it or report hosted-model results as official-equivalent.
+
+**Changes committed in Session 010's first offline slice:**
+
+1. New `integrations/chart_controller.py`: Pure `ChartController` state machine for the three generator roles, an inert `run_shell` descriptor, provider-specific request preparation, explicitly accepted normalized replies, pending tool-call tracking, and pure recording of externally obtained sandbox outputs. Default caps: 4 model turns, 6 tools, 2,000 command characters, 2,048-character stdout/stderr fields. Every call remains separately approved by a future host; the budgets never grant authorization.
+2. New `tests/test_controller_offline.py`: Mock-only tests for three-provider request shapes and Responses-vs-Chat continuation, no-transport preview, terminal replies, pending tools, command arguments and IDs, strict budgets, malformed outputs, and truncation.
+3. Updated `.github/workflows/offline-ci.yml` to run the dedicated mock-only controller suite.
+4. New `docs/Session-010-Controller-Design.md` explains the runtime boundary and unresolved task-file/PNG transport decisions. Updated README with the current first-slice scope.
+
+**What we deliberately did not do:** call any provider, start Docker, execute model-proposed shell commands, stage task data in a container, retrieve a model-generated figure, test end-to-end chart correctness, change the existing judge, score human labels, or update the official Modal runner.
+
+**Pending user Codespace verification:** Run `uv run python -m unittest discover -s tests -p 'test_controller_*_offline.py' -v`, the existing provider and validator suites, `uv run python scripts/provider_preflight.py`, and `git status --short --branch`. We do **not** claim these new tests have passed until the user supplies actual results. CI also needs PR verification before merge.
+
+**Next:** Review the first-slice tests and fix any issues. Then design and mock-test a restricted Assignment 1 `Sandbox` adapter with explicit `network="none"`, no credentials/host mounts, bounded time/resources, and safe task input/PNG extraction. Any real Docker execution or potentially billed model call will be separately discussed and authorized.
 
 ### Template for future sessions
 
