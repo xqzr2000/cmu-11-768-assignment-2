@@ -123,8 +123,12 @@ def snapshot_task_csvs(descriptor: Path) -> TaskInputSnapshot:
     recheck content digests and apply the same no-mount/no-credentials policy.
     """
     descriptor = Path(descriptor)
-    if descriptor.is_symlink():
-        raise ArtifactError("Symbolic links are not permitted for task descriptors.")
+    if any(path.is_symlink() for path in (descriptor, *descriptor.parents)):
+        raise ArtifactError("Symbolic links are not permitted in task descriptor paths.")
+    if not descriptor.is_file():
+        raise ArtifactError("Task descriptor must be a regular file.")
+    if descriptor.stat().st_size > 128 * 1024:
+        raise ArtifactError("Task descriptor exceeds the 128 KiB size cap.")
     task = AuthoredTask.load(descriptor)
     if not 1 <= len(task.inputs) <= MAX_INPUT_FILES:
         raise ArtifactError("A chart-data task needs between 1 and 8 CSV input files.")
