@@ -56,8 +56,8 @@ Also verified: 14/14 plotting wheel entries matched committed `uv.lock` metadata
 
 **Scope of evidence:** host-only and fake/mock checks; no actual container run, registry access, package download/install in the chart image, build authorization, model call, or judged chart accuracy. This observation is from the user's Codespaces terminal output, not from GitHub Actions.
 
-**CI gate:** Review the draft PR's current-head GitHub Actions checks separately; do not assume local success establishes CI success.
+**Initial PR CI evidence:** [Draft PR #13](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/13) was opened against `main`. [GitHub Actions 42516818263](https://github.com/xqzr2000/cmu-11-768-assignment-2/actions/runs/42516818263) **completed successfully** at head `fc571b6`: all **20/20 workflow job steps** succeeded, including this new guarded host-only suite. This provides separate CI evidence but **not** an actual Docker run, image build or model accuracy result. Subsequent documentation-only commits need separate latest-head CI verification.
 
 No paid model requests, actual Docker-built chart, BuildKit performance test, model-agent chart generation, judge MCC or official-model-equivalent results are claimed.
 
-**Next:** Review the draft PR diff and latest-head GitHub Actions. Keep this branch unmerged pending explicit review. Stage B remains blocked until a separately reviewed build/run proposal and fresh authorization.
+**Next:** Review the draft [PR #13](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/13) diff and **latest-head** GitHub Actions; choose whether to merge only after explicit human review. Stage B remains blocked until a separately reviewed build/run proposal and fresh authorization.
