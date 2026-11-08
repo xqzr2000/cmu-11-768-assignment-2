@@ -174,11 +174,11 @@ See [Session 010 supply-chain provenance](docs/Session-010-Supply-Chain.md) for 
 
 **Session 010 finished:** PR #10 [merged](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/10), CI passed, and the user cleaned the old local/remote branch. See [Learning Progress](docs/Learning-Progress.md) for the completed milestone and the active Session 011 handoff.
 
-## Session 011 — Empty-input chart runtime support (offline implementation, tests pending)
+## Session 011 — Empty-input chart runtime support (focused offline tests passed)
 
 The official authored-task schema already accepts `inputs=[]` or an omitted input list, but our Session 010 snapshotter, transfer staging and private context previously required one CSV, and the inert Dockerfile's glob-based chmod would fail if the directory were empty. On `feature/session-011-chart-runtime` we now allow **0–8** CSV files while retaining file safety checks, a strictly allowlisted build context, the pinned plotting requirements file, and a fixed empty-file-safe `find ... -exec chmod` step. No tasks automatically enter Docker or a model API.
 
-New offline regression cases cover zero-input descriptors, private staging and cleanup, exact three-file build contexts with empty `inputs/`, rejection of unexpected input files and Dockerfile handling. **The new Session 011 code has not yet been verified by the user in Codespaces.** The historical **173/173 passed** count belongs to Session 010, before these changes. Review the [Session 011 journal entry](docs/Learning-Progress.md) and run the guarded offline tests before any PR or separately authorized real image build.
+New offline regression cases cover zero-input descriptors, private staging and cleanup, exact three-file build contexts with empty `inputs/`, rejection of unexpected input files and Dockerfile handling. **Verified in Codespaces at `c1f5602`: all 62/62 focused offline tests passed** (17 task artifacts, 13 transfer, 13 recipe, 19 context). The separate 14-package wheel metadata audit also passed. Git was clean and synchronized. **Next: run all six chart/controller suites and provider, validator, and structural regressions (expected 178 total tests)** before a draft Session 011 PR. The earlier **173/173** Session 010 result remains historical. These tests do not demonstrate an actual image build or authorize Docker/model operations.
 
 No additional model API requests, real Docker builds, sandbox launches, live chart-generation runs, or Terra accuracy evaluations are authorized by Session 010's offline verification. The official Modal runner and assignment requirements are unchanged.
 
