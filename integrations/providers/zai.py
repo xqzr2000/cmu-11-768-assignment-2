@@ -21,6 +21,10 @@ def build(spec: ModelSpec, items: list[dict[str, Any]],
         "model": spec.model_id, "messages": items,
         "max_tokens": max_output_tokens, "stream": False,
     }
+    if spec.model_id == "glm-5.3-flash":
+        # 5.3 Flash always reasons; select low effort for the 512-token probe.
+        # OpenAI SDK merges extra_body into the provider-native JSON payload.
+        request["extra_body"] = {"reasoning_effort": "low"}
     if tools:
         request["tools"] = [
             {"type": "function", "function": {

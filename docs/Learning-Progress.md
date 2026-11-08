@@ -62,10 +62,12 @@ Range: **−1 to 1**, where 1 is perfect, 0 is no measured correlation, and nega
 
 ### Fixed official model policy versus our learning adaptation
 
-The original course setup fixes the validator to **Qwen/Qwen3-VL-30B-A3B-Instruct-FP8** and the chart-generating agents to **Qwen/Qwen2.5-Coder-3B-Instruct**, **mistralai/Ministral-3-14B-Instruct-2512**, and **zai-org/GLM-4.7-Flash**, with student-owned Modal deployments. Our repository explicitly takes a separate **non-credit, no-Modal** route: keep the upstream starter, reuse the Assignment 1 Docker sandbox pinned at `0cb0534c2fffb67ddfff619100057fad0be90a3c`, and experiment with hosted Z.ai `glm-4.7-flash` for generation. A hosted endpoint is **not automatically equivalent** to the official checkpoint/runtime. The multimodal validator endpoint is still **to be verified**. We must record every substitution and never present independently measured scores as official private-set scores. See [docs/UPSTREAM.md](UPSTREAM.md) and [docs/ARCHITECTURE.md](ARCHITECTURE.md).
+The original course setup fixes the validator to **Qwen/Qwen3-VL-30B-A3B-Instruct-FP8** and the chart-generating agents to **Qwen/Qwen2.5-Coder-3B-Instruct**, **mistralai/Ministral-3-14B-Instruct-2512**, and **zai-org/GLM-4.7-Flash**, with student-owned Modal deployments. Our repository explicitly takes a separate **non-credit, no-Modal** route: keep the upstream starter, reuse the Assignment 1 Docker sandbox pinned at `0cb0534c2fffb67ddfff619100057fad0be90a3c`, and experiment with hosted DeepSeek `deepseek-flash`, OpenAI `gpt-5.6-luna`, and Z.ai `glm-5.3-flash` as potential chart generators (the earlier Z.ai `glm-4.7-flash` attempt remains historical). A hosted endpoint is **not automatically equivalent** to the official checkpoint/runtime. The multimodal validator endpoint is still **to be verified**. We must record every substitution and never present independently measured scores as official private-set scores. See [docs/UPSTREAM.md](UPSTREAM.md) and [docs/ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## Current state — 2026-11-07
 
+- **Latest verified milestone — Session 009:** All four current hosted models passed a separately approved **one-turn live API transport/schema probe**: DeepSeek `deepseek-flash`, OpenAI `gpt-5.6-luna`, paid Z.ai `glm-5.3-flash` (inert function calls parsed), and experimental visual judge OpenAI `gpt-6.1-terra` (synthetic PNG and strict JSON parsed). The free Z.ai `glm-4.7-flash` attempt failed with `RateLimitError` and zero retries; its output is preserved. **37/37 provider and 49/49 validator offline tests** passed in Codespaces, and no agent controller, Docker plotting run, Terra accuracy/MCC benchmark or official Qwen equivalence is claimed. Session 009 feature branch is ready for a draft PR and CI review; **not yet merged**. All five one-request live authorizations are consumed.
+- **Git (superseding the older point-in-time snapshot below):** PR #8 merged Session 008 at `5833b2b`; Session 007 was archived to tag `archive/session-007-20261107` at `939b01f`. Both old feature branches were deleted. Session 009 is on `feature/session-009-provider-compatibility`, with documentation updates after the verified Codespace tests; original course runner and validator remain unchanged.
 - **Existing code:** imported full pinned official starter; offline preflight, its unit tests, GitHub Actions CI, development-container setup, and supporting Phase 0 docs.
 - **Seed inventory:** 110 released `result.json` trajectories; 98 final `figure.png` files; 19 committed CSV input files; `seed_labels.json` contains 110 human labels. Some runs legitimately have no figure.
 - **Reported Phase 0 label counts (not validator predictions):** 12 `execution_failure`, 25 `wrong_data`, 71 `wrong_chart`, 39 `hard_to_read`, and 16 fully acceptable runs; refer to [PHASE-0.md](PHASE-0.md) and rerun the preflight before relying on a local environment.
@@ -900,6 +902,104 @@ git status --short --branch
 **Interpretation:** Phase A–C provider adapter scaffolding passes local mocked/synthetic verification. The configured API IDs are not yet confirmed accessible through the user's live accounts, and no agent tool loop, Docker integration, or actual judge inference has occurred. No claim of official equivalence.
 
 **Next actions:** Sync this journal-only commit into the Codespace, review the 20-file branch diff and open a PR only after user approval. GitHub Actions runs on pull_request, so CI should be confirmed before merging. Keep Session 007 independent. All live provider smoke tests require separate explicit user approval after the reviewed offline PR.
+
+### Session 009 — 2026-11-07 (America/Vancouver) — Individual API compatibility probe preparation
+
+**Git starting point:** PR #8 merged into `main` at `5833b2b`, GitHub Actions successful. User synchronized Codespaces `main`, pushed an annotated Session 007 archive tag `archive/session-007-20261107` pointing to `939b01f`, deleted both local and remote Session 007 and Session 008 feature branches, verified clean synchronized `main` as the only remaining active branch. The archive preserves committed work, not ignored `output/` files.
+
+**Session 009 intent:** User said to continue with the next agreed milestone: provider compatibility checks, with explicit authorization **before each model API request**. A new feature branch `feature/session-009-provider-compatibility` was created remotely from `main`. Public docs confirm configured API IDs and interfaces (DeepSeek stateless Responses, OpenAI Luna/Terra Responses, Z.ai Chat Completions); documentation is not evidence of account access.
+
+**Offline preparation committed (user verification pending):**
+
+- `scripts/provider_compat_probe.py` previews per-model synthetic requests without credentials or network. Generators receive an inert `run_shell` function descriptor requesting `printf session009`; the script never executes any model-proposed shell command. The experimental Terra judge receives an in-memory synthetic two-bar PNG and the existing strict four-family judgment schema; no released seed or human labels are included.
+- One-request live path is guarded by all three of `--live`, `--confirm-one-request`, and `--approve-model EXACT_ID`, plus provider credentials. The code reuses `execute_one` (zero SDK retries, a 60s timeout, 512 max output tokens), and never silently switches models.
+- The future live path saves only minimal metadata and reported usage to a new, locally ignored `output/provider_compat_<role>.json` file, refuses to overwrite an earlier result, and redacts provider exception contents. A text-only generator response is recorded as missing tool-call evidence, not a successful tool integration. A Terra schema-valid result does not imply a correct judge.
+- `tests/test_provider_compat_probe_offline.py` mocks all four roles and verifies pure offline previews, strict authorization, sanitized errors, no retries, non-overwrite behavior, metadata records, and the synthetic image/schema.
+- Documentation: README and `docs/Session-009-Compatibility-Probes.md`. Official `validator/solution.py` and Modal-based `workflow/generate.py` remain unchanged.
+
+**Codespace offline verification (2026-11-07, user-supplied terminal log):**
+
+- Fresh checkout of remote `feature/session-009-provider-compatibility` succeeded and was clean/synchronized.
+- `uv sync --locked`: resolved 111 packages, rebuilt/reinstalled local `hw2-validator`.
+- `uv run python -m unittest discover -s tests -p 'test_provider_*_offline.py' -v`: **34/34 passed** (27 prior adapter tests + 7 new compatibility-probe tests).
+- All four `uv run python scripts/provider_compat_probe.py --role ...` offline previews passed: `agent_a` -> `deepseek-flash`, `agent_b` -> `gpt-5.6-luna`, `agent_c` -> `glm-4.7-flash`, `experimental_judge` -> `gpt-6.1-terra`. All reported `network_requests=0`, correct API styles; three roles had inert `run_shell` descriptors, Terra had `structured_judgment=true` and no tools.
+- Existing validator tests: **49/49 passed**. Expected CLI usage diagnostics occurred in an intentionally rejected malformed-consent test and did not indicate a failure.
+- Offline dataset preflight: **PASSED** with 110 runs, 98 PNG figures, 110 human-labeled runs, 16 acceptable, 12 execution_failure, 39 hard_to_read, 71 wrong_chart, 25 wrong_data.
+- Final `git status --short --branch`: clean `feature/session-009-provider-compatibility...origin/feature/session-009-provider-compatibility`. **83/83 offline unit tests passed.** No model/provider calls, no cloud infrastructure invoked.
+
+**Still not verified or performed:** any live API request, four-model account access, real tool/function-call responses, actual Terra structured JSON on a live synthetic image, chart-generation agent loop, or MCC. Mock test success does not confirm model/API compatibility or semantic correctness.
+
+**First approved live compatibility request (DeepSeek, Agent A, 2026-11-07, user-supplied Codespace output):**
+
+- User explicitly approved **exactly one** potentially billed `deepseek-flash` request with no retry and no tool execution. After pulling `ea0b182`, verified clean/synchronized Git, and confirmed `DEEPSEEK_API_KEY` was configured (without exposing it), user executed `uv run python scripts/provider_compat_probe.py --role agent_a --live --confirm-one-request --approve-model deepseek-flash` exactly once.
+- The request **completed**. Provider: DeepSeek; requested model: `deepseek-flash`; reported model: `deepseek-flash`; interface: Responses. It returned **one** inert `run_shell` function call; `expected_tool_called=true`, `tool_call_compatibility=true`. No model-proposed commands were executed; retries=0.
+- Usage reported by provider: **346 input tokens, 59 output tokens, 405 total tokens**. Actual monetary charge was not independently verified. No fallback or additional API request occurred.
+- Saved local ignored result: `output/provider_compat_agent_a.json` (contents supplied by user match CLI output). Final `git status --short --branch` remained clean and synchronized; the committed files were unchanged before this documentation update.
+- **Interpretation:** DeepSeek's live endpoint supports this exact one-turn function-call request and our parser accepts its response. This is not an end-to-end plotting agent, Docker/shell execution test, data-visualization quality evaluation, Terra judge inference or MCC benchmark.
+
+**Second approved live compatibility request (OpenAI Luna, Agent B, 2026-11-07 America/Vancouver, user Codespace transcript):**
+
+- Following the successful DeepSeek probe and its journal commits, user explicitly authorized **exactly one** potentially billed OpenAI `gpt-5.6-luna` compatibility request, without retries or tool execution. They verified the feature branch remained clean/synchronized and checked that `OPENAI_API_KEY` was configured without revealing it.
+- User executed `uv run python scripts/provider_compat_probe.py --role agent_b --live --confirm-one-request --approve-model gpt-5.6-luna` **exactly once**. The real OpenAI Responses API request completed. Requested model: `gpt-5.6-luna`; reported model: `gpt-5.6-luna`; one inert `run_shell` function call was returned and correctly parsed (`expected_tool_called=true`, `tool_call_compatibility=true`).
+- Reported usage: **94 input tokens, 33 output tokens, 127 total tokens**; retries=0; proposed commands executed=0; `official_qwen_equivalent=false`. Actual monetary charge was not independently verified.
+- Ignored local record: `output/provider_compat_agent_b.json`, which user read back and verified matched the CLI's result. Final Git status was clean/synchronized before the documentation commit.
+- **Interpretation:** Both DeepSeek Agent A and OpenAI Luna Agent B have now passed one-turn live function-call compatibility checks. Neither was a chart-generation agent run; Docker/shell behavior, plotting quality, and Terra judgment remain untested. No Z.ai or Terra calls have been made in Session 009.
+
+**Third approved live compatibility request (Z.ai GLM, Agent C, 2026-11-07 America/Vancouver, user Codespace transcript):**
+
+- User explicitly authorized **one** potentially billed Z.ai `glm-4.7-flash` request with no retries and no tool execution. The user pulled the then-current branch (already up to date), verified clean/synchronized Git, and checked `ZAI_API_KEY` existed without revealing it.
+- Executed **once**: `uv run python scripts/provider_compat_probe.py --role agent_c --live --confirm-one-request --approve-model glm-4.7-flash`. This produced **`status=failed`, `error_type=RateLimitError`**, and the message `Compatibility probe failed. Do not retry without new approval.` No automatic retries occurred (`retries=0`).
+- Saved safely redacted local result `output/provider_compat_agent_c.json` (user supplied matching output); it records that a failed request **may have been billed**. No response/model-ID/usage/tool call was returned; `glm-4.7-flash` Chat Completions **live compatibility remains unverified**, not disproven. We do not know the underlying Z.ai business error code from the intentionally minimal exception record.
+- Final `git status --short --branch`: clean/synchronized feature branch. The one Z.ai approval has been **consumed**. No further live requests, fallback models, or retries are authorized.
+- **Next diagnosis without model calls:** inspect Z.ai account dashboard for key type/billing plan, available balance or credits, quota, concurrency/rate-limit counters, and recent failed-request logs; distinguish account quota/access failure from temporary throttling if the dashboard exposes a safe numeric business error code. Never paste API keys, bearer tokens or full provider errors containing sensitive account metadata. Any follow-up GLM request needs fresh user consent.
+- **Current status:** Agent A DeepSeek one-turn function call passed; Agent B Luna one-turn function call passed; Agent C GLM blocked with `RateLimitError`; experimental Terra judge has not been called.
+
+**Session 009 follow-up — Agent C paid-model replacement decision (2026-11-07, America/Vancouver):**
+
+- User asked: **switch from the free Z.ai model to `glm-5.3-flash` and test**. We interpret the change as a newly configured model, not a retry of the failed `glm-4.7-flash` probe; the earlier attempt's `RateLimitError` and its ignored `output/provider_compat_agent_c.json` must remain unchanged.
+- Agent C's current configured model is now `glm-5.3-flash` (Chat Completions, standard `https://api.z.ai/api/paas/v4`, `ZAI_API_KEY`). The prior code/tests `glm-4.7-flash` are now historical. Other roles unchanged.
+- GLM-5.3-Flash defaults to substantial mandatory reasoning; we send `reasoning_effort=low` using the OpenAI SDK's `extra_body` for a bounded 512-output-token one-turn tool-call probe. This is deliberately **not a benchmark of default model quality**.
+- The compatibility CLI now saves model-scoped results such as `output/provider_compat_agent_c_glm-5.3-flash.json`, preserving the earlier role-only `output/provider_compat_agent_c.json`. It refuses a repeated model test if either a new model-scoped file or an old same-model legacy record already exists; malformed legacy files also block conservatively.
+- Updated mocked unit tests pin `glm-5.3-flash` and verify correct Z.ai request, low reasoning effort, no network by default, preservation of `glm-4.7-flash` failure record, and rejection of same-model attempts. Existing official model settings, runner, judge, labels and pinned Docker dependency are untouched.
+- Public model documentation and model-card material establish `glm-5.3-flash` as an API/model identifier, not the user's account entitlement. A previous rate-limit failure might affect the new model if caused by a shared account quota or insufficient balance.
+- **Current state:** Source changes and documentation pushed to the Session 009 feature branch; **Codespace offline tests and a GLM-5.3-Flash live API call have not yet been performed or verified**. Per-request user approval remains mandatory before any possibly billed model request; no automatic retry, fallback or shell execution.
+
+**GLM-5.3-Flash migration verification completed in Codespaces (2026-11-07 America/Vancouver; user-supplied terminal log):**
+
+- `git pull --ff-only`: fast-forwarded Session 009 from `092c35c` to `957a9bc` with nine changed files. Working tree clean and tracking `origin/feature/session-009-provider-compatibility`.
+- `uv run python -m unittest discover -s tests -p 'test_provider_*_offline.py' -v`: **37/37 passed**, including the three new tests for old-record preservation, duplicate legacy model rejection, and invalid legacy-result blocking.
+- `uv run python scripts/provider_compat_probe.py --role agent_c`: offline preview requested **`glm-5.3-flash`**, provider `zai`, API style `chat_completions`, `max_output_tokens=512`, inert `run_shell`, `network_requests=0`, `live_approval_required=true`.
+- `uv run python scripts/provider_preflight.py`: four registered roles, each with `network_requests=0`; Agent C now `glm-5.3-flash`; Terra remains strict structured judge in registry.
+- Existing validator tests: **49/49 passed**. Expected argparse errors while testing incomplete live-consent flags did not indicate a failing test. Total **86/86 offline unit tests passed**.
+- Final `git status --short --branch`: clean/synchronized. No additional API call, model output, shell execution, or cloud infrastructure invoked during these checks.
+
+**Agent C paid-model live probe — GLM-5.3-Flash success (2026-11-07 America/Vancouver, user Codespace transcript):**
+
+- User **separately and explicitly approved one** potentially billed `glm-5.3-flash` Chat Completions compatibility request with `reasoning_effort=low`, maximum 512 output tokens, 60-second timeout, no retries and no execution of model-proposed tools.
+- Before testing, user confirmed the Session 009 branch was clean and synchronized (`git pull --ff-only` said already up to date), and `ZAI_API_KEY` was configured (without displaying it).
+- User executed **once**: `uv run python scripts/provider_compat_probe.py --role agent_c --live --confirm-one-request --approve-model glm-5.3-flash`. The request **completed**. Requested model = reported model = `glm-5.3-flash`. API style: `chat_completions`. Exactly **one** inert `run_shell` tool call was returned, and the adapter reported `expected_tool_called=true` and `tool_call_compatibility=true`.
+- Provider-reported usage: **212 input tokens, 15 output tokens, 227 total tokens**; `retries=0`, `model_proposed_commands_executed=0`. Monetary charge is not independently verified.
+- Saved ignored result to `output/provider_compat_agent_c_glm-5.3-flash.json`. User also read the older `output/provider_compat_agent_c.json`, which **still contains the failed `glm-4.7-flash` `RateLimitError` record** with zero retries; neither was overwritten. Git status remained clean/synchronized.
+- **Interpretation:** All three **current** generator roles now pass a one-request live tool-call compatibility smoke test: DeepSeek Flash, OpenAI GPT-5.6 Luna and Z.ai GLM-5.3 Flash. This demonstrates that the configured endpoints accept the synthetic request and the adapters parse one inert function call; **not** actual code/shell execution, multi-turn agent operations, plotting quality or benchmark equivalence. The earlier `glm-4.7-flash` failure remains unexplained; a successful new-model request does not prove the prior rate error was model-specific.
+- The authorization for the GLM-5.3-Flash request has been **consumed**. Never retry it without fresh authorization. No live Terra judgment has yet been performed in this session.
+
+**Fourth approved live compatibility request — OpenAI Terra synthetic PNG and strict JSON (2026-11-07 America/Vancouver, user-supplied Codespace transcript):**
+
+- User separately and explicitly authorized **exactly one potentially billed `gpt-6.1-terra` request**, with no retries and no tool execution. They verified `OPENAI_API_KEY` was configured without printing it and that the Session 009 feature branch was clean and synchronized.
+- User invoked **once**: `uv run python scripts/provider_compat_probe.py --role experimental_judge --live --confirm-one-request --approve-model gpt-6.1-terra`.
+- The OpenAI Responses API request **completed**. Requested model and reported model: `gpt-6.1-terra`. Input was the local synthetic bar-chart PNG and synthetic task description; strict local JSON parsing reported `schema_valid=true`. The parsed `judgment_families=[]` indicates no error families were returned for this synthetic case. `accuracy_evaluated=false`.
+- Provider-reported usage: **215 input tokens, 73 output tokens, 288 total tokens**. Tool calls=0; SDK retries=0; model-proposed shell commands executed=0; `official_qwen_equivalent=false`. Monetary charge is not independently verified.
+- Ignored output `output/provider_compat_experimental_judge_gpt-6.1-terra.json` was read back and matched the CLI result. Final `git status --short --branch` remained clean and tracking the feature branch.
+- **Interpretation:** Terra's API accepts this synthetic PNG and its response validates against the existing strict error-family schema. This **does not** establish error-detection accuracy, confusion matrices, MCC, calibration, or equivalence to the course Qwen judge. The one-call Terra authorization has been fully consumed.
+
+**Session 009 compatibility milestone conclusion (2026-11-07 America/Vancouver):**
+
+- All **four current roles** passed exactly one separately authorized live compatibility probe: Agent A DeepSeek `deepseek-flash`, Agent B OpenAI `gpt-5.6-luna`, Agent C paid Z.ai `glm-5.3-flash`, and experimental OpenAI judge `gpt-6.1-terra`. The first three each returned a parsable inert `run_shell` function call; Terra returned structured JSON from synthetic PNG input.
+- A **fifth, historical model attempt** using free `glm-4.7-flash` failed with `RateLimitError`, zero retries and no parseable model response. This remains preserved separately from the successful paid GLM-5.3 result; we do not claim to know the original rate-limit cause.
+- Latest Codespace offline verification before the final live probes: **37/37 provider tests, 49/49 validator tests**, four zero-network previews; no code changed following this verification (documentation updates only). Model-reported usage and model-ID strings were logged; monetary charges were not independently verified.
+- **Not implemented:** a multi-turn agent controller, any model-generated chart inside Docker, a real Terra `validate(run)` integration, a human-label accuracy experiment, MCC analysis, authored-task suite, or the official course model setup.
+
+**Next:** Pull the documentation-only completion commits, run one final offline regression/preflight and review the Session 009 branch diff; open a **draft PR to `main`** and check CI before considering merge. No further paid API calls are required for Session 009 or authorized by earlier consents. Plan the bounded Docker chart-agent controller as a **new feature branch** after Session 009 is merged.
 
 ### Template for future sessions
 

@@ -1,6 +1,6 @@
 # Session 008 — Hosted-provider adapter migration (independent research)
 
-**Status:** Initial provider-adapter implementation committed; user Codespace offline verification **pending**. No live calls, no agent runs, no full Terra judgment or new score claimed.
+**Status (2026-11-07):** Session 008 provider adapters merged via PR #8 (`5833b2b`), with 27/27 mocked provider tests, 49/49 existing validator tests, 5/5 infrastructure tests, dataset preflight passed in Codespaces, and GitHub Actions successful. No live calls, no agent runs, no full Terra judgment or new score claimed.
 
 ## Scope and departure from the course
 

@@ -24,7 +24,7 @@ class ProviderRegistryOfflineTests(unittest.TestCase):
             {
                 "agent_a": ("deepseek", "deepseek-flash"),
                 "agent_b": ("openai", "gpt-5.6-luna"),
-                "agent_c": ("zai", "glm-4.7-flash"),
+                "agent_c": ("zai", "glm-5.3-flash"),
                 "experimental_judge": ("openai", "gpt-6.1-terra"),
             },
         )

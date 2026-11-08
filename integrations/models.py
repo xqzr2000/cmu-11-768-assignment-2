@@ -39,7 +39,7 @@ _MODELS: dict[str, ModelSpec] = {
         "responses", "OPENAI_API_KEY", "https://api.openai.com/v1",
     ),
     "agent_c": ModelSpec(
-        "agent_c", "zai", "glm-4.7-flash", "GLM-4.7 Flash",
+        "agent_c", "zai", "glm-5.3-flash", "GLM-5.3 Flash",
         "chat_completions", "ZAI_API_KEY", "https://api.z.ai/api/paas/v4",
     ),
     "experimental_judge": ModelSpec(
