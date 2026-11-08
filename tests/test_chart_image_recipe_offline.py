@@ -87,7 +87,18 @@ class ChartImageRecipeOfflineTests(unittest.TestCase):
         ])
         self.assertNotIn("COPY .", content)
         self.assertNotIn("ADD ", content)
-        self.assertIn("chmod 0444 /opt/assignment/inputs/*.csv /opt/assignment/extract_figure.py", content)
+        self.assertIn("chmod 0444 /opt/assignment/extract_figure.py", content)
+        self.assertIn("find /opt/assignment/inputs -maxdepth 1 -type f -name '*.csv'", content)
+        self.assertIn("-exec chmod 0444 {} +", content)
+        self.assertNotIn("chmod 0444 /opt/assignment/inputs/*.csv", content)
+
+    def test_zero_csv_input_directory_has_no_failing_chmod_glob(self):
+        content = plan_chart_image(FAKE_BASE).dockerfile
+        self.assertIn("COPY inputs/ /opt/assignment/inputs/", content)
+        self.assertIn("RUN mkdir -p /opt/assignment/inputs", content)
+        self.assertNotIn("chmod 0444 /opt/assignment/inputs/*.csv", content)
+        self.assertIn("-exec chmod 0444 {} +", content)
+        self.assertEqual(content.count("COPY inputs/ "), 1)
 
     def test_no_host_network_ports_secrets_or_docker_socket_in_recipe(self):
         content = plan_chart_image(FAKE_BASE).dockerfile
