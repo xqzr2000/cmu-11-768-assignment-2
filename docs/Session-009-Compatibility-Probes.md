@@ -1,6 +1,6 @@
 # Session 009 — One-request live compatibility probes (independent adaptation)
 
-**Status (2026-11-07):** Session 009 migration verified in Codespaces (**37/37** provider tests, **49/49** validator tests, four zero-network model previews). Three **individually authorized live generator function-call probes passed**: DeepSeek `deepseek-flash` (Agent A), OpenAI `gpt-5.6-luna` (Agent B), and paid Z.ai `glm-5.3-flash` (Agent C). The earlier free Z.ai `glm-4.7-flash` attempt failed with `RateLimitError` and zero retries, and its record remains preserved. The synthetic image + structured JSON OpenAI Terra judge probe is **not yet authorized or executed**.
+**Status (2026-11-07):** **All four current model roles passed individually authorized live API compatibility checks**: DeepSeek `deepseek-flash` (Agent A), OpenAI `gpt-5.6-luna` (Agent B), paid Z.ai `glm-5.3-flash` (Agent C), and synthetic-PNG/structured-JSON OpenAI `gpt-6.1-terra` (experimental judge). The earlier free Z.ai `glm-4.7-flash` attempt failed with `RateLimitError`, zero retries; its record is preserved. Codespace offline verification before the last live tests: **37/37** provider tests, **49/49** validator tests and four zero-network model previews. **Session 009 compatibility objective met, but no agent/controller, chart-generation, judge-accuracy or official-equivalence results are claimed.**
 
 ## Goal and decisions
 
@@ -160,6 +160,40 @@ Code changes on `feature/session-009-provider-compatibility`:
 **Interpretation:** The paid GLM-5.3-Flash model accepted one synthetic function-calling request and the normalized adapter parsed it. The earlier free-model rate-limit cause remains unknown; the successful new request alone does not show whether that restriction was account-, model-, plan-, or time-dependent. All **current chart-generator roles** have passed this narrowly scoped one-turn transport/tool parser check. No model-proposed shell command was executed, no Docker controller was run, and no actual chart-generation benchmark result was produced.
 
 **Next:** The OpenAI `gpt-6.1-terra` synthetic image + strict JSON schema check remains outstanding and requires **a separate, new explicit one-request authorization**. The earlier DeepSeek, Luna, and GLM requests are fully consumed; do not rerun them automatically or treat these smoke tests as final evaluation evidence.
+
+## Verified live compatibility: Experimental judge, OpenAI Terra
+
+**Date:** 2026-11-07 (America/Vancouver; user Codespace transcript). The user separately authorized **exactly one** potentially billed `gpt-6.1-terra` request with no retries and no tool execution. They checked the OpenAI key was configured without disclosing it.
+
+| Field | Observed |
+| --- | --- |
+| Role | `experimental_judge` |
+| Requested / reported model | `gpt-6.1-terra` / `gpt-6.1-terra` |
+| API style | OpenAI Responses |
+| Status | `completed` |
+| Synthetic input | Locally constructed bar-chart PNG plus a synthetic chart task |
+| Strict JSON schema | `schema_valid=true` |
+| Error families returned | `[]` |
+| Accuracy checked | `accuracy_evaluated=false` |
+| Token usage | 215 input, 73 output, **288 total** |
+| Function tool calls / retries / shell executions | 0 / 0 / 0 |
+| New ignored result | `output/provider_compat_experimental_judge_gpt-6.1-terra.json` |
+| Git working tree after test | Clean / tracking remote |
+| Monetary charge | Not independently verified |
+
+The empty error list is a syntactically valid schema response for the synthetic fixture. This does **not** establish that Terra correctly identifies wrong data, wrong chart types or readability errors across independently labeled figures. No course Qwen-equivalent scoring, human-label-based sensitivity/specificity or MCC has been demonstrated.
+
+## Completed live compatibility matrix
+
+| Role / attempt | Live outcome | Provider-reported tokens | What was verified |
+| --- | --- | ---: | --- |
+| Agent A — `deepseek-flash` | Success | 405 | Stateless Responses function call parsed |
+| Agent B — `gpt-5.6-luna` | Success | 127 | Responses function call parsed |
+| Agent C — `glm-4.7-flash` (historical) | Failed: `RateLimitError` | Not returned | Nothing about tool-call support; preserved as failure |
+| Agent C — `glm-5.3-flash` (current) | Success | 227 | Z.ai Chat Completions function call parsed |
+| Experimental judge — `gpt-6.1-terra` | Success | 288 | Synthetic PNG input and strict error JSON parsed |
+
+**Safety and scope:** Each live request had its own explicit user approval. No automatic retries, no model-proposed commands executed. The historical `glm-4.7-flash` failure is not a model-quality verdict. All five request approvals have been consumed. The next phase—real bounded agent loops with Assignment 1 Docker sandbox integration—requires separate design and explicit authorization before any additional billed model request.
 
 ## After the four approved checks
 
