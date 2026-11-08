@@ -27,7 +27,7 @@
 
 | Session | Outcome and evidence | Status |
 | --- | --- | --- |
-| 001 (Nov 5) | Imported/studied full pinned starter; established this learning journal, source map and official-vs-independent boundary | Recorded |
+| 001 (Nov 5) | Inspected the full pinned starter; established this learning journal, source map and official-vs-independent boundary | Recorded |
 | 002 (Nov 5) | Offline environment/preflight, seed inventory and real trajectory/figure case studies | Verified offline |
 | 003 (Nov 5) | Designed/mock-tested semantic validator wiring and separated structural PNG checks from vision judgments | Independent groundwork |
 | 004 (Nov 5) | Explored exact-checkpoint vision requirements and bounded synthetic image compatibility; did **not** prove official Qwen equivalence | Partial/exploratory |
