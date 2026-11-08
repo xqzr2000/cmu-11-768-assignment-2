@@ -901,6 +901,24 @@ git status --short --branch
 
 **Next actions:** Sync this journal-only commit into the Codespace, review the 20-file branch diff and open a PR only after user approval. GitHub Actions runs on pull_request, so CI should be confirmed before merging. Keep Session 007 independent. All live provider smoke tests require separate explicit user approval after the reviewed offline PR.
 
+### Session 009 — 2026-11-07 (America/Vancouver) — Individual API compatibility probe preparation
+
+**Git starting point:** PR #8 merged into `main` at `5833b2b`, GitHub Actions successful. User synchronized Codespaces `main`, pushed an annotated Session 007 archive tag `archive/session-007-20261107` pointing to `939b01f`, deleted both local and remote Session 007 and Session 008 feature branches, verified clean synchronized `main` as the only remaining active branch. The archive preserves committed work, not ignored `output/` files.
+
+**Session 009 intent:** User said to continue with the next agreed milestone: provider compatibility checks, with explicit authorization **before each model API request**. A new feature branch `feature/session-009-provider-compatibility` was created remotely from `main`. Public docs confirm configured API IDs and interfaces (DeepSeek stateless Responses, OpenAI Luna/Terra Responses, Z.ai Chat Completions); documentation is not evidence of account access.
+
+**Offline preparation committed (user verification pending):**
+
+- `scripts/provider_compat_probe.py` previews per-model synthetic requests without credentials or network. Generators receive an inert `run_shell` function descriptor requesting `printf session009`; the script never executes any model-proposed shell command. The experimental Terra judge receives an in-memory synthetic two-bar PNG and the existing strict four-family judgment schema; no released seed or human labels are included.
+- One-request live path is guarded by all three of `--live`, `--confirm-one-request`, and `--approve-model EXACT_ID`, plus provider credentials. The code reuses `execute_one` (zero SDK retries, a 60s timeout, 512 max output tokens), and never silently switches models.
+- The future live path saves only minimal metadata and reported usage to a new, locally ignored `output/provider_compat_<role>.json` file, refuses to overwrite an earlier result, and redacts provider exception contents. A text-only generator response is recorded as missing tool-call evidence, not a successful tool integration. A Terra schema-valid result does not imply a correct judge.
+- `tests/test_provider_compat_probe_offline.py` mocks all four roles and verifies pure offline previews, strict authorization, sanitized errors, no retries, non-overwrite behavior, metadata records, and the synthetic image/schema.
+- Documentation: README and `docs/Session-009-Compatibility-Probes.md`. Official `validator/solution.py` and Modal-based `workflow/generate.py` remain unchanged.
+
+**Not verified or performed:** Codespace offline tests on this branch, any live API request, four-model account access, generator function calls against actual endpoints, Terra real-model schema behavior, figure-generating agent loop, or MCC.
+
+**Next:** User fetches and checks out the newly pushed Session 009 branch in Codespaces; runs provider mock tests and zero-request previews; shares results. Only then should we ask the user to approve **exactly one** DeepSeek request before giving a live command. Do not merge prematurely or run another provider request without separate consent.
+
 ### Template for future sessions
 
 Copy this entire section to the bottom for each new session. Do not backfill invented results.
