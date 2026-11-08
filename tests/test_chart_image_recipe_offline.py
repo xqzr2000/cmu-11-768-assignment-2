@@ -10,6 +10,8 @@ from unittest.mock import patch
 from integrations.chart_image_recipe import (
     ImageRecipeError,
     PLOT_PACKAGES,
+    REQUIREMENTS_CONTEXT_PATH,
+    REQUIREMENTS_DESTINATION,
     plan_chart_image,
 )
 
@@ -50,10 +52,21 @@ class ChartImageRecipeOfflineTests(unittest.TestCase):
             "pillow==12.3.0",
         ))
         result = plan_chart_image(FAKE_BASE).dockerfile
-        self.assertIn("RUN python -m pip install --no-cache-dir --only-binary=:all: ", result)
+        self.assertIn(
+            "RUN python -m pip install --no-cache-dir --require-hashes "
+            "--only-binary=:all: -r /opt/assignment/chart-requirements.txt", result
+        )
+        self.assertIn(f"COPY {REQUIREMENTS_CONTEXT_PATH} {REQUIREMENTS_DESTINATION}", result)
         for package in PLOT_PACKAGES:
-            self.assertIn(package, result)
+            self.assertNotIn(f" {package}", result)
         self.assertNotIn("pip install -U", result)
+
+    def test_lockfile_copy_precedes_pip_install_and_no_bare_pins(self):
+        dockerfile = plan_chart_image(FAKE_BASE).dockerfile
+        self.assertLess(dockerfile.index("COPY requirements/"), dockerfile.index("RUN python -m pip"))
+        self.assertEqual(dockerfile.count("RUN python -m pip"), 1)
+        self.assertEqual(dockerfile.count("--require-hashes"), 1)
+        self.assertNotIn(" --extra-index-url", dockerfile)
 
     def test_runtime_is_nonroot_and_has_private_writable_workspace(self):
         content = plan_chart_image(FAKE_BASE).dockerfile
@@ -68,6 +81,7 @@ class ChartImageRecipeOfflineTests(unittest.TestCase):
         content = plan_chart_image(FAKE_BASE).dockerfile
         copy_lines = [line for line in content.splitlines() if line.startswith("COPY ")]
         self.assertEqual(copy_lines, [
+            "COPY requirements/chart-cp312-linux-amd64.txt /opt/assignment/chart-requirements.txt",
             "COPY inputs/ /opt/assignment/inputs/",
             "COPY trusted/extract_figure.py /opt/assignment/extract_figure.py",
         ])
@@ -93,6 +107,8 @@ class ChartImageRecipeOfflineTests(unittest.TestCase):
         self.assertFalse(manifest["image_trusted_verified"])
         self.assertFalse(manifest["image_platform_and_architecture_verified"])
         self.assertFalse(manifest["full_dependency_hash_lock_verified"])
+        self.assertTrue(manifest["hash_locked_install_requested"])
+        self.assertEqual(manifest["required_context_requirements_path"], REQUIREMENTS_CONTEXT_PATH)
         self.assertEqual(manifest["docker_builds"], 0)
         self.assertEqual(manifest["sandbox_launches"], 0)
         self.assertEqual(manifest["model_requests"], 0)
