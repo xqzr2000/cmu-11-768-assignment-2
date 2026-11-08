@@ -1,6 +1,6 @@
 # Session 010 — Bounded chart-agent controller (offline-first)
 
-**Status (2026-11-07 America/Vancouver):** **64/64 Session 010 offline tests passed** in Codespaces: controller 11, fake-Docker gateway 14, task artifacts 16, chart transfer 12, and image recipe 11. A sixth *minimal private build-context* slice with **13 new offline tests** is committed, but these tests have **not yet run** in Codespaces. The original provider 37/37 and validator 49/49 suites passed earlier. No model API calls, real Docker builds/launches, chart-generating commands, or container extraction occurred in this session.
+**Status (2026-11-07 America/Vancouver):** The six Session 010 suites passed **77/77 offline tests** in Codespaces: controller 11, fake-Docker gateway 14, task artifact 16, chart transfer 12, image recipe 11, and minimal build context 13. Existing provider 37/37 and validator 49/49 passed earlier. No model API request, real Docker build/pull/launch, or container-based PNG extraction has been performed. The next gate is actual base-image and package supply-chain verification, not more mocked execution.
 
 ## Why a controller is necessary
 
@@ -220,7 +220,7 @@ git status --short --branch
 
 **Subsequent engineering decision:** Verify a real Python base image digest for a specific architecture; resolve and hash-lock the actual package wheels; create a minimal private Docker build context exclusively from the checked CSV bytes and reviewed extractor source; only then consider a separately approved image build and a trusted large-output extraction path. The current `SandboxGateway` still targets the non-chart-capable floating `python:3.12-slim` transport-test image and cannot silently adopt the new recipe.
 
-## Sixth offline slice — minimal private Docker build-context assembly (tests pending)
+## Sixth offline slice — minimal private Docker build-context assembly (verified)
 
 **Goal:** Ensure a future Docker build sees exactly the reviewed Dockerfile, already validated CSV bytes and version-controlled trusted extraction helper—not a broad repository or user home directory.
 
@@ -241,7 +241,7 @@ build-context/                (0700; temporary)
 
 **Important:** This stage **does write temporary, private host files**, but never invokes `DockerImage.build`, `Sandbox`, Docker CLI, subprocesses, or model APIs. The context path should only be handed to a future, independently approved build operation while its context manager is active. Existing `DockerImage` supports taking a Dockerfile/context path, but no such call has been made. The pinned `python:3.12-slim` digest, platform, dependency wheel hashes and actual build success remain unknown. The image recipe has **not** been changed to point to a deployable digest.
 
-Added `tests/test_chart_build_context_offline.py` with **13 synthetic offline tests**: exact layout and private modes, fixed helper provenance, multi-CSV integrity, cleanup on exceptions, refusal of mutable base references and forged snapshots, detection of tampered files/Dockerfile/helper, unexpected credentials or checkout files, symlinks, modified permissions, oversized forged metadata, unsafe parent directories, and zero subprocess/model/Docker calls. Added `scripts/check_chart_build_context_offline.py` with nonzero-discovery enforcement and wired the test runner into GitHub Actions. **No Codespaces pass is claimed yet for these 13 new tests.**
+Added `tests/test_chart_build_context_offline.py` with **13 synthetic offline tests**: exact layout and private modes, fixed helper provenance, multi-CSV integrity, cleanup on exceptions, refusal of mutable base references and forged snapshots, detection of tampered files/Dockerfile/helper, unexpected credentials or checkout files, symlinks, modified permissions, oversized forged metadata, unsafe parent directories, and zero subprocess/model/Docker calls. Added `scripts/check_chart_build_context_offline.py` with nonzero-discovery enforcement and wired the test runner into GitHub Actions. **Verified:** User ran the guarded suite in Codespaces and all **13/13 tests passed**.
 
 Verify entirely offline:
 
@@ -257,10 +257,27 @@ uv run python scripts/check_sandbox_gateway_offline.py
 git status --short --branch
 ```
 
-Expected, pending actual verification: **13 new + 64 previously passed = 77 Session 010 tests**.
+**Observed in Codespaces:** **13 new + 64 previously passed = 77/77 Session 010 tests**, with clean tracking branch.
+
+## Supply-chain verification checkpoint after 77 passing tests
+
+The image-planning module does **not** yet identify a real base image digest. The Docker Official Image `python:3.12-slim` tag is multi-platform and mutable. Docker Hub's tag page changes as upstream publishes new images, and cached pages can show different digests. Before selecting a pin, inspect **the current registry manifest metadata** and the Codespace architecture together. Do not derive the full digest from an abbreviated per-platform display or an old screenshot.
+
+```bash
+cd /workspaces/cmu-11-768-assignment-2
+uname -m
+docker buildx imagetools inspect docker.io/library/python:3.12-slim
+git status --short --branch
+```
+
+`docker buildx imagetools inspect` **queries registry metadata over the network**. It does **not** build or pull image layers, run a container, use a model API, or incur LLM charges. If the command is unavailable, record the exact error and do not substitute `docker pull` or `docker build`. The result must establish a full image/index SHA-256 digest and the matching `linux/amd64` or `linux/arm64` manifest. We have not verified those against the actual Codespace yet.
+
+The committed `uv.lock` already contains versions and SHA-256 artifact metadata for `matplotlib==3.10.5`, `numpy==2.3.2`, `pandas==2.3.1` and `pillow==12.3.0`. **But** `integrations/chart_image_recipe.py` currently emits `pip install` with *only the four direct package pins*; it does not install from the committed `uv.lock` or enforce hashes on every transitive dependency. A chart-only, platform-specific and fully hashed wheel resolution is still required, followed by validation that selected wheels are available for the pinned image's Python ABI and Linux architecture. No new dependency lock was generated in this checkpoint.
+
+We should first capture reliable registry/platform evidence, then review a hash-locked installation plan and only later ask the user to approve a real Docker image pull/build. **Do not automatically advance from a metadata lookup to any image or shell execution.**
 
 ## Next decisions before any live chart generation
 
-First **verify the 13 new minimal build-context tests**. Then review the actual immutable base digest, platform and full wheel lock. No Docker build, pull, sandbox command, or image extraction is authorized by these offline plans; any real execution requires separate explicit user approval. A separate human confirmation is required before any real Docker launch, and a fresh explicit model-specific approval is required **for every potentially billed model turn**. The bounded controller and gateway must not be wired to unattended live execution.
+The **13 minimal build-context tests are verified**. Next inspect registry metadata and the Codespace architecture, then design a complete chart-only wheel hash lock. No Docker image build/pull, sandbox command, or model request is authorized by these checks; any real execution requires separate explicit user approval. A separate human confirmation is required before any real Docker launch, and a fresh explicit model-specific approval is required **for every potentially billed model turn**. The bounded controller and gateway must not be wired to unattended live execution.
 
 **Non-goals for this slice:** model-quality comparisons, MCC, human-label prediction, a live Terra judgment, course-equivalent results, automatic API retries, and unsupervised multi-turn execution.
