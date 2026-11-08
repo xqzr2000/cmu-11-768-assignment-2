@@ -34,7 +34,7 @@ Verification now checks both the staged worker's declared size/SHA-256 and its *
 - `tests/test_chart_build_context_offline.py`: context 4/5/6-file expectations, exact source copy, altered-worker forgery detection even with a rewritten manifest, missing staged file, and missing/symlinked/oversized original source. **Three additional tests.**
 - `scripts/preview_chart_smoke_offline.py` and `tests/test_chart_smoke_preview_offline.py`: both zero-CSV and one-CSV strict allowlists updated; the same offline preview must still show zero Docker/network/model requests and destroy temporary contexts.
 
-Previous baseline **193 tests** plus **four new tests** yields **197 expected**, pending actual verification on this Session 014 head. Do not report them as passed yet.
+Previous baseline **193 tests** plus **four new tests** yielded **197/197 full offline tests passed** in Codespaces on feature head `118ea8a` (2026-11-08 UTC). The tests are host/mock/fake checks, not a built-image result.
 
 ### First focused Codespaces checks
 
@@ -49,7 +49,13 @@ uv run --offline --locked python scripts/check_chart_wheel_lock_offline.py
 git status --short --branch
 ~~~
 
-Only proceed to full provider/validator/structural/offline regression once focused tests pass. GitHub Actions must be reviewed on a **draft PR** after Codespaces evidence is available. No PR should be merged automatically.
+**Observed focused Codespaces result:** 14/14 image recipe, 22/22 build context, 7/7 preview, 8/8 worker, **51/51 passed**. Separately, 14/14 wheel-lock metadata audit passed.
+
+**Observed full Codespaces regression on the same clean head `118ea8a`:** 5/5 structural, 37/37 provider adapters, 49/49 validator, 106/106 chart/controller infrastructure, **197/197 total passed**. Dataset preflight passed (**110 runs, 98 figures, 110 human labels, 16 acceptable**); four-role provider preflight reported **`network_requests: 0`**. The final working tree was clean and tracking `origin/feature/session-014-chart-worker-image-staging`.
+
+The expected CLI `usage:` and worker-failure lines occurred in negative test cases which all finished `ok`. The Dockerfile is still inert text, with no Docker/image/network/model operations from these commands.
+
+**Next:** Create and review a **draft PR**, inspect GitHub Actions on the latest PR head, and decide merge separately. No PR should be merged automatically.
 
 ## Still needed before an explicitly authorized real Docker smoke test
 
@@ -59,4 +65,4 @@ Only proceed to full provider/validator/structural/offline regression once focus
 4. Design a trusted **size-bounded** PNG artifact channel and validate the returned image against the existing strict PNG checker. The gateway's shortened stdout is not adequate for base64 PNGs.
 5. Review precise build/pull/run/extraction/cleanup commands and risks with the user for **fresh specific authorization**. Prior offline checks and historical API probes are not authorization.
 
-**Resume checkpoint:** Session 014 branch created at clean `e0242d6`. Source, offline tests and docs are being prepared remotely. Await Codespaces focused verification; no Docker or model operations have been performed by this work.
+**Resume checkpoint:** Session 014 branched from clean `e0242d6`; the user verified 51/51 focused and 197/197 full offline checks at clean tracking feature head `118ea8a`. Documentation-only evidence updates may require a fast-forward pull. Draft PR and latest-head CI review are next. No Docker or model operations have been performed by this work.
