@@ -160,16 +160,17 @@ The following components remain separately gated and **do not yet form a live ag
 - `integrations/chart_image_recipe.py`: inert digest-shaped Python 3.12 Dockerfile, direct plotting library pins and unprivileged runtime.
 - `integrations/chart_build_context.py`: temporary, verified context containing only the Dockerfile, approved CSVs, and trusted extraction helper. No Docker build has been attempted.
 
-**Next gate: supply-chain verification.** The Python base tag is mutable/multi-platform. No true base digest, chosen architecture, chart-only transitive wheel hash lock, image build, or container execution has yet been validated. The committed `uv.lock` includes wheel hashes for project dependencies, but the separate chart Dockerfile does **not** consume that lock or enforce hashes.
+**Supply-chain checkpoint:** User Codespace registry inspection verified an `x86_64` (`linux/amd64`) host, the official Python image's **multi-platform index** `sha256:4840d514c583a4d3d8cad3940e68dee6f0f6f3635c12fcd0a3d74c21a5b93a54`, and its distinct **AMD64 image manifest** `sha256:05a994d2344eb364cc186910f4fc8786a38215f39f00d0acc25bff33a08f4177` (version `3.12.16-slim-trixie`). No image was pulled, built or launched.
 
-Inspect remote registry metadata **without pulling/building any image**:
+**New chart-only wheel hash file (audit pending):** `requirements/chart-cp312-linux-amd64.txt` records the exact versions and selected wheel hashes for **14 plotting packages** derived from the existing committed `uv.lock`: four direct and ten transitive. The offline checker `scripts/check_chart_wheel_lock_offline.py` re-derives that dependency closure and rejects missing, extra, modified or ambiguously marked dependencies. CI runs the audit. In Codespaces, run:
 
 ```bash
-uname -m
-docker buildx imagetools inspect docker.io/library/python:3.12-slim
+uv run python scripts/check_chart_wheel_lock_offline.py
 ```
 
-The second command contacts the public Docker registry for manifest metadata; it does not download image layers, start Docker containers, or call a paid model. Report the actual digest and supported platform before we pin anything. Do not silently replace the metadata inspection with `docker pull` or `docker build`.
+This check performs no PyPI download, pip installation, Docker command, or model request. It has **not yet been verified in Codespaces**. The existing chart Dockerfile and minimal build context still **do not consume the hashed requirements file**; adopting it must be separately reviewed and tested. Metadata hashes alone do not prove that a wheel can be downloaded or installed.
+
+See [Session 010 supply-chain provenance](docs/Session-010-Supply-Chain.md) for full observed digests, platform evidence, package closure and remaining build-trust gaps.
 
 No additional model API requests, real Docker builds, sandbox launches, live chart-generation runs, or Terra accuracy evaluations are authorized by Session 010's offline verification. The official Modal runner and assignment requirements are unchanged.
 
