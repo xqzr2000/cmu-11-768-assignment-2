@@ -150,6 +150,23 @@ class TaskArtifactsOfflineTests(unittest.TestCase):
             with self.assertRaises(ArtifactError):
                 snapshot_task_csvs(alias)
 
+    def test_descriptor_size_and_symlinked_task_directory_are_rejected(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            descriptor = write_task(root, {"data.csv": b"x,y\n1,2\n"})
+            original = descriptor.read_text(encoding="utf-8")
+            descriptor.write_text(original + " " * (128 * 1024), encoding="utf-8")
+            with self.assertRaises(ArtifactError):
+                snapshot_task_csvs(descriptor)
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            descriptor = write_task(root, {"data.csv": b"x,y\n1,2\n"})
+            alternate = root / "other"
+            alternate.mkdir()
+            (alternate / "demo").symlink_to(descriptor.parent, target_is_directory=True)
+            with self.assertRaises(ArtifactError):
+                snapshot_task_csvs(alternate / "demo" / "task.json")
+
     def test_png_validation_success_and_safe_metadata(self):
         png = make_png()
         figure = validate_figure_png(png)
