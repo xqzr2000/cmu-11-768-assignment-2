@@ -9,7 +9,28 @@
 > **Learning mode:** beginner-friendly; explain purpose, inputs, outputs, commands, observations, failures, and follow-ups.  
 > **Source of truth:** [ASSIGNMENT.md](../ASSIGNMENT.md) for official requirements; [README.md](../README.md) and [docs/ARCHITECTURE.md](ARCHITECTURE.md) for our independent adaptation.
 
-## Pause / resume checkpoint — 2026-11-07 (America/Vancouver)
+## Current resume checkpoint — 2026-11-08 (America/Vancouver): Session 013
+
+- **Verified remote starting point:** Session 012 [PR #12](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/12) merged to main at `1118bcd`. Latest main GitHub Actions `42459107237` succeeded. User confirmed clean local `main...origin/main` at `1118bcd` after `git fetch origin --prune` and `git pull --ff-only`; no stashing or hard reset is required.
+- **Active verified feature branch:** `feature/session-013-docker-smoke-readiness` created from `1118bcd`. User fetched and switched locally, tracking origin at `200d195`; clean working tree confirmed before and after tests.
+- **Current code slice:** Fixed synthetic plotting worker `scripts/chart_smoke_worker.py`, eight host-only tests in `tests/test_chart_smoke_worker_offline.py`, guarded runner `scripts/check_chart_smoke_worker_offline.py`, CI wiring and [Session 013 gates](Session-013-Docker-Smoke-Readiness.md). The worker is **not added to the proposed chart image context** or Dockerfile. Output uses fixed values and a private `figure.png`; no agent or model integration.
+- **Session 013 Codespaces full acceptance passed at `200d195`:** **193/193** offline tests: 5 structural, 37 provider, 49 validator and 102 infrastructure (11 controller, 14 fake gateway, 17 artifacts, 13 transfer, 13 image recipe, 19 context, 7 inert preview, 8 trusted smoke worker). Separately **14/14** wheel metadata audit; dataset **110 runs / 98 figures / 110 human labels / 16 acceptable**, preflight PASS; four-role provider preview with **`network_requests: 0`**. All checks used offline/locked uv execution where applicable; no Docker/model operation. The new 8 tests also passed alone in 6.085 s.
+- **Draft PR and CI:** [PR #13](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/13) opened in **draft** against `main` (seven changed files, no auto-merge). GitHub Actions [run 42516818263](https://github.com/xqzr2000/cmu-11-768-assignment-2/actions/runs/42516818263) **completed successfully** at PR head `fc571b6` on 2026-11-08 UTC: offline job **20/20 steps succeeded**, including the guarded fixed smoke worker suite. Subsequent documentation-only commits need a fresh latest-head CI review; this is not a Docker build.
+- **Next action:** Pull subsequent documentation commits with `git pull --ff-only`, review the draft PR and its **latest-head** GitHub Actions, then decide whether to merge only after explicit source review. No need to rerun the 193 local tests unless code changes or CI reveals a problem.
+- **Never infer Stage B approval:** no Docker pull/build/launch, wheel/registry download, model request, tool command, actual PNG-in-container or independent judge scoring has been authorized by this branch. First review immutable base and real wheel bytes, BuildKit limits, vetted worker staging, fixed run flags, trusted artifact channel and cleanup. See [Session 012 preflight](Session-012-Docker-Smoke-Preflight.md).
+
+### Session 013 — 2026-11-08 UTC — complete offline regression verified
+
+- Local Codespaces was clean and tracking `origin/feature/session-013-docker-smoke-readiness` at `200d195`. The standalone smoke-worker tests passed **8/8** (6.085 s). The user then executed the full offline-only checks on the same head, with `set -e` so unexpected failures would stop the run.
+- **193/193 offline tests passed:** structural **5/5** (0.012 s), provider **37/37** (1.468 s), validator **49/49** (0.339 s); chart/controller checks: controller **11/11**, fake sandbox **14/14**, task artifacts **17/17**, chart transfer **13/13**, image recipe **13/13**, build context **19/19**, zero/one-CSV preview **7/7**, synthetic smoke worker **8/8** = infrastructure **102/102**.
+- Separately, plotting wheel requirements metadata audit verified **14/14** hashes against the committed `uv.lock` without downloading wheel bytes. Dataset preflight PASSED: **110 runs**, **98 figures**, **110 human-labeled runs**, **16 acceptable**. Offline provider preflight reported four roles and **`network_requests: 0`**. Final Git status confirmed no local modifications.
+- Intentional negative tests logged argparse `usage:` and fixed-worker error messages followed by `ok`; these were **not failures**. No actual Docker pull, build, launch, model request, compiled chart image, or official validator MCC was established. Stage B requires fresh independent review and authorization.
+- **Draft PR #13 / CI evidence:** Opened [draft PR #13](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/13) against `main`; GitHub Actions [run 42516818263](https://github.com/xqzr2000/cmu-11-768-assignment-2/actions/runs/42516818263) passed **20/20 workflow steps** at head `fc571b6`, including the fixed worker runner. This is offline CI only. Documentation commits after this run require a separate latest-head check.
+- **Next:** Review draft PR source and final CI, keep Stage B unapproved, and merge only on explicit user decision. Keep historical checkpoints below intact.
+
+**Preserve earlier dated checkpoints below as historical context.** This top checkpoint is the current resume source of truth.
+
+## Pause / resume checkpoint — 2026-11-07 (America/Vancouver) (historical)
 
 **Project:** Independent, non-credit CMU 11-768 Assignment 2 adaptation. Preserve the official starter, original Modal-based generator, exact official model requirements, and human-label separation. This checkpoint is about our separate chart-agent execution infrastructure; it is **not** an official course-equivalent result.
 
@@ -38,7 +59,8 @@
 | 009 (Nov 7) | Separately authorized live one-request compatibility checks: three generator roles + synthetic-image Terra judge; free Z.ai probe rate-limited; PR #9 merged at `65b0a49` | Merged; compatibility only |
 | 010 (Nov 7–8 UTC) | Controller, fake sandbox, CSV/PNG transfer, hash-locked inert chart image and context; **14/14** wheel metadata audit, **173/173** offline tests; PR #10 GitHub Actions passed twice | **Merged to `main` at `19e0a27`; old feature branch deleted** |
 | 011 (Nov 7 local / Nov 8 UTC) | Zero-CSV task support in snapshots, staging, context and Dockerfile; focused **62/62**, full **178/178**, dataset/provider preflights and GitHub Actions passed | **PR #11 merged to `main` at `55299ad`; feature branches deleted** |
-| 012 (Nov 8 UTC) | Full **185/185 offline regression** passed; dataset 110/98/110 and four-role zero-network preflights passed; chart wheel lock metadata audit **14/14**; safe zero/one-CSV context preview | **Active; draft PR / CI review next; no real Docker or model calls** |
+| 012 (Nov 8 UTC) | Full **185/185 offline regression** passed; dataset 110/98/110 and four-role zero-network preflights passed; chart wheel lock metadata audit **14/14**; safe zero/one-CSV context preview | **PR #12 merged to main at `1118bcd`; latest main CI passed; no Docker or model calls** |
+| 013 (Nov 8 UTC) | Trusted fixed Matplotlib smoke worker; **8/8 focused** and **193/193 full** Codespaces offline tests; **14/14** lock audit and dataset/provider preflights; initial PR CI **20/20 steps passed** | **Draft PR #13 open; no Docker/model operations authorized** |
 
 See the detailed session history below for exact experiments, commands, model IDs, errors and scope boundaries. This table is a navigation summary, not a replacement for those records.
 
