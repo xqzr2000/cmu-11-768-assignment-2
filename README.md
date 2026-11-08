@@ -161,6 +161,22 @@ uv run python -m unittest discover -s tests -p 'test_provider_*_offline.py' -v
 
 The live path is **not authorized yet**. Every possibly billed call needs separate user approval for that exact model. There are no automatic retries, model-proposed shell commands are never executed, results are stored in ignored `output/*.json`, and full plotting-agent/Docker integration is still future work. See [docs/Session-009-Compatibility-Probes.md](docs/Session-009-Compatibility-Probes.md). Offline tests added in this branch remain **pending Codespace verification**.
 
+### Session 009 model-switch preparation — Z.ai GLM-5.3-Flash
+
+After a separately authorized `glm-4.7-flash` function-call probe failed with `RateLimitError` (zero retries), we selected paid `glm-5.3-flash` as Agent C's **current** requested model. The prior attempt is retained as historical evidence; an account-wide balance/quota problem could still affect the replacement model.
+
+The new probe saves `output/provider_compat_agent_c_glm-5.3-flash.json` and **does not delete or overwrite** the previous `output/provider_compat_agent_c.json`. New offline tests cover this distinction. `reasoning_effort=low` is used for the GLM-5.3-Flash request because its thinking cannot be fully disabled; this is a transport smoke test, not a benchmark with default reasoning.
+
+Run only these zero-network checks first on `feature/session-009-provider-compatibility`:
+
+```bash
+uv run python -m unittest discover -s tests -p 'test_provider_*_offline.py' -v
+uv run python scripts/provider_compat_probe.py --role agent_c
+uv run python scripts/provider_preflight.py
+```
+
+**No new live GLM-5.3-Flash request has been performed or authorized yet.** Its single-request test must be separately approved after Codespace offline verification. See [Session 009 compatibility probes](docs/Session-009-Compatibility-Probes.md).
+
 ## Session 008 — offline-only multi-provider adapters (completed, merged via PR #8)
 
 This is an **independent research adaptation**. The course requires its Qwen3-VL validator and fixed generation models; we have **not replaced or re-scored** the official validator. Session 007's wrong-chart v1/v2 findings remain separate on their feature branch.
@@ -171,7 +187,7 @@ Four experimental roles are configured under `integrations/models.py`:
 | --- | --- | --- | --- |
 | Agent A | DeepSeek | `deepseek-flash` | Stateless Responses |
 | Agent B | OpenAI | `gpt-5.6-luna` | Responses |
-| Agent C | Z.ai | `glm-4.7-flash` | Chat Completions |
+| Agent C | Z.ai | `glm-5.3-flash` | Chat Completions (low reasoning effort) |
 | Experimental judge | OpenAI | `gpt-6.1-terra` | Responses + image + JSON schema |
 
 This phase adds provider request builders and normalizers, an opt-in one-request transport helper, an inert function-call representation, and strict local judge-response checking. It **does not yet run agents, execute model tool calls, host models, or make live API requests**. Existing `workflow/generate.py` remains a Modal runner; a future task will integrate the pinned Assignment 1 Docker sandbox.
