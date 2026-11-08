@@ -2,7 +2,7 @@
 
 An independent, non-credit adaptation of [CMU 11-768 Assignment 2: Evaluating a Data-Visualization Agent](https://github.com/cmu-agents/assignment-2).
 
-**Status:** Phase 1 (early) — offline evaluation infrastructure, mock-tested validator integration, and one verified Z.ai synthetic image probe. Real seed judgments and official-model-equivalent scoring remain unverified. We retained the **entire pinned official starter**, including the released agent trajectories, figures, human labels, evaluator, and Harbor examples. We do **not** use Modal for execution or model hosting.
+**Status:** Offline evaluation infrastructure and a completed four-model API compatibility milestone, but no end-to-end chart-agent run or Terra judge accuracy benchmark. Official-model-equivalent scoring remains unverified. We retained the **entire pinned official starter**, including the released agent trajectories, figures, human labels, evaluator, and Harbor examples. We do **not** use Modal for execution or model hosting.
 
 ## Our learning goals
 
@@ -145,37 +145,33 @@ uv run python scripts/openai_seed_pilot.py --run-id 004 --family wrong_data --co
 
 The independent `--compare` path reads human labels locally, reports a single family decision's TP/FP/FN/TN, and makes no model requests. A single selected example is not evidence of MCC or model generalization. The existing Z.ai pilot and official Qwen3-VL configuration remain intact.
 
-## Session 009 — One-model-at-a-time compatibility probes (offline preparation)
+## Session 009 — Completed four-model live API compatibility checks
 
-Session 008's provider adapters are merged through PR #8 (`5833b2b`); its 27 provider tests, 49 validator tests, 5 infrastructure tests and dataset preflight passed locally, and GitHub Actions passed on the PR. Session 007 remains safely archived at `archive/session-007-20261107`.
+Session 008's offline provider-adapter foundation was merged via PR #8 (`5833b2b`). Session 007's unmerged wrong-chart experiment is preserved at `archive/session-007-20261107`.
 
-Session 009 adds `scripts/provider_compat_probe.py`, an **offline-by-default** per-model compatibility preview and a strictly gated, one-request transport probe for a later separately authorized live check. For a fully offline preview, run:
+**Session 009 objective met:** All four *current* model roles passed one separately user-authorized live compatibility request each. The three chart-generator providers returned function-call descriptions that the adapters parsed; the experimental Terra judge accepted a synthetic PNG and returned strict JSON. No tool request was executed, no model-generated chart was produced and no judge accuracy or MCC was measured.
 
-```bash
-uv run python scripts/provider_compat_probe.py --role agent_a
-uv run python scripts/provider_compat_probe.py --role agent_b
-uv run python scripts/provider_compat_probe.py --role agent_c
-uv run python scripts/provider_compat_probe.py --role experimental_judge
-uv run python -m unittest discover -s tests -p 'test_provider_*_offline.py' -v
-```
+| Role | Requested / reported model | Live compatibility |
+| --- | --- | --- |
+| Agent A | `deepseek-flash` | Responses API tool call parsed (405 tokens) |
+| Agent B | `gpt-5.6-luna` | Responses API tool call parsed (127 tokens) |
+| Agent C | `glm-5.3-flash` | Z.ai Chat Completions tool call parsed (227 tokens) |
+| Experimental judge | `gpt-6.1-terra` | Synthetic PNG + strict JSON schema parsed (288 tokens) |
 
-The live path is **not authorized yet**. Every possibly billed call needs separate user approval for that exact model. There are no automatic retries, model-proposed shell commands are never executed, results are stored in ignored `output/*.json`, and full plotting-agent/Docker integration is still future work. See [docs/Session-009-Compatibility-Probes.md](docs/Session-009-Compatibility-Probes.md). Offline tests added in this branch remain **pending Codespace verification**.
+A separate historical free-model attempt to `glm-4.7-flash` failed with `RateLimitError` and **zero retries**; it was preserved instead of overwritten. The paid replacement `glm-5.3-flash` is the current Agent C model, using `reasoning_effort=low` for this bounded transport test. The previous failure's exact root cause remains unknown.
 
-### Session 009 model-switch preparation — Z.ai GLM-5.3-Flash
-
-After a separately authorized `glm-4.7-flash` function-call probe failed with `RateLimitError` (zero retries), we selected paid `glm-5.3-flash` as Agent C's **current** requested model. The prior attempt is retained as historical evidence; an account-wide balance/quota problem could still affect the replacement model.
-
-The new probe saves `output/provider_compat_agent_c_glm-5.3-flash.json` and **does not delete or overwrite** the previous `output/provider_compat_agent_c.json`. New offline tests cover this distinction. `reasoning_effort=low` is used for the GLM-5.3-Flash request because its thinking cannot be fully disabled; this is a transport smoke test, not a benchmark with default reasoning.
-
-Run only these zero-network checks first on `feature/session-009-provider-compatibility`:
+The feature branch's Codespace verification passed **37/37 mocked provider tests and 49/49 validator regression tests** (86/86), plus four zero-network model previews. Run the zero-network checks at any time:
 
 ```bash
 uv run python -m unittest discover -s tests -p 'test_provider_*_offline.py' -v
-uv run python scripts/provider_compat_probe.py --role agent_c
+uv run python -m unittest discover -s tests -p 'test_validator_*_offline.py' -v
 uv run python scripts/provider_preflight.py
+uv run python scripts/provider_compat_probe.py --role agent_c
 ```
 
-**No new live GLM-5.3-Flash request has been performed or authorized yet.** Its single-request test must be separately approved after Codespace offline verification. See [Session 009 compatibility probes](docs/Session-009-Compatibility-Probes.md).
+The offline-default probe script refuses live requests unless the role, consent flags, **exact model ID** and provider secret match. It saves per-model results to ignored `output/provider_compat_<role>_<model>.json` files, recognizes older role-only results, refuses repeated same-model attempts, has **zero automatic retries**, and never executes a model-suggested command. The earlier five one-request user approvals are all consumed; **any new model API request requires separate fresh approval**.
+
+Read the [Session 009 compatibility experiment report](docs/Session-009-Compatibility-Probes.md) and [learning journal](docs/Learning-Progress.md). Next: review this branch in a PR, then design a separately tested bounded chart-generation controller that uses the pinned Assignment 1 Docker sandbox without exposing credentials to it.
 
 ## Session 008 — offline-only multi-provider adapters (completed, merged via PR #8)
 
