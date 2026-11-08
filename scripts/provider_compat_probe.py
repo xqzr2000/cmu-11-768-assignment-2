@@ -105,6 +105,8 @@ def _result_record(spec: ModelSpec, reply: Any) -> dict[str, Any]:
         "model_proposed_commands_executed": 0,
         "official_qwen_equivalent": False,
     }
+    if not spec.is_judge:
+        record["tool_call_compatibility"] = record["expected_tool_called"]
     if spec.is_judge:
         verdicts = decode_judgment(reply)
         record["schema_valid"] = True
@@ -151,9 +153,11 @@ def main(argv: list[str] | None = None) -> None:
     if destination.exists():
         parser.error("A saved result already exists for this role. "
                      "No request sent; inspect the existing result instead.")
+    from dotenv import load_dotenv
+
+    load_dotenv()
     if not os.getenv(spec.key_env):
-        # execute_one also checks and loads ignored .env; this early check
-        # deliberately requires a Codespaces/environment secret for CLI probes.
+        # Accept Codespaces secrets or ignored local .env without showing values.
         parser.error(f"Missing {spec.key_env} environment secret; no request sent")
 
     try:
