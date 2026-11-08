@@ -34,6 +34,7 @@ class ZaiProviderOfflineTests(unittest.TestCase):
         self.assertEqual(request["tools"][0]["function"]["name"], "run_shell")
         self.assertEqual(request["tools"][0]["type"], "function")
         self.assertEqual(request["max_tokens"], 512)
+        self.assertEqual(request["extra_body"], {"reasoning_effort": "low"})
         self.assertFalse(request["stream"])
         self.assertNotIn("input", request)
         with self.assertRaises(ValueError):
