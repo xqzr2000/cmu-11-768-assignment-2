@@ -915,9 +915,19 @@ git status --short --branch
 - `tests/test_provider_compat_probe_offline.py` mocks all four roles and verifies pure offline previews, strict authorization, sanitized errors, no retries, non-overwrite behavior, metadata records, and the synthetic image/schema.
 - Documentation: README and `docs/Session-009-Compatibility-Probes.md`. Official `validator/solution.py` and Modal-based `workflow/generate.py` remain unchanged.
 
-**Not verified or performed:** Codespace offline tests on this branch, any live API request, four-model account access, generator function calls against actual endpoints, Terra real-model schema behavior, figure-generating agent loop, or MCC.
+**Codespace offline verification (2026-11-07, user-supplied terminal log):**
 
-**Next:** User fetches and checks out the newly pushed Session 009 branch in Codespaces; runs provider mock tests and zero-request previews; shares results. Only then should we ask the user to approve **exactly one** DeepSeek request before giving a live command. Do not merge prematurely or run another provider request without separate consent.
+- Fresh checkout of remote `feature/session-009-provider-compatibility` succeeded and was clean/synchronized.
+- `uv sync --locked`: resolved 111 packages, rebuilt/reinstalled local `hw2-validator`.
+- `uv run python -m unittest discover -s tests -p 'test_provider_*_offline.py' -v`: **34/34 passed** (27 prior adapter tests + 7 new compatibility-probe tests).
+- All four `uv run python scripts/provider_compat_probe.py --role ...` offline previews passed: `agent_a` -> `deepseek-flash`, `agent_b` -> `gpt-5.6-luna`, `agent_c` -> `glm-4.7-flash`, `experimental_judge` -> `gpt-6.1-terra`. All reported `network_requests=0`, correct API styles; three roles had inert `run_shell` descriptors, Terra had `structured_judgment=true` and no tools.
+- Existing validator tests: **49/49 passed**. Expected CLI usage diagnostics occurred in an intentionally rejected malformed-consent test and did not indicate a failure.
+- Offline dataset preflight: **PASSED** with 110 runs, 98 PNG figures, 110 human-labeled runs, 16 acceptable, 12 execution_failure, 39 hard_to_read, 71 wrong_chart, 25 wrong_data.
+- Final `git status --short --branch`: clean `feature/session-009-provider-compatibility...origin/feature/session-009-provider-compatibility`. **83/83 offline unit tests passed.** No model/provider calls, no cloud infrastructure invoked.
+
+**Still not verified or performed:** any live API request, four-model account access, real tool/function-call responses, actual Terra structured JSON on a live synthetic image, chart-generation agent loop, or MCC. Mock test success does not confirm model/API compatibility or semantic correctness.
+
+**Next:** Sync this journal-only commit. Before running a live DeepSeek compatibility request, present its exact role/model, synthetic request, one-request budget and cost basis, and ask the user explicitly to authorize exactly that one call. Do not run or provide execution of other models until separately authorized; no automatic retries.
 
 ### Template for future sessions
 
