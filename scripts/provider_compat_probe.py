@@ -126,6 +126,30 @@ def _write_new(path: Path, data: dict[str, Any]) -> None:
         print(file=stream)
 
 
+def result_path(spec: ModelSpec) -> Path:
+    """Make new attempts model-specific; preserve prior role-only records."""
+    return RELEASE / "output" / f"provider_compat_{spec.role}_{spec.model_id}.json"
+
+
+def prior_result_exists(spec: ModelSpec) -> bool:
+    """Block repeats of the same model, including pre-migration result names.
+
+    A legacy result from a *different* requested model does not block the
+    migration. An unreadable/unknown legacy record blocks conservatively.
+    """
+    if result_path(spec).exists():
+        return True
+    legacy = RELEASE / "output" / f"provider_compat_{spec.role}.json"
+    if not legacy.exists():
+        return False
+    try:
+        previous = json.loads(legacy.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return True
+    return (not isinstance(previous, dict)
+            or previous.get("requested_model") in (None, spec.model_id))
+
+
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--role", required=True, choices=tuple(MODELS))
@@ -149,9 +173,9 @@ def main(argv: list[str] | None = None) -> None:
         parser.error("Live mode requires --live --confirm-one-request and "
                      f"--approve-model {spec.model_id}; no request was sent")
 
-    destination = RELEASE / "output" / f"provider_compat_{spec.role}.json"
-    if destination.exists():
-        parser.error("A saved result already exists for this role. "
+    destination = result_path(spec)
+    if prior_result_exists(spec):
+        parser.error("A result already exists for this role and requested model. "
                      "No request sent; inspect the existing result instead.")
     from dotenv import load_dotenv
 
