@@ -68,11 +68,21 @@ git status --short --branch
 
 **Decision:** Pinning the observed platform-specific manifest *as a documented candidate* is justified by user-supplied registry metadata. Treating the resulting Docker environment as built, reproducible, secure or assignment-equivalent is not justified yet.
 
+## Offline hashed-wheel staging implementation — tests pending
+
+The inert image recipe now adds `COPY requirements/chart-cp312-linux-amd64.txt /opt/assignment/chart-requirements.txt` before its pip step. It **requests** `pip install --no-cache-dir --require-hashes --only-binary=:all: -r /opt/assignment/chart-requirements.txt`, rather than installing the four plotting roots as un-hashed command arguments. No such install has actually been executed.
+
+The context allowlist now includes exactly one new file, `requirements/chart-cp312-linux-amd64.txt`, in a private `requirements/` subdirectory; Dockerfile, vetted CSVs and the fixed extractor are unchanged permitted categories. A reusable no-network audit validates the source and staged bytes against `uv.lock` (not just against a forgeable manifest checksum). The existing wheel-audit CLI still uses this logic.
+
+Updated offline tests cover the Dockerfile copy/install ordering, exact context paths, permission and cleanup policy, extra/unhashed requirements, changed wheel hashes with forged manifests, and missing/symlinked/unhashed source locks. CI continues to run the guarded image/context suites and the separate wheel audit.
+
+**This code is committed but the updated Python tests have not yet been run in Codespaces.** The previous 14-wheel metadata audit PASS and 77/77 test result predate this wiring. We have not retrieved/rehashed actual wheels, verified pip resolution, built an image or launched Docker. The minimal image still omits SciPy and seaborn supported by the course environment, so we cannot claim full environment equivalence.
+
 ## Pause / restart handoff
 
 **Last verified local Git state:** clean feature branch `feature/session-010-chart-agent-controller` tracking origin at `b3983cc`, before the subsequent documentation-only handoff updates. Keep the branch; do **not** merge, delete it or rerun any billable model probe just to stop the Codespace.
 
-**Next implementation step (offline-only):** Modify `integrations/chart_image_recipe.py` so its Dockerfile stages `chart-cp312-linux-amd64.txt` and installs packages with `pip --require-hashes --only-binary=:all:`; modify `integrations/chart_build_context.py` to add exactly that reviewed hash-file path to the private build-context allowlist. Expand fake/test-based checks for tampering, extra/unhashed requirements, manifests and cleanup. Update CI and the chronological journal. Only after this offline verification should we separately discuss a real image build and plotting smoke test.
+**Next verification step (offline-only):** Pull the new hash-lock integration commits, run the independent wheel audit plus guarded chart-image and private-context test scripts, and report the actual output. Review CI before considering any separately approved real image build or plotting smoke test.
 
 **Resume:**
 
