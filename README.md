@@ -145,38 +145,35 @@ uv run python scripts/openai_seed_pilot.py --run-id 004 --family wrong_data --co
 
 The independent `--compare` path reads human labels locally, reports a single family decision's TP/FP/FN/TN, and makes no model requests. A single selected example is not evidence of MCC or model generalization. The existing Z.ai pilot and official Qwen3-VL configuration remain intact.
 
-## Session 010 — Bounded chart controller and offline-first chart environment
+## Session 010 — Offline-first chart controller and chart environment
 
-Session 009 merged via PR #9 (`65b0a49`); Session 010 continues independently on `feature/session-010-chart-agent-controller`. The project has **not** executed any model APIs, real Docker builds/launches, or untrusted shell commands during Session 010.
+PR #9 merged Session 009 into `main` at `65b0a49`. Session 010 continues on `feature/session-010-chart-agent-controller`.
 
-**Verified Codespace baseline: 64/64 offline tests passed**, comprising 11 controller, 14 fake-Docker gateway, 16 task CSV/PNG artifact, 12 private CSV/extraction helper and 11 digest-guarded image recipe tests. Earlier provider **37/37** and validator **49/49** regression suites also passed. All dedicated offline test runners fail on empty discovery.
+**Verified in Codespaces: 77/77 Session 010 offline tests passed**, with a clean working tree. The suites cover a manually stepped controller (11), fake-Docker gateway (14), bounded CSV/PNG handling (16), private file staging and extraction helper (12), inert Docker image recipe (11), and a minimal private build context (13). Earlier provider **37/37** and validator **49/49** regressions also passed.
 
-Implementation boundaries:
+The following components remain separately gated and **do not yet form a live agent**:
 
-- `integrations/chart_controller.py`: manually stepped three-provider conversation state; no transport or automatic execution.
-- `integrations/sandbox_gateway.py`: explicitly approved, `network="none"` sandbox launch and per-command approval, with limits and cleanup. **No real container launched**.
-- `integrations/task_artifacts.py`: small, bounded CSV snapshots and strict PNG decoding.
-- `integrations/chart_transfer.py` plus `scripts/figure_extract_worker.py`: private temporary CSV staging and a fixed bounded PNG envelope. **No container transfer run**.
-- `integrations/chart_image_recipe.py`: inert chart-capable Dockerfile text requiring a digest-shaped `python:3.12-slim` base reference, headless Matplotlib/Pandas, unprivileged runtime user, and only vetted input/helper COPY paths. **No real image digest, wheel-hash lock or image build verified**.
+- `integrations/chart_controller.py`: provider conversation replay and strict turn/tool budgets, with no model transport.
+- `integrations/sandbox_gateway.py`: explicit sandbox launch and per-command approval; `network="none"`, no host mounts or ports; tested with fake Docker only.
+- `integrations/task_artifacts.py`: bounded task-local CSV snapshots and strict PNG/JSON-envelope validation.
+- `integrations/chart_transfer.py` and `scripts/figure_extract_worker.py`: private temporary host-file staging and a fixed bounded PNG extraction protocol, not connected to Docker.
+- `integrations/chart_image_recipe.py`: inert digest-shaped Python 3.12 Dockerfile, direct plotting library pins and unprivileged runtime.
+- `integrations/chart_build_context.py`: temporary, verified context containing only the Dockerfile, approved CSVs, and trusted extraction helper. No Docker build has been attempted.
 
-**Sixth offline slice (new; tests pending):** `integrations/chart_build_context.py` produces a private temporary host-side build context with exactly an inert `Dockerfile`, vetted `inputs/*.csv`, and the reviewed `trusted/extract_figure.py`. It verifies byte hashes, private modes, zero symlinks and no extra checkout/secret files, and cleans up on exit. It does **not** call Docker or a model. The **13 new synthetic tests** await Codespace verification.
+**Next gate: supply-chain verification.** The Python base tag is mutable/multi-platform. No true base digest, chosen architecture, chart-only transitive wheel hash lock, image build, or container execution has yet been validated. The committed `uv.lock` includes wheel hashes for project dependencies, but the separate chart Dockerfile does **not** consume that lock or enforce hashes.
 
-Run all six guarded offline test suites:
+Inspect remote registry metadata **without pulling/building any image**:
 
 ```bash
-uv run python scripts/check_chart_build_context_offline.py
-uv run python scripts/check_chart_image_recipe_offline.py
-uv run python scripts/check_chart_transfer_offline.py
-uv run python scripts/check_task_artifacts_offline.py
-uv run python scripts/check_controller_offline.py
-uv run python scripts/check_sandbox_gateway_offline.py
+uname -m
+docker buildx imagetools inspect docker.io/library/python:3.12-slim
 ```
 
-Expected total **if the 13 new context tests pass: 77/77 Session 010 tests**. The previous 64 passed; do not claim a new total until verified.
+The second command contacts the public Docker registry for manifest metadata; it does not download image layers, start Docker containers, or call a paid model. Report the actual digest and supported platform before we pin anything. Do not silently replace the metadata inspection with `docker pull` or `docker build`.
 
-**Still missing:** selection/verification of a real immutable base digest and complete dependency lock, a separately authorized Docker build with the minimal context, a fixed large-output extraction gateway, and a human-approved per-turn live chart agent. The original Modal runner and official judge setup have not changed.
+No additional model API requests, real Docker builds, sandbox launches, live chart-generation runs, or Terra accuracy evaluations are authorized by Session 010's offline verification. The official Modal runner and assignment requirements are unchanged.
 
-See [Session 010 safety/design report](docs/Session-010-Controller-Design.md) and [learning journal](docs/Learning-Progress.md).
+See [Session 010 engineering design](docs/Session-010-Controller-Design.md) and [Learning-Progress.md](docs/Learning-Progress.md).
 
 ## Session 009 — Completed four-model live API compatibility checks
 
