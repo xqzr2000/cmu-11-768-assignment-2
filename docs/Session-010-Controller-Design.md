@@ -1,6 +1,6 @@
 # Session 010 — Bounded chart-agent controller (offline-first)
 
-**Status (2026-11-07 America/Vancouver):** The four completed offline slices passed **53/53 tests in Codespaces**: 11 controller, 14 fake-Docker gateway, 16 task-artifact, and 12 CSV transfer/PNG extractor tests; earlier provider **37/37** and validator **49/49** regressions passed. A fifth **pure Dockerfile recipe** slice and **11 new tests** are committed but their Codespace results are **pending**. No live model request, real Docker image build/pull, sandbox launch, or model-proposed command execution has occurred in Session 010.
+**Status (2026-11-07 America/Vancouver):** **64/64 Session 010 offline tests passed** in Codespaces: controller 11, fake-Docker gateway 14, task artifacts 16, chart transfer 12, and image recipe 11. A sixth *minimal private build-context* slice with **13 new offline tests** is committed, but these tests have **not yet run** in Codespaces. The original provider 37/37 and validator 49/49 suites passed earlier. No model API calls, real Docker builds/launches, chart-generating commands, or container extraction occurred in this session.
 
 ## Why a controller is necessary
 
@@ -191,7 +191,7 @@ git status --short --branch
 
 **Observed:** The user pulled the feature branch to `f81f4d1`; 12 chart-transfer tests, 16 artifact tests, 11 controller tests, and 14 fake-gateway tests all passed (**53/53**). Working tree was clean and synchronized; no Docker or model API was used.
 
-## Fifth offline slice — digest-guarded chart image recipe (tests pending)
+## Fifth offline slice — digest-guarded chart image recipe (verified)
 
 Session 010 needs a chart-capable image, but a real image digest, build results, and package wheel hashes have **not** yet been verified. We must not invent an immutable base digest or claim that a Docker build has succeeded.
 
@@ -201,7 +201,7 @@ The rendered Dockerfile fixes the requested versions already pinned in `pyprojec
 
 **Important supply-chain limitation:** Exact **direct** package versions are not an immutable full dependency lock: transitive wheels, their hashes, their platform availability, and the selected base image architecture are not yet proven. `ChartImageRecipe.preview()` explicitly says `full_dependency_hash_lock_verified=false`, `image_exists_verified=false`, `docker_build_authorized=false`, and reports zero Docker/model operations. The emitted Dockerfile is a reviewable **development plan**, not a trusted, tested or authorized image.
 
-New `tests/test_chart_image_recipe_offline.py` has **11 synthetic checks** for rejecting moving or injected base references, requesting the exact versions, non-root workspace, only fixed context copies, safe file permissions, absence of secrets/mounts/ports, metadata honesty, deterministic Dockerfile checksum, and no subprocess execution. The fake base digest used in unit tests is not a known real artifact. New `scripts/check_chart_image_recipe_offline.py` fails on zero discovered tests; the existing offline GitHub Actions workflow invokes it. These 11 tests **have not yet been run in Codespaces**.
+New `tests/test_chart_image_recipe_offline.py` has **11 synthetic checks** for rejecting moving or injected base references, requesting the exact versions, non-root workspace, only fixed context copies, safe file permissions, absence of secrets/mounts/ports, metadata honesty, deterministic Dockerfile checksum, and no subprocess execution. The fake base digest used in unit tests is not a known real artifact. New `scripts/check_chart_image_recipe_offline.py` fails on zero discovered tests; the existing offline GitHub Actions workflow invokes it. All **11/11 recipe tests passed** in Codespaces at `f0818ba`, using only a fictitious digest. No image was looked up or built.
 
 **Next offline verification (zero API requests and zero Docker operations):**
 
@@ -216,12 +216,51 @@ uv run python scripts/check_sandbox_gateway_offline.py
 git status --short --branch
 ```
 
-If all pass: **11 new recipe tests + 53 verified prior tests = 64/64 Session 010 tests**. This is an expectation, not yet observed.
+**Observed:** The five guarded suites discovered and passed **64/64 tests**, with a clean worktree. These do not verify image existence or runtime compatibility.
 
 **Subsequent engineering decision:** Verify a real Python base image digest for a specific architecture; resolve and hash-lock the actual package wheels; create a minimal private Docker build context exclusively from the checked CSV bytes and reviewed extractor source; only then consider a separately approved image build and a trusted large-output extraction path. The current `SandboxGateway` still targets the non-chart-capable floating `python:3.12-slim` transport-test image and cannot silently adopt the new recipe.
 
+## Sixth offline slice — minimal private Docker build-context assembly (tests pending)
+
+**Goal:** Ensure a future Docker build sees exactly the reviewed Dockerfile, already validated CSV bytes and version-controlled trusted extraction helper—not a broad repository or user home directory.
+
+New `integrations/chart_build_context.py` exposes `prepare_chart_build_context(snapshot, base_image)` as a temporary **host-side** context manager. It first validates the digest-formatted base reference using the fifth-slice inert `plan_chart_image`; this still does **not** verify the digest exists. It then calls the fourth-slice `stage_input_snapshots` to revalidate task CSV bytes and hashes, copies the verified CSV bytes into a separate temporary build context, and adds only the module's fixed Dockerfile text and the repository-reviewed `scripts/figure_extract_worker.py` bytes. It does not accept arbitrary model-provided source paths or copy the checkout.
+
+The exact expected layout for one CSV is:
+
+```text
+build-context/                (0700; temporary)
+├── Dockerfile               (0600; deterministic recipe)
+├── inputs/                  (0700)
+│   └── data.csv             (0600; rehashed snapshot bytes)
+└── trusted/                 (0700)
+    └── extract_figure.py    (0600; fixed reviewed helper source)
+```
+
+`ChartBuildContext.manifest()` hides the temporary absolute host path and CSV contents. `verify_chart_build_context` checks the **exact allowlist**, absence of symlinks and unexpected `.env`/`.git`/source files, private file/directory modes, per-file and total byte caps, SHA-256 integrity, and exact Dockerfile correspondence. The temporary context is removed on normal exit and exceptions.
+
+**Important:** This stage **does write temporary, private host files**, but never invokes `DockerImage.build`, `Sandbox`, Docker CLI, subprocesses, or model APIs. The context path should only be handed to a future, independently approved build operation while its context manager is active. Existing `DockerImage` supports taking a Dockerfile/context path, but no such call has been made. The pinned `python:3.12-slim` digest, platform, dependency wheel hashes and actual build success remain unknown. The image recipe has **not** been changed to point to a deployable digest.
+
+Added `tests/test_chart_build_context_offline.py` with **13 synthetic offline tests**: exact layout and private modes, fixed helper provenance, multi-CSV integrity, cleanup on exceptions, refusal of mutable base references and forged snapshots, detection of tampered files/Dockerfile/helper, unexpected credentials or checkout files, symlinks, modified permissions, oversized forged metadata, unsafe parent directories, and zero subprocess/model/Docker calls. Added `scripts/check_chart_build_context_offline.py` with nonzero-discovery enforcement and wired the test runner into GitHub Actions. **No Codespaces pass is claimed yet for these 13 new tests.**
+
+Verify entirely offline:
+
+```bash
+cd /workspaces/cmu-11-768-assignment-2
+git pull --ff-only
+uv run python scripts/check_chart_build_context_offline.py
+uv run python scripts/check_chart_image_recipe_offline.py
+uv run python scripts/check_chart_transfer_offline.py
+uv run python scripts/check_task_artifacts_offline.py
+uv run python scripts/check_controller_offline.py
+uv run python scripts/check_sandbox_gateway_offline.py
+git status --short --branch
+```
+
+Expected, pending actual verification: **13 new + 64 previously passed = 77 Session 010 tests**.
+
 ## Next decisions before any live chart generation
 
-First **verify the 11 new chart-image recipe tests** and fix any failures. Then separately verify the actual immutable base digest and full wheel lock, followed by a minimal build-context design with only vetted CSVs and the trusted extraction helper. Any real Docker build and fixed-helper extraction operation still require separate authorization. A separate human confirmation is required before any real Docker launch, and a fresh explicit model-specific approval is required **for every potentially billed model turn**. The bounded controller and gateway must not be wired to unattended live execution.
+First **verify the 13 new minimal build-context tests**. Then review the actual immutable base digest, platform and full wheel lock. No Docker build, pull, sandbox command, or image extraction is authorized by these offline plans; any real execution requires separate explicit user approval. A separate human confirmation is required before any real Docker launch, and a fresh explicit model-specific approval is required **for every potentially billed model turn**. The bounded controller and gateway must not be wired to unattended live execution.
 
 **Non-goals for this slice:** model-quality comparisons, MCC, human-label prediction, a live Terra judgment, course-equivalent results, automatic API retries, and unsupervised multi-turn execution.
