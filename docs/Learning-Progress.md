@@ -962,7 +962,16 @@ git status --short --branch
 - Public model documentation and model-card material establish `glm-5.3-flash` as an API/model identifier, not the user's account entitlement. A previous rate-limit failure might affect the new model if caused by a shared account quota or insufficient balance.
 - **Current state:** Source changes and documentation pushed to the Session 009 feature branch; **Codespace offline tests and a GLM-5.3-Flash live API call have not yet been performed or verified**. Per-request user approval remains mandatory before any possibly billed model request; no automatic retry, fallback or shell execution.
 
-**Next:** User pulls remote Session 009 changes into Codespaces and runs mocked provider tests, offline agent_c preview and preflight, plus existing validator regression tests. Share output before authorizing/providing the exact single potentially billed `glm-5.3-flash` live command. Terra probe remains separate and unapproved.
+**GLM-5.3-Flash migration verification completed in Codespaces (2026-11-07 America/Vancouver; user-supplied terminal log):**
+
+- `git pull --ff-only`: fast-forwarded Session 009 from `092c35c` to `957a9bc` with nine changed files. Working tree clean and tracking `origin/feature/session-009-provider-compatibility`.
+- `uv run python -m unittest discover -s tests -p 'test_provider_*_offline.py' -v`: **37/37 passed**, including the three new tests for old-record preservation, duplicate legacy model rejection, and invalid legacy-result blocking.
+- `uv run python scripts/provider_compat_probe.py --role agent_c`: offline preview requested **`glm-5.3-flash`**, provider `zai`, API style `chat_completions`, `max_output_tokens=512`, inert `run_shell`, `network_requests=0`, `live_approval_required=true`.
+- `uv run python scripts/provider_preflight.py`: four registered roles, each with `network_requests=0`; Agent C now `glm-5.3-flash`; Terra remains strict structured judge in registry.
+- Existing validator tests: **49/49 passed**. Expected argparse errors while testing incomplete live-consent flags did not indicate a failing test. Total **86/86 offline unit tests passed**.
+- Final `git status --short --branch`: clean/synchronized. No additional API call, model output, shell execution, or cloud infrastructure invoked during these checks.
+
+**Next:** Record this verified preparation and request a **separate explicit approval** for exactly one potentially billed Z.ai `glm-5.3-flash` function-call compatibility request (512 max output tokens, 60-second timeout, no retries, no execution). If approved, user runs it once in Codespaces and inspects new `output/provider_compat_agent_c_glm-5.3-flash.json`; preserve older `output/provider_compat_agent_c.json` from failed GLM-4.7 attempt. Terra remains a separate test requiring its own authorization.
 
 ### Template for future sessions
 
