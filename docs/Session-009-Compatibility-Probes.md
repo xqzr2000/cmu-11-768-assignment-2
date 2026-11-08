@@ -1,6 +1,6 @@
 # Session 009 — One-request live compatibility probes (independent adaptation)
 
-**Status (2026-11-07):** Session 009 offline preparation verified in Codespaces (**34/34** provider tests and **49/49** validator tests passed; four request previews reported zero network requests). Two separately authorized live compatibility requests **succeeded**: DeepSeek `deepseek-flash` (Agent A) and OpenAI `gpt-5.6-luna` (Agent B). The separately authorized Z.ai `glm-4.7-flash` (Agent C) call **failed with `RateLimitError` and zero retries**; its model/tool compatibility remains unverified. Terra has not been called; its access remains unverified. **New Agent C configuration:** `glm-5.3-flash` with low reasoning effort, pending new Codespace offline verification and a fresh, separately approved live request.
+**Status (2026-11-07):** Session 009 offline preparation verified in Codespaces (**34/34** provider tests and **49/49** validator tests passed; four request previews reported zero network requests). Two separately authorized live compatibility requests **succeeded**: DeepSeek `deepseek-flash` (Agent A) and OpenAI `gpt-5.6-luna` (Agent B). The separately authorized Z.ai `glm-4.7-flash` (Agent C) call **failed with `RateLimitError` and zero retries**; its model/tool compatibility remains unverified. Terra has not been called; its access remains unverified. **New Agent C configuration:** `glm-5.3-flash` with low reasoning effort; its migration passed **37/37** provider tests, **49/49** existing validator tests and offline request previews in Codespaces. **The GLM-5.3 live request is not yet authorized or attempted.**
 
 ## Goal and decisions
 
@@ -136,7 +136,7 @@ Code changes on `feature/session-009-provider-compatibility`:
 - Offline tests update model assertions and verify preservation of the older GLM record and rejection of attempted repeated probes.
 - No changes to course runner, official judge, sandbox integration, human labels or metrics. Changing a model may improve access, but does not prove that the previous `RateLimitError` was model-specific.
 
-**Verification:** New tests and model selection have been committed remotely; Codespace results are **pending**. This documentation records **no actual GLM-5.3-Flash API request** and no account entitlement confirmation. Its only allowed next action without explicit new call approval is an offline preview and mocked tests. A later live request needs a fresh, explicit, model-specific authorization; paid usage and possible failures remain.
+**Verification (2026-11-07 America/Vancouver, supplied Codespace log):** The migration has passed **37/37** mocked provider tests and **49/49** offline validator regression tests (86/86 total). The dedicated Agent C preview returned `glm-5.3-flash`, `chat_completions`, `max_output_tokens=512`, inert `run_shell`, and `network_requests=0`. The four-model registry preflight also reported zero model requests. Final Git status was clean and synchronized. **No live GLM-5.3-Flash request has been made or authorized yet**; exact account access and function-call support remain unknown. Every potentially billed live call needs fresh per-model authorization, with zero retries and no tool execution.
 
 ## After the four approved checks
 
