@@ -943,7 +943,16 @@ git status --short --branch
 - Ignored local record: `output/provider_compat_agent_b.json`, which user read back and verified matched the CLI's result. Final Git status was clean/synchronized before the documentation commit.
 - **Interpretation:** Both DeepSeek Agent A and OpenAI Luna Agent B have now passed one-turn live function-call compatibility checks. Neither was a chart-generation agent run; Docker/shell behavior, plotting quality, and Terra judgment remain untested. No Z.ai or Terra calls have been made in Session 009.
 
-**Next:** Sync this documentation-only commit, then request fresh explicit authorization for **one Z.ai `glm-4.7-flash` Agent C compatibility call** before providing its live command. The Terra judge requires its own independent approval later. No automatic retries or model substitution.
+**Third approved live compatibility request (Z.ai GLM, Agent C, 2026-11-07 America/Vancouver, user Codespace transcript):**
+
+- User explicitly authorized **one** potentially billed Z.ai `glm-4.7-flash` request with no retries and no tool execution. The user pulled the then-current branch (already up to date), verified clean/synchronized Git, and checked `ZAI_API_KEY` existed without revealing it.
+- Executed **once**: `uv run python scripts/provider_compat_probe.py --role agent_c --live --confirm-one-request --approve-model glm-4.7-flash`. This produced **`status=failed`, `error_type=RateLimitError`**, and the message `Compatibility probe failed. Do not retry without new approval.` No automatic retries occurred (`retries=0`).
+- Saved safely redacted local result `output/provider_compat_agent_c.json` (user supplied matching output); it records that a failed request **may have been billed**. No response/model-ID/usage/tool call was returned; `glm-4.7-flash` Chat Completions **live compatibility remains unverified**, not disproven. We do not know the underlying Z.ai business error code from the intentionally minimal exception record.
+- Final `git status --short --branch`: clean/synchronized feature branch. The one Z.ai approval has been **consumed**. No further live requests, fallback models, or retries are authorized.
+- **Next diagnosis without model calls:** inspect Z.ai account dashboard for key type/billing plan, available balance or credits, quota, concurrency/rate-limit counters, and recent failed-request logs; distinguish account quota/access failure from temporary throttling if the dashboard exposes a safe numeric business error code. Never paste API keys, bearer tokens or full provider errors containing sensitive account metadata. Any follow-up GLM request needs fresh user consent.
+- **Current status:** Agent A DeepSeek one-turn function call passed; Agent B Luna one-turn function call passed; Agent C GLM blocked with `RateLimitError`; experimental Terra judge has not been called.
+
+**Next:** Sync the documentation-only commit. We can investigate the Z.ai dashboard without a model call, or separately ask approval for **one OpenAI `gpt-6.1-terra` synthetic-PNG structured-output compatibility probe**; neither GLM retry nor Terra call is authorized by the earlier approvals.
 
 ### Template for future sessions
 
