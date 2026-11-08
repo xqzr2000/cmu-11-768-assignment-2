@@ -9,6 +9,47 @@
 > **Learning mode:** beginner-friendly; explain purpose, inputs, outputs, commands, observations, failures, and follow-ups.  
 > **Source of truth:** [ASSIGNMENT.md](../ASSIGNMENT.md) for official requirements; [README.md](../README.md) and [docs/ARCHITECTURE.md](ARCHITECTURE.md) for our independent adaptation.
 
+## Pause / resume checkpoint — 2026-11-07 (America/Vancouver)
+
+**Project:** Independent, non-credit CMU 11-768 Assignment 2 adaptation. Preserve the official starter, original Modal-based generator, exact official model requirements, and human-label separation. This checkpoint is about our separate chart-agent execution infrastructure; it is **not** an official course-equivalent result.
+
+**Where we stopped:**
+
+- Repository: `xqzr2000/cmu-11-768-assignment-2`.
+- Active Git branch: `feature/session-010-chart-agent-controller`, tracking `origin/feature/session-010-chart-agent-controller`. **Do not merge or delete this active branch during the pause.**
+- Last user-verified Codespace checkout *before this documentation update*: `b3983cc` after `git pull --ff-only`; `git status --short --branch` showed a **clean, synchronized** working tree.
+- Last user-verified offline controller/build tests: **77/77 passed** across six guarded suites (11 controller, 14 fake-Docker gateway, 16 task artifacts, 12 chart transfer, 11 image recipe, 13 minimal build context). Earlier provider **37/37** and validator **49/49** test results also passed; no new full regression run occurred in the last audit.
+- **Most recent result:** `uv run python scripts/check_chart_wheel_lock_offline.py` **PASSED**, auditing **14 fully hashed packages** for CPython 3.12/`linux/amd64` (4 plotting roots, 10 transitive), matching committed `uv.lock`. This is **metadata consistency only**, not downloaded wheel integrity, a pip install, or a Docker build. Git remained clean.
+- Registry metadata: host `x86_64`/`linux/amd64`; observed Python OCI index `sha256:4840d514c583a4d3d8cad3940e68dee6f0f6f3635c12fcd0a3d74c21a5b93a54`, **AMD64 Python manifest** `sha256:05a994d2344eb364cc186910f4fc8786a38215f39f00d0acc25bff33a08f4177`. Only public manifest metadata was queried—no image layer was pulled.
+- **No Session 010 live model calls**, real Docker builds/launches, model-proposed command execution, figure extraction from Docker, Terra accuracy benchmark, or MCC scoring. Session 009's prior one-request API approvals are fully consumed; **every future potentially billed model request requires fresh separate user authorization**. Future real Docker builds/launches and tool execution require separately reviewed authorization.
+
+### Session history at a glance
+
+| Session | Outcome and evidence | Status |
+| --- | --- | --- |
+| 001 (Nov 5) | Imported/studied full pinned starter; established this learning journal, source map and official-vs-independent boundary | Recorded |
+| 002 (Nov 5) | Offline environment/preflight, seed inventory and real trajectory/figure case studies | Verified offline |
+| 003 (Nov 5) | Designed/mock-tested semantic validator wiring and separated structural PNG checks from vision judgments | Independent groundwork |
+| 004 (Nov 5) | Explored exact-checkpoint vision requirements and bounded synthetic image compatibility; did **not** prove official Qwen equivalence | Partial/exploratory |
+| 005 (Nov 5) | Attempted controlled real-seed model judgment; recorded successes and failures without claiming a broad benchmark | Partial/exploratory |
+| 006 (Nov 7) | Controlled seed-008 OpenAI judgment and error analysis, with labels used only after prediction | Limited independent evidence |
+| 007 (Nov 7) | Wrong-chart precision experiment: improved seed 008 but regressed seed 004; preserved in archive tag `archive/session-007-20261107` (`939b01f`), **not merged** | Archived |
+| 008 (Nov 7) | Implemented offline three-generator-provider and experimental Terra judge adapters; PR #8 merged at `5833b2b` | Merged |
+| 009 (Nov 7) | Separately authorized live one-request compatibility checks: three generator roles + synthetic-image Terra judge; free Z.ai probe rate-limited; PR #9 merged at `65b0a49` | Merged; compatibility only |
+| 010 (Nov 7) | Manually stepped chart controller, fake-sandbox gateway, bounded CSV/PNG transport, minimal build context, digest-guarded recipe, registry manifest inspection, and **14/14 wheel metadata entries audited** | **Active, not merged** |
+
+See the detailed session history below for exact experiments, commands, model IDs, errors and scope boundaries. This table is a navigation summary, not a replacement for those records.
+
+### Exactly where to resume
+
+1. **Sync the feature branch:** `cd /workspaces/cmu-11-768-assignment-2 && git switch feature/session-010-chart-agent-controller && git pull --ff-only && git status --short --branch`. Expect the latest journal/documentation commit and no uncommitted files.
+2. **Confirm the new audit:** `uv run python scripts/check_chart_wheel_lock_offline.py` (expected 14 hashes, 4 direct + 10 transitive, **no network/Docker/model call**). The user already verified this audit before the pause; rerun only if helpful after synchronization.
+3. **Next development task (offline first):** Make `integrations/chart_image_recipe.py` install using `requirements/chart-cp312-linux-amd64.txt` with `pip --require-hashes --only-binary=:all:`, and extend `integrations/chart_build_context.py` so the **exact vetted requirements file** is the *only* additional allowlisted build-context file. Add tests for a changed/extra/unhashed requirement, hash provenance, context contents and cleanup. Update CI and this journal. Retain the observed `linux/amd64` Python manifest reference, but do not silently launch Docker.
+4. **Only after offline tests and review:** Consider an explicitly approved real `linux/amd64` Docker build and independent install/plotting smoke test, followed by a separately reviewed large-output PNG extraction route. Do **not** wire model-proposed commands to automatic execution or assume that a Docker container is a hardened VM.
+5. **After the complete milestone and CI review:** Open/inspect a Session 010 PR. Merge only after reviewed tests and scope; preserve the feature-branch/PR learning workflow. No PR for Session 010 has been verified in this handoff.
+
+**Source files for the next session:** [Session 010 controller design](Session-010-Controller-Design.md), [supply-chain evidence](Session-010-Supply-Chain.md), `integrations/chart_image_recipe.py`, `integrations/chart_build_context.py`, `requirements/chart-cp312-linux-amd64.txt`, `scripts/check_chart_wheel_lock_offline.py`, and `.github/workflows/offline-ci.yml`.
+
 ## How to use this journal
 
 1. Start with **What we are building**, then **How information flows**.
@@ -64,20 +105,18 @@ Range: **−1 to 1**, where 1 is perfect, 0 is no measured correlation, and nega
 
 The original course setup fixes the validator to **Qwen/Qwen3-VL-30B-A3B-Instruct-FP8** and the chart-generating agents to **Qwen/Qwen2.5-Coder-3B-Instruct**, **mistralai/Ministral-3-14B-Instruct-2512**, and **zai-org/GLM-4.7-Flash**, with student-owned Modal deployments. Our repository explicitly takes a separate **non-credit, no-Modal** route: keep the upstream starter, reuse the Assignment 1 Docker sandbox pinned at `0cb0534c2fffb67ddfff619100057fad0be90a3c`, and experiment with hosted DeepSeek `deepseek-flash`, OpenAI `gpt-5.6-luna`, and Z.ai `glm-5.3-flash` as potential chart generators (the earlier Z.ai `glm-4.7-flash` attempt remains historical). A hosted endpoint is **not automatically equivalent** to the official checkpoint/runtime. The multimodal validator endpoint is still **to be verified**. We must record every substitution and never present independently measured scores as official private-set scores. See [docs/UPSTREAM.md](UPSTREAM.md) and [docs/ARCHITECTURE.md](ARCHITECTURE.md).
 
-## Current state — 2026-11-07
+## Current state — 2026-11-07 (pause checkpoint)
 
-- **Session 010 in progress:** On `feature/session-010-chart-agent-controller`, **77/77 offline tests passed in Codespaces** (controller 11, fake-Docker gateway 14, task artifacts 16, chart transfer 12, image recipe 11, private build context 13). Existing provider 37/37 and validator 49/49 tests passed previously. User verified **real OCI registry index and linux/amd64 image manifest metadata** for `python:3.12-slim`; a 14-package chart-only wheel hash file and offline audit are committed but **audit execution remains pending**. No real Docker image pull/build/launch, model request or container chart extraction occurred.
-- **Latest verified milestone — Session 009:** All four current hosted models passed a separately approved **one-turn live API transport/schema probe**: DeepSeek `deepseek-flash`, OpenAI `gpt-5.6-luna`, paid Z.ai `glm-5.3-flash` (inert function calls parsed), and experimental visual judge OpenAI `gpt-6.1-terra` (synthetic PNG and strict JSON parsed). The free Z.ai `glm-4.7-flash` attempt failed with `RateLimitError` and zero retries; its output is preserved. **37/37 provider and 49/49 validator offline tests** passed in Codespaces, and no agent controller, Docker plotting run, Terra accuracy/MCC benchmark or official Qwen equivalence is claimed. Session 009 feature branch is ready for a draft PR and CI review; **not yet merged**. All five one-request live authorizations are consumed.
-- **Git (superseding the older point-in-time snapshot below):** PR #8 merged Session 008 at `5833b2b`; Session 007 was archived to tag `archive/session-007-20261107` at `939b01f`. Both old feature branches were deleted. Session 009 is on `feature/session-009-provider-compatibility`, with documentation updates after the verified Codespace tests; original course runner and validator remain unchanged.
-- **Existing code:** imported full pinned official starter; offline preflight, its unit tests, GitHub Actions CI, development-container setup, and supporting Phase 0 docs.
-- **Seed inventory:** 110 released `result.json` trajectories; 98 final `figure.png` files; 19 committed CSV input files; `seed_labels.json` contains 110 human labels. Some runs legitimately have no figure.
-- **Reported Phase 0 label counts (not validator predictions):** 12 `execution_failure`, 25 `wrong_data`, 71 `wrong_chart`, 39 `hard_to_read`, and 16 fully acceptable runs; refer to [PHASE-0.md](PHASE-0.md) and rerun the preflight before relying on a local environment.
-- **Session 002 offline preflight:** Verified in Codespace on 2026-11-05: 111 resolved packages, 110 seed runs / 98 figures / 110 labels, and 5/5 unit tests passed. Visual/trajectory case studies for runs 004 and 008 recorded below; no model judging performed.
-- **Validator status:** Session 002 structural checks and Session 003 baseline semantic wiring remain mock-tested; 49/49 validator tests and 5/5 structural tests passed in Codespaces on 2026-11-07. The independent one-request Z.ai synthetic image probe passed in Session 004, but the later real-seed Z.ai attempt failed. OpenAI structured-output judgments on seeds 004 and 008 work independently of the official validator path. No full baseline sweep, official Qwen-equivalent score, or per-family/macro-MCC has been verified.
-- **Agent generation:** `workflow/generate.py` still calls Modal; it has **not** been migrated to the Assignment 1 Docker runtime. Do not run it expecting local Docker behavior.
-- **Harbor:** example and template exist; our own packaged tasks do not yet exist. Docker execution and reward tests were **not performed in this session**.
-- **Documentation:** this journal is the session 001 deliverable. GitHub source inspection and branch creation are verified; **no code execution, model calls, score computation, or CI result is claimed by this journal-writing session**.
-- **Git (current):** PRs #1–#7 have been merged into `main`, most recently [PR #7](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/7) at `91bd01c`. The user uploaded `docs/Progress-Explained-20261107.md` identically to both `main` (`252140e`) and the independent Session 007 feature branch (`939b01f`), then synchronized both local branches. Session 007 remains **unmerged** with an experimental wrong-chart v2 prompt that corrected seed 008 FP→TN but regressed seed 004 TP→FN. The current Session 008 feature branch `feature/session-008-provider-adapters` was created from `main` at `252140e`, and new offline-only provider-adapter code is committed there; **its tests are awaiting user Codespace verification**. No official Qwen evaluation, generalizable MCC, new plotting-agent runs or live Session 008 provider calls are claimed.
+- **Branch and merge status:** PR #8 (Session 008) and PR #9 (Session 009) were merged; the Session 007 experiment was archived separately. Active unmerged branch is `feature/session-010-chart-agent-controller`; last user-verified checkout was clean and tracking origin at `b3983cc` before the documentation handoff commit.
+- **Verified Session 010 tests:** **77/77 offline tests** passed in Codespaces across the six controller/sandbox/artifact/image/build-context suites. Provider **37/37** and validator **49/49** regression suites passed earlier.
+- **Latest verified checkpoint:** chart-only **14/14-package wheel hash metadata audit passed** (`4` roots + `10` transitive) against committed `uv.lock`. This audit is additional to, **not a seventh set of numbered unit tests inside**, the 77-test Session 010 count.
+- **Observed base image metadata:** `x86_64` host, `linux/amd64` Python `3.12.16-slim-trixie` manifest `sha256:05a994d2344eb364cc186910f4fc8786a38215f39f00d0acc25bff33a08f4177`; OCI multi-platform index `sha256:4840d514c583a4d3d8cad3940e68dee6f0f6f3635c12fcd0a3d74c21a5b93a54`. Manifest metadata only; no pull/build/start or signature validation.
+- **Next code gap:** The Dockerfile still uses four direct `pip` version pins, and the minimal build context still omits `requirements/chart-cp312-linux-amd64.txt`. Integrate the **14-package hash lock** into those two components, test offline, then obtain separate authorization before a real build.
+- **Evaluation scope:** No complete official baseline, no comparable Qwen3-VL score, no validated end-to-end chart-generating agent, no Terra accuracy benchmark or MCC result. The retained upstream Modal entry point is not our Docker runner; original official requirements remain unchanged.
+- **Security and consent:** No Session 010 billed model calls or real Docker execution. Model-suggested shell commands remain inert unless each proposed action is independently approved; each future potentially billed API request requires a fresh one-request user authorization. The Docker sandbox is not a hardened isolation boundary.
+- **Dataset reference:** Official pinned starter retained; previously inventoried 110 seed trajectories, 98 final figures, 19 input CSV files and 110 human labels. Figures and labels are not all equivalent to successful generated chart runs; the human labels must not enter model prediction prompts.
+
+For exact restart commands and a chronological map of Sessions 001–010, see **Pause / resume checkpoint** above. Historical entries below intentionally retain their original point-in-time conclusions.
 
 ## How information flows through the code
 
@@ -1099,7 +1138,16 @@ git status --short --branch
 - New `docs/Session-010-Supply-Chain.md` records full registry digests, architecture, version, source lockfile and unverified prerequisites. README and `docs/Session-010-Controller-Design.md` were updated.
 - **Important:** The Dockerfile still uses four direct version pins with regular pip (without `--require-hashes`), and the minimal build context does not include the new requirements file. The default gateway image also remains the floating non-chart-capable transport-test image. **No image recipe, build context, sandbox runtime, or agent execution path was silently modified.**
 
-**Next:** User pulls the latest feature commits and runs `uv run python scripts/check_chart_wheel_lock_offline.py` with `git status --short --branch`. Expected audit: 14 packages (4 direct, 10 transitive); **do not claim pass until actual output confirms it**. After audit verification, review a narrow integration of the hashed requirements into the Dockerfile and build context, then separately seek authorization for any real Docker image build or model API call.
+**Wheel hash audit verified and session paused (2026-11-07 America/Vancouver, user Codespace transcript):**
+
+- User fast-forwarded `feature/session-010-chart-agent-controller` from `79b63b3` to `b3983cc`. Git showed clean tracking status `## feature/session-010-chart-agent-controller...origin/feature/session-010-chart-agent-controller` before this documentation update.
+- `uv run python scripts/check_chart_wheel_lock_offline.py` printed **`Chart wheel lock audit: 14 fully hashed package(s), CPython 3.12 / linux/amd64 (manylinux)`** and **`Direct roots: 4; transitive: 10`**, listed each package and expected wheel, and ended in `PASS: requirements match the committed uv.lock metadata; no network/download/install.`
+- Audit checks **metadata consistency only**. The output explicitly states `NOT VERIFIED: actual package download, wheel integrity, pip resolution or Docker build.` No Docker image was pulled/built/launched; no model request was sent. The earlier 77/77 offline tests remain the latest verified controller/image/build-context suite results, not rerun in this audit-only command.
+- The working tree was clean and synchronized. The user elected to **stop here and continue another time**.
+
+**Decision and next session:** Preserve the current feature branch unmerged; update README/supply-chain report and this journal as a handoff. Next implement a **strict hashed-requirements Dockerfile + minimal context integration**, with offline tests/CI and no Docker or billable calls. Do not move to a real container pull/build/smoke test until the user independently authorizes it. On return, read the **Pause / resume checkpoint** near the top of this document and start with `git pull --ff-only`.
+
+
 
 ### Template for future sessions
 
