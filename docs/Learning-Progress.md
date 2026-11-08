@@ -102,6 +102,12 @@ See the detailed session history below for exact experiments, commands, model ID
 - **Limits:** zero CSVs accepted in the tested offline contracts, but no image pull/build/launch, real chart render, agent-operated shell, API call, model accuracy evaluation or MCC. Session 011 does not relax the separate approval gates.
 - **Next:** draft Session 011 PR against `main`, review the diff and CI, then decide on merging or preparing a separately authorized real pinned-image plotting smoke test. Do not merge automatically.
 
+### Session 011 — 2026-11-08 UTC — draft PR #11 created for review
+
+- Opened [draft PR #11](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/11), **Session 011: Support zero-input chart tasks in offline runtime**, targeting `main` from `feature/session-011-chart-runtime`. GitHub marked the PR mergeable after calculation. The initial diff is **10 files**, containing the four narrow infrastructure changes, four offline regression test files, README and this learning journal.
+- The PR documents the user-verified **178/178 Codespaces offline tests**, dataset and four-role preflights, and separate 14-package metadata audit. Its PR-triggered workflow run [42457258427](https://github.com/xqzr2000/cmu-11-768-assignment-2/actions/runs/42457258427) began on commit `f00566a`; **its final CI result was not available when this journal entry was written**. Confirm the latest PR-head CI status before merging.
+- **No merge performed.** Continue on the active branch until the source diff and CI are reviewed. No real Docker/image operation, unattended agent command or model request has been approved or performed.
+
 ## How to use this journal
 
 1. Start with **What we are building**, then **How information flows**.
