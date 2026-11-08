@@ -1,6 +1,6 @@
 # Session 010 — Bounded chart-agent controller (offline-first)
 
-**Status (2026-11-07 America/Vancouver):** The pure controller test suite passed **11/11**, and the permission-gated fake-Docker gateway passed **14/14** in Codespaces (25/25 Session 010 tests so far); existing provider **37/37** and validator **49/49** regressions passed previously. A third **pure artifact-boundary** slice and **16 additional offline tests** are now committed but unverified. No live model, real Docker container, chart generation, sandbox command or new judge request has been performed in this session.
+**Status (2026-11-07 America/Vancouver):** Controller **11/11**, fake-Docker gateway **14/14**, and task CSV/PNG validation **16/16** tests passed in Codespaces (**41/41 Session 010 tests**); earlier provider **37/37** and validator **49/49** regressions also passed. A fourth **offline-only staging/extraction transfer-plan slice with 12 new tests** is now committed, but those new tests have **not yet been verified in Codespaces**. No live model request, actual Docker build/container, or model-proposed command execution has occurred in Session 010.
 
 ## Why a controller is necessary
 
@@ -139,7 +139,7 @@ git status --short --branch
 
 **Verified:** User pulled through commit `353fcad`; the guarded runners discovered **11 controller tests** and **14 gateway tests**, with **25/25 passing**, and final Git status was clean. All gateway operations used fake Docker; none started a real container.
 
-## Third offline slice — task CSV and PNG artifact boundary (pending tests)
+## Third offline slice — task CSV and PNG artifact boundary (verified)
 
 New `integrations/task_artifacts.py` implements **pure host-side validation and immutable in-memory snapshots**, not a Docker file-transfer mechanism:
 
@@ -148,9 +148,9 @@ New `integrations/task_artifacts.py` implements **pure host-side validation and 
 3. `decode_figure_envelope(json_text)` accepts only the fixed `figure.png` transport format: `{"path":"figure.png","encoding":"base64","size_bytes":...,"sha256":...,"data_base64":"..."}`. It rejects extra fields, alternate or traversal paths, invalid sizes, noncanonical base64, digest mismatch, corrupt PNGs and oversized text. **This is a future trusted extraction-helper output format, not permission to accept raw model text as a file.**
 4. The future transfer layer must create a reviewed, chart-capable **digest-pinned image**, materialize the already-vetted byte snapshots without secrets/host mounts, verify the copies, and extract one bounded figure through a supported and separately approved sandbox mechanism. The pinned DockerImage public API has `add_local_file(..., "/opt/assignment/inputs/<name>")` for **build-time file staging**, but it may start Docker builds and is **not called** by this slice. The gateway's normal 2,048-character command-output cap is **not** an appropriate PNG extraction channel; a separate size-aware transport is required.
 
-New `tests/test_task_artifacts_offline.py` defines **16** synthetic, temporary-file tests for accepted CSV snapshots, ASCII/UTF-8 and file limits, symlink and descriptor size rejection, safe manifests, valid PNGs, invalid formats, truncated/oversized/pixel-bomb/trailing-payload PNGs, and strict base64-envelope checks. The new `scripts/check_task_artifacts_offline.py` fails when no tests are discovered. GitHub Actions now runs that guarded suite. **No actual Codespace pass is claimed yet for these 15 tests.**
+New `tests/test_task_artifacts_offline.py` defines **16** synthetic, temporary-file tests for accepted CSV snapshots, ASCII/UTF-8 and file limits, symlink and descriptor size rejection, safe manifests, valid PNGs, invalid formats, truncated/oversized/pixel-bomb/trailing-payload PNGs, and strict base64-envelope checks. The new `scripts/check_task_artifacts_offline.py` fails when no tests are discovered. GitHub Actions runs that guarded suite. The user verified **16/16 passed** in Codespaces at commit `cf78030`, with a clean worktree.
 
-**Next offline verification (zero API requests and zero Docker launches):**
+**Verified Codespace command sequence (zero API requests and zero Docker launches):**
 
 ```bash
 cd /workspaces/cmu-11-768-assignment-2
@@ -161,10 +161,38 @@ uv run python scripts/check_sandbox_gateway_offline.py
 git status --short --branch
 ```
 
-Expected **16 newly discovered artifact tests**, and **41 total Session 010 tests** if all pass. Fix any actual test failures before adding real transfer operations.
+**Observed:** 16 artifact, 11 controller and 14 gateway tests all passed (**41/41**); the final Git worktree was clean and synchronized.
+
+## Fourth offline slice — private CSV staging and a fixed PNG extraction protocol (tests pending)
+
+**Goal:** Prepare bounded, reviewable file transport without using a Docker engine, provider SDK, network or unattended tool loop.
+
+- `integrations/chart_transfer.py` defines `stage_input_snapshots(snapshot)`, a context manager that **revalidates already-snapshotted bytes and SHA-256 checksums before writing** private, short-lived host files. It rejects malformed task IDs, unsafe/duplicate CSV filenames, invalid UTF-8, NUL bytes, mismatched digests and excess file counts/bytes. It stages one `0600` CSV under a private `0700` temporary input directory per accepted asset, verifies the written digest, and removes the entire staging directory on context exit. `InputStagingPlan` returns intended `/opt/assignment/inputs/<name>` container destinations and trusted host staging paths for a *future authorized image build*; its printable manifest omits temporary host paths and data. The staging function **writes temporary host files** but does not build images or copy data into containers.
+- `scripts/figure_extract_worker.py` is a **fixed, standard-library-only trusted helper** intended for eventual review and inclusion in the chart image at `/opt/assignment/extract_figure.py`. At production entry its path is fixed to `/workspace/figure.png`; no user/model-provided CLI arguments are accepted. It opens without following final-component symlinks (where supported), requires a regular file, checks the maximum **2 MiB** size before and after a bounded read, confirms the PNG signature, and emits the canonical fixed-field JSON/base64 envelope. It is **not a chart generator**, does not fully validate PNG pixels inside the image, and is **not yet executed inside Docker**.
+- `preview_figure_extraction()` is inert protocol metadata: fixed `["python", "/opt/assignment/extract_figure.py"]` argv, `shell=False`, fixed `/workspace/figure.png` path, and an explicit **separate approval requirement**. The previously verified `decode_figure_envelope` and `validate_figure_png` validate checksum, byte length, PNG structure and pixels **after** trusted extraction output is delivered to the host.
+- **Key integration gap:** the current `SandboxGateway.execute_approved` truncates command output to 2,048 characters, which cannot transfer a valid 2 MiB image. No special trusted-extraction execution path has been added. The future host must design a separate bounded-output transport, explicit approval gate and suitable container image. Nothing in these modules calls the actual pinned `DockerImage.add_local_file` or `Sandbox.execute`.
+- The current gateway uses the floating transport-test image `python:3.12-slim`, **not** a digest-pinned image with Matplotlib/Pandas or a writable workspace guarantee. The image selection, build reproducibility and native host-to-Docker staging/extraction remain **unverified**.
+
+New `tests/test_chart_transfer_offline.py` contains **12** pure/offline tests using only temporary synthetic CSV and PNG bytes: private file modes and cleanup, strict source bytes/digest, hostile/malformed snapshot rejections, uniqueness and size bounds, static extraction metadata, successful fixed envelope round-trip, missing/invalid/oversized/symlinked output, CLI argument rejection, and full host PNG decoding. The tests call the helper's local read function with temporary paths only; they do **not** start a container.
+
+New `scripts/check_chart_transfer_offline.py` fails on zero discovered tests, and the offline CI workflow now invokes it.
+
+**Codespace verification (still pending):**
+
+```bash
+cd /workspaces/cmu-11-768-assignment-2
+git pull --ff-only
+uv run python scripts/check_chart_transfer_offline.py
+uv run python scripts/check_task_artifacts_offline.py
+uv run python scripts/check_controller_offline.py
+uv run python scripts/check_sandbox_gateway_offline.py
+git status --short --branch
+```
+
+Expected: **12 new transfer tests**; if these and all prior suites pass, **53/53 Session 010 tests**. Do not claim this pass until Codespace/CI evidence is available.
 
 ## Next decisions before any live chart generation
 
-First **verify the new 15-task-artifact tests** and fix any failures. Then design a reviewed task-local Docker image, safe data injection (no secret or host mounts), and size-limited PNG extraction using only supported pinned runtime interfaces. A separate human confirmation is required before any real Docker launch, and a fresh explicit model-specific approval is required **for every potentially billed model turn**. The bounded controller and gateway must not be wired to unattended live execution.
+First **verify the 12 new transfer-plan tests** and fix any failures. Then decide how to build a reviewed **digest-pinned chart-capable** Docker image and a separately authorized, size-aware fixed-helper extraction operation; validate image staging from checksum-verified temporary files without passing host mounts or secrets. A separate human confirmation is required before any real Docker launch, and a fresh explicit model-specific approval is required **for every potentially billed model turn**. The bounded controller and gateway must not be wired to unattended live execution.
 
 **Non-goals for this slice:** model-quality comparisons, MCC, human-label prediction, a live Terra judgment, course-equivalent results, automatic API retries, and unsupervised multi-turn execution.
