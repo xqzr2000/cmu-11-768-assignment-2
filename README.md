@@ -174,6 +174,12 @@ See [Session 010 supply-chain provenance](docs/Session-010-Supply-Chain.md) for 
 
 **Session 010 finished:** PR #10 [merged](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/10), CI passed, and the user cleaned the old local/remote branch. See [Learning Progress](docs/Learning-Progress.md) for the completed milestone and the active Session 011 handoff.
 
+## Session 012 — Offline chart image and plotting smoke-test preflight (active)
+
+On `feature/session-012-docker-smoke-preflight`, the user verified the existing image recipe **13/13**, private context **19/19** offline tests and the separate **14/14** wheel metadata audit in Codespaces; Git stayed clean. The latest change adds `scripts/preview_chart_smoke_offline.py`, a **zero-Docker/no-model** JSON review of the fixed Dockerfile and short-lived private contexts for synthetic zero-CSV and one-CSV tasks. It has **seven new offline tests** in `tests/test_chart_smoke_preview_offline.py`, a guarded test script and CI wiring. **The new preview and its tests have not yet been verified in Codespaces.**
+
+See [Session 012 smoke-test preflight and approval gates](docs/Session-012-Docker-Smoke-Preflight.md). The previously observed Python AMD64 manifest is only a review candidate. No real image pull/build/launch, wheel installation, PNG from Docker or model API call is authorized. The preview prints metadata and inert Dockerfile text, *not* an execution-ready Docker build context. The next step is running `uv run python scripts/check_chart_smoke_preview_offline.py` and `uv run python scripts/preview_chart_smoke_offline.py` before drafting a PR.
+
 ## Session 011 — Empty-input chart runtime support (full offline regression passed)
 
 The official authored-task schema already accepts `inputs=[]` or an omitted input list, but our Session 010 snapshotter, transfer staging and private context previously required one CSV, and the inert Dockerfile's glob-based chmod would fail if the directory were empty. On `feature/session-011-chart-runtime` we now allow **0–8** CSV files while retaining file safety checks, a strictly allowlisted build context, the pinned plotting requirements file, and a fixed empty-file-safe `find ... -exec chmod` step. No tasks automatically enter Docker or a model API.
