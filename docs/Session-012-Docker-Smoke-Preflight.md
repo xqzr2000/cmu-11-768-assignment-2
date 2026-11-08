@@ -31,7 +31,7 @@ An earlier metadata-only registry inspection recorded the `linux/amd64` Python m
 5. Review a later trusted plotting script with hard-coded synthetic numeric values and a bounded PNG export to `/workspace/figure.png`. No model-proposed shell commands and no user secrets; if using CSV, read only the vetted `/opt/assignment/inputs/` location. Ensure the run uses constrained CPU/memory/time and non-root permissions.
 6. Define pass/fail evidence before execution: actual Docker exit code, package import/version checks, PNG created, output size/pixels and figure envelope verified, cleanup, and no unreviewed network or extra commands.
 
-**Current Stage A status:** In Codespaces, the user verified the 14-package wheel **metadata** audit (**PASS**), Dockerfile recipe **13/13**, private build context **19/19**, and subsequent synthetic zero/one-CSV preview **7/7** (**39/39 focused unit tests across two runs**). The JSON preview completed at branch commit `b0e617f` with a clean worktree; **no Docker or model operations occurred**. A post-change full regression and PR CI remain pending.
+**Current Stage A status:** User verified the wheel-lock **metadata** audit (**14/14**), Dockerfile recipe **13/13**, private build context **19/19**, and synthetic zero/one-CSV preview **7/7** in Codespaces. The subsequent **complete 185/185 offline regression passed** at feature commit `c677bca`, alongside dataset preflight and the four-role zero-network provider preview. Working tree was clean and synchronized. **No Docker or model operations occurred; draft PR/CI review is next.**
 
 ### Preview entry point: safe metadata, real private host staging, zero container execution
 
@@ -76,6 +76,14 @@ The JSON records `docker_builds=0`, `docker_launches=0`, `network_requests=0`, `
 
 **Next offline acceptance gate:** run the full current regression (expected **185 tests**, including these seven new preview tests), dataset preflight and zero-network provider preview, and review draft PR/CI before any merge. Stage B is **not authorized**. The Stage B command template is reference text only, not a runnable instruction for this checkpoint.
 
+### Complete offline regression — verified 2026-11-08 UTC
+
+On `feature/session-012-docker-smoke-preflight` at `c677bca`, the user ran all seven guarded infrastructure suites: controller **11/11**, fake-Docker gateway **14/14**, task artifacts **17/17**, transfer **13/13**, recipe **13/13**, build context **19/19**, and smoke preview **7/7**. Together **94/94** chart infrastructure tests passed. Provider **37/37**, validator **49/49**, and structural **5/5** also passed — **185/185 total**.
+
+The separate wheel metadata audit passed for **14** packages (4 direct + 10 transitive) with no package downloads or installation. Dataset preflight passed (110 runs, 98 figures, 110 labeled, 16 acceptable); four-role provider preview reported `network_requests: 0`. Git was clean and synchronized. The CLI usage diagnostic in the vision negative-consent test was expected; the enclosing test was `ok`.
+
+**Acceptance boundary:** this completes offline Stage A unit/preflight verification, **not** a production-image or plotting smoke test. We still have not verified a trusted base-image manifest and downloaded wheel archives, resource/time-bounded Docker build and container run, or the PNG extraction channel. No Docker pull/build/launch or model API request is authorized.
+
 ## Stage B — Separately approved real environment smoke test (NOT AUTHORIZED)
 
 **Do not start Stage B without a fresh, explicit user approval for the exact reviewed build/pull and smoke-run commands.** The approval should identify: immutable base digest and platform, image tag, Dockerfile/context, network policy during build, max resources/time, whether image pull/wheel download is permitted, test script and expected files, and cleanup.
@@ -101,4 +109,4 @@ uv run python scripts/check_chart_build_context_offline.py
 git status --short --branch
 ```
 
-The new guarded preview tests and JSON manifest have **passed** in Codespaces. **Next:** full offline regression (expected 185 tests), dataset and provider preflights, then draft PR/CI review. Stage B remains blocked until the control and approval gaps above are resolved and a fresh, explicit authorization is given. Do not claim any actual chart image results.
+The full offline regression has **passed (185/185 tests)**, including the new guarded preview tests; dataset and provider preflights passed as well. **Next:** draft PR and current-head GitHub Actions review. Stage B remains blocked until the control and approval gaps above are resolved and a fresh, explicit authorization is given. Do not claim any actual chart image results.
