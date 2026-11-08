@@ -31,5 +31,7 @@ jobs:
         run: uv run python scripts/check_controller_offline.py
       - name: Test sandbox gateway with fake Docker and no network calls
         run: uv run python scripts/check_sandbox_gateway_offline.py
+      - name: Test bounded task CSV snapshots and PNG decoding offline
+        run: uv run python scripts/check_task_artifacts_offline.py
       - name: Preview provider registry without network calls
         run: uv run python scripts/provider_preflight.py
