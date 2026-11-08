@@ -1,9 +1,9 @@
 # CMU 11-768 Assignment 2 — What We Are Building and What We Have Learned
 
-**A beginner-friendly guide to our project, as of November 7, 2026**  
+**A beginner-friendly guide to our project, updated after Sessions 008–010 on November 7, 2026**  
 **Repository:** [cmu-11-768-assignment-2](https://github.com/xqzr2000/cmu-11-768-assignment-2)  
-**Current work:** `feature/session-007-wrong-chart-precision` (unmerged at this checkpoint)  
-**Sources:** the repository's `ASSIGNMENT.md`, `README.md`, `docs/ARCHITECTURE.md`, `docs/PHASE-0.md`, `docs/Learning-Progress.md`, `workflow/generate.py`, `workflow/evaluate.py`, and our recorded Codespace experiments.
+**Current work:** `feature/session-010-chart-agent-controller` (unmerged; paused after offline wheel-lock audit). Session 007's prompt experiment is preserved in `archive/session-007-20261107`.  
+**Sources:** repository `ASSIGNMENT.md`, `README.md`, `docs/Learning-Progress.md`, the Session 008–010 design and compatibility reports, `integrations/models.py`, `validator/`, `workflow/`, and verified Codespaces checkpoints.
 
 > **The central idea:** We are learning to **evaluate an AI agent**, not mainly to teach AI to draw charts. A chart-making agent tries to finish a user's visualization task. Our validator checks whether its resulting figure and its recorded actions satisfy the task. Human judgments let us measure whether the validator is trustworthy.
 
@@ -45,7 +45,7 @@ A **model** is the underlying language/vision system; an **agent** is a model op
 
 The course requires **at least five new visualization tasks**, each run once by **all three agents**: a minimum of **5 × 3 = 15 new runs**, each to be human-reviewed. We **have not yet generated those 15 new runs** in our independent environment. The existing 110 seed runs were supplied in the starter; they are not runs we generated during Sessions 001–007.
 
-### A simple picture of the workflow
+### Official assignment workflow (not our current experimental model deployment)
 
 ```text
                  USER'S VISUALIZATION REQUEST
@@ -77,50 +77,68 @@ The course requires **at least five new visualization tasks**, each run once by 
 
 The figure-generating agents are **the systems being tested**. The validator is **the system we are trying to improve**. The human labels are a **reference for evaluating the validator**, not instructions we give the validator.
 
-## 3. Why Qwen, Z.ai, and OpenAI? Did we change the assignment's model?
+**Important as of Session 010:** This diagram names the *official* models. Our current independent API-backed roles differ; see Section 3. We have not yet generated the 15 required new agent runs in either setup.
 
-**No: we have not replaced the official Qwen validator.** The three names show up in our story for different reasons.
+## 3. Why did we change model selection? The APIs we can actually use
 
-### Qwen: the required official judge and one generator
+**Short answer:** The official assignment specifies models normally deployed through Modal. We are doing an **independent, non-credit adaptation** in GitHub Codespaces. We have working credentials and accessible hosted APIs for **DeepSeek, OpenAI, and Z.ai**, but we have not deployed the required Qwen/Ministral models and Qwen3-VL judge ourselves. Therefore we chose API-accessible models to learn how to build and evaluate the *same type of chart-making agent system* without pretending these are identical models or an official course submission.
 
-The assignment **fixes** the validator's vision-language model to `Qwen3-VL-30B-A3B-Instruct-FP8`. Its fixed identity matters because students should improve the *evaluation design and logic*, not get a better score simply by swapping in a more powerful model. Official grading uses that same model family/checkpoint.
+**The API constraint is a practical implementation reason, not a scientific reason to prefer these models.** We must distinguish what we can execute from what the course requires. An API connection that works does not guarantee equal chart quality, reasoning, vision performance, cost, or official grading comparability.
 
-A different Qwen model, **Qwen2.5-Coder-3B**, is one of the three fixed **chart generators**. Those two Qwen models have different roles and must not be confused.
+### Original course models versus our current API-backed choices
 
-The course's normal setup uses **Modal** to host these models. Our independent project intentionally has not deployed the official validator this way, so **we do not have official Qwen baseline scores or macro-MCC yet**.
+| Role | Official required model (in `ASSIGNMENT.md`) | Our independent API choice (in `integrations/models.py`) | Provider / protocol |
+| --- | --- | --- | --- |
+| Chart agent A | `Qwen/Qwen2.5-Coder-3B-Instruct` | `deepseek-flash` | DeepSeek / stateless Responses |
+| Chart agent B | `mistralai/Ministral-3-14B-Instruct-2512` | `gpt-5.6-luna` | OpenAI / Responses |
+| Chart agent C | `zai-org/GLM-4.7-Flash` | `glm-5.3-flash` | Z.ai / Chat Completions |
+| Chart-error validator | `Qwen/Qwen3-VL-30B-A3B-Instruct-FP8` (fixed; no replacement permitted for official grading) | `gpt-6.1-terra` (**experimental judge only**) | OpenAI / Responses, image input, strict JSON |
 
-### Z.ai: an accessible provider for independent experiments
+The **original models and Modal scripts are still in the repository**. The new role registry and adapters are under `integrations/`; `workflow/generate.py` still represents the original Modal generation route, and `validator/solution.py` has not been converted into a Terra-powered official validator. Calling the Terra adapter an *experimental judge* is deliberate: a Terra result is **not** a Qwen3-VL validator result.
 
-We had previously explored a Z.ai-hosted **GLM-4.7-Flash text model** in Assignment 1. In Assignment 2, we also tried **`glm-4.6v-flash`**, a *different* GLM model with image-understanding capability, as an **optional experimental judge**.
+The direct-provider IDs are request names, not proof of immutable model weights. In particular, `deepseek-flash` is a moving alias; record both the requested and provider-reported ID (and date) rather than asserting an exact underlying checkpoint. Similarly, the hosted `glm-5.3-flash` endpoint is not a verified checkpoint-equivalent replacement for the course's `zai-org/GLM-4.7-Flash`.
 
-We chose that route because it provided an OpenAI-compatible API for exploring multimodal evaluation from Codespaces without first standing up the official large Qwen vision model on Modal. Its advertised pricing/free access made it an attractive experiment, but API availability, rate limits, and model output behavior are separate concerns. **Z.ai was not a course requirement for judging.**
+### How we arrived at these choices (Sessions 004–009)
 
-We verified one small synthetic vision probe: it could inspect a generated bar chart. But the later full seed-004 evaluation did **not** produce a complete usable result. In subsequent diagnostics, the provider response/format and output-budget behavior did not satisfy our strict YES/NO pipeline. That is a **failed experimental integration**, not proof that the model is generally bad at reading charts.
+1. **Official starting point:** The course gives us three named chart agents and the fixed Qwen3-VL judge. Its expected deployment uses Modal. We retained the starter and began with offline dataset and validator work.
+2. **Early Z.ai vision exploration:** `glm-4.6v-flash` could inspect a small synthetic bar chart, but a real-seed pilot did not produce a reliable strict YES/NO result. This was an *experimental judge*, never the official generator GLM.
+3. **Early OpenAI vision exploration:** We used `gpt-5.4-mini` for separately controlled, structured per-error-family questions on seeds 004 and 008. These tests taught us about false positives and false negatives, not official Qwen accuracy.
+4. **Session 008 provider migration:** We added an explicit four-role registry and provider-specific request builders because we have practical API access to DeepSeek, OpenAI and Z.ai. Three adapters can describe a `run_shell` tool request; Terra has a separate image-and-JSON judging adapter. None of these adapters automatically executes proposed commands.
+5. **Session 009 live compatibility tests:** The user separately authorized **one** live probe for each current model role. `deepseek-flash`, `gpt-5.6-luna`, and `glm-5.3-flash` each returned a parsable *inert* function call. `gpt-6.1-terra` returned schema-valid structured JSON for a **synthetic** chart image. The earlier attempt to use a free `glm-4.7-flash` endpoint instead failed with `RateLimitError` and no retry. We moved to paid `glm-5.3-flash` for the experimental Agent C; the exact cause of the earlier rate limit is unknown.
 
-**Important name difference:** `zai-org/GLM-4.7-Flash` is the course's third **generator** model; `glm-4.6v-flash` was our separate **experimental vision judge**. Their roles and versions differ.
+**What the four successes prove:** the requested hosted APIs accepted these particular requests and our adapters understood their tool-call or structured-output formats.
 
-### OpenAI: a more controllable experimental vision judge
+**What they do *not* prove:** that any agent can write, run and save a correct chart; that Terra correctly diagnoses real failures; that a full multi-turn workflow works; or that a score from these model substitutions can be compared directly with official Qwen/Ministral/GLM grading.
 
-After the Z.ai pilot's real-seed reliability problems, we added an isolated OpenAI API pilot using **`gpt-5.4-mini`**. We did this to test multimodal judging with **strict structured JSON output** such as:
+### Why the provider differences matter
 
-```json
-{
-  "has_error": true,
-  "evidence": "The chart omits a required source category."
-}
-```
+The same agent-controller idea must work across *different message formats*. DeepSeek requires stateless Responses history replay; OpenAI uses Responses items and function-call outputs; Z.ai uses Chat Completions messages and tool replies. We added normalization so the rest of our program sees a consistent representation of a model's **proposed** tool call.
 
-That is easier to validate consistently than trying to interpret a free-form reply beginning with “YES” or “NO.” The pilot also supports **one deliberately authorized request at a time**, disabled automatic retries, offline previews, and **human-label comparison only after the answer has been saved**.
+A model **proposing** `run_shell` is not permission to run it. The controller and Docker gateway enforce bounded turns, tools, command sizes and result sizes; a host must still request **separate explicit authorization** before each potentially billed model request, sandbox launch and command execution. No old API-test permission carries over into Session 010.
 
-We changed **the model used in our research pilot**, **not** the model used for the official assignment submission. Results from GPT-5.4 Mini are informative for our learning, but **must not be presented as Qwen3-VL scores**. A ChatGPT subscription and OpenAI API billing are also separate things.
+### What has actually been built around the new models (Session 010)
 
-### What is our current infrastructure?
+The new local architecture is still **offline-first and incomplete**:
 
-- **GitHub Codespaces**: editor, terminal, Python environment, Git and tests.
-- **`uv`**: Python dependencies and commands.
-- **Pinned Assignment 1 Docker sandbox dependency**: retained in our project for future local agent execution, **not yet wired into** the official generation workflow.
-- **Existing `workflow/generate.py`**: still uses Modal; our local generation replacement is unfinished.
-- **Model API pilots**: Z.ai and OpenAI experimentation only; both separate from the fixed official Qwen validator.
+- `integrations/chart_controller.py` implements an in-memory controller with provider-specific conversation replay and budgets; it makes no API calls and runs no tools.
+- `integrations/sandbox_gateway.py` is a separately gated interface to our **pinned Assignment 1 Docker sandbox**. It rejects unapproved launches/commands, limits resources, does not forward model API keys, and requests a fingerprint-based check of exact commands. The tests use fake Docker.
+- `integrations/task_artifacts.py`, `integrations/chart_transfer.py` and `scripts/figure_extract_worker.py` validate task CSVs, stage controlled inputs, and define a strict bounded PNG extraction format. These are not yet wired into a live chart loop.
+- `integrations/chart_image_recipe.py` and `integrations/chart_build_context.py` generate an **inert** non-root Dockerfile recipe and a tightly limited private build context; they have not built an image.
+- `requirements/chart-cp312-linux-amd64.txt` pins **14** plotting dependencies (4 direct, 10 transitive) to selected wheel hashes derived from `uv.lock`. The independent offline audit **passed** in Codespaces. **However, the Dockerfile and build context do not consume that hash file yet**, and no wheels have been downloaded or installed. A registry-inspected `python:3.12-slim` AMD64 manifest is only a *candidate image pin*, not a built or trusted environment.
+
+**Current verified boundary:** Session 010's six offline suites passed **77/77** tests; the earlier provider **37/37** and validator **49/49** regressions also passed. The later 14-wheel hash audit separately passed. None of this constitutes an end-to-end agent run, model-accuracy benchmark, real Docker build, or official reproduction.
+
+### The rule that keeps our experiment scientifically honest
+
+We must maintain **two clearly labeled tracks**:
+
+| Track | What we can conclude |
+| --- | --- |
+| **Independent API-based learning track** | We can study orchestration, trajectory collection, visual error definitions, human labeling, confusion matrices, MCC, and failure analysis using our API-backed agents and Terra. Every result must identify actual provider, requested/reported model, task set, prompt, rubric, date, and runtime. |
+| **Strict course-equivalent track** | Only the prescribed three generation models and fixed Qwen3-VL judge, under the required assignment interfaces and evaluation conditions, can support a claim of following the official model constraints. Completing our API-based experiment **does not** automatically satisfy those requirements. |
+
+The assignment's **intellectual goal remains unchanged:** build a validator that detects genuine errors in agent-generated visualizations, measure where it fails against independent human labels, create harder tests, and improve the evaluator. **The model substitutions change the experimental population and judge; they must not be hidden or described as a drop-in official solution.**
+
 
 ## 4. Is the assignment simply “one agent draws, another checks against human-labelled plots”?
 
@@ -307,86 +325,124 @@ This discarded **80 rows** (8%) with `orange` as the source. The displayed left-
 
 **What we learned:** A model may claim that requested axes are correct even when the trajectory's code demonstrates otherwise. We need to check **specific requirements** rather than trust a fluent summary.
 
-## 8. Our project progress so far: Sessions 001–007
+## 8. Our project progress so far: Sessions 001–010
 
-| Session | What we did | Outcome / status |
+The earlier sections' seed examples and confusion-matrix lesson remain valid **historical development examples**. This section updates the *current project state* instead of erasing those observations.
+
+| Session | Work performed | Verified result / important limit |
 | --- | --- | --- |
-| **001 — Repo setup and study guide** | Imported the pinned full official starter, retained the published artifacts and labels, set up the independent repository and documented our plan. | Foundation established. |
-| **002 — Offline dataset inspection** | Mapped the released runs, plots, CSVs and human labels; inspected selected cases and built dataset preflight checks. | 110 runs / 98 figures / 110 labels verified. |
-| **003 — Validator wiring** | Created structural PNG validation and integrated baseline semantic questions with mock testing. | Offline tests exercised the interface; no real Qwen accuracy measurement. |
-| **004 — First vision experiment** | Built and verified a bounded synthetic-image probe using Z.ai `glm-4.6v-flash`. | Simple image understanding worked; not a full seed evaluation. |
-| **005 — Real-seed pilot** | Tried Z.ai on a real seed, encountered response/budget problems, then added a strict OpenAI structured-output pilot. | OpenAI seed 004: `wrong_data` TP, `wrong_chart` TP, `hard_to_read` TN. Explanations were not uniformly good. |
-| **006 — Controlled seed 008** | Independently checked the CSV and plotted figure, then evaluated three families with GPT-5.4 Mini. | `wrong_data` TP, `hard_to_read` TP, `wrong_chart` **FP**. Documented why the chart-design accusation was unjustified. PR #7 merged. |
-| **007 — Prompt precision experiment** | Added optional versioned `wrong_chart` rubric v2, independent result filenames and six new mock tests. Re-evaluated two known cases. | **v2:** seed 008 changed FP→TN, **but seed 004 changed TP→FN**. Regression documented; branch remains unmerged. |
+| **001 — Repo setup** | Imported the full starter, pinned Assignment 1 sandbox dependency, documented the independent workflow. | Official starter retained. |
+| **002 — Seed inspection** | Inspected released artifacts, figures, inputs and human labels. | 110 released runs / 98 figures / 110 labels verified. |
+| **003 — Validator plumbing** | Added structural figure checks and mock-tested the baseline interface. | Offline wiring, not model accuracy. |
+| **004 — Z.ai vision probe** | Tested `glm-4.6v-flash` on a synthetic figure. | Limited image-understanding smoke test. |
+| **005 — Real-seed pilots** | Diagnosed Z.ai response/budget mismatch; introduced `gpt-5.4-mini` structured pilot. | Selected family-level judgments only. |
+| **006 — Seed 008** | Inspected actual CSV/figure and performed three-family OpenAI pilot. | Found `wrong_chart` false positive alongside correct detections. |
+| **007 — Chart-design rubric** | Tested versioned `wrong_chart` prompt v2 against seeds 004 and 008. | 008 FP→TN **but** 004 TP→FN; experiment archived, not universal improvement. |
+| **008 — API model migration** | Added DeepSeek/OpenAI/Z.ai adapters, immutable four-role registry, normalizers and Terra judge parser. | Mocked provider integration merged via PR #8; no agent chart run. |
+| **009 — API compatibility** | Ran separately authorized one-call checks for three generators and Terra, including a documented GLM rate-limit failure and later paid GLM replacement. | Four current roles successfully parsed a tool call / synthetic-image JSON; no shell execution or MCC. Merged via PR #9. |
+| **010 — Chart controller and environment** | Built pure controller, gated fake-Docker gateway, CSV/PNG guards, extractor protocol, inert Docker image/context planning, and chart-only wheel hash audit. | **77/77** Session 010 offline tests, **14/14** wheel hashes audited; **no** real build, launch, model-agent loop or generated chart. Feature branch **not merged**. |
 
-### Verified engineering checkpoint
+### What we can and cannot claim at this checkpoint
 
-As of the last Codespace checks on November 7:
+**Verified:** The seed inventory and selected human-versus-model examples; the four current model API/schema handshakes; robust offline unit checks for the prospective controller, sandbox boundary, artifact protocols, and locked dependency *metadata*. The most recent documented Codespace checkpoint has a clean `feature/session-010-chart-agent-controller` working tree and successful hash audit.
 
-- **55 validator offline tests passed**, including the six new versioned-prompt tests.
-- **5 dataset/infrastructure offline tests passed**.
-- **Dataset preflight passed**: 110 released runs, 98 figures, 110 labels.
-- The Session 007 branch was clean and synchronized after documentation commit **`28e30e1`**.
-- The new **v2 prompt is only an experiment**; the official `validator/solution.py` and `validator/baseline.py` have **not** been updated to use it.
-- The pilot prediction JSON files live in the **ignored local `output/` directory**. They are not necessarily on GitHub; preserve the Codespace or back them up safely before deleting it.
+**Not verified or completed:** downloading the hashed wheels; installing packages inside a chart image; pulling/building/running that image; full multi-turn chart creation by any of the three replacement agents; real Terra judgments across labeled runs; official Qwen3-VL predictions or an official macro-MCC; five original tasks with 15 human-reviewed runs; completed Harbor packages/mutants; or a final graded submission.
 
-### What we can and cannot claim
+Our initial `gpt-5.4-mini` seed pilots are **not** evidence of Terra's performance. Session 009's Terra **schema** success is **not** evidence of Terra's classification accuracy. Offline unit-test totals and the 14-package audit are engineering checks, **not** MCC scores.
 
-**We can claim:** We loaded and checked the public dataset, exercised our validator plumbing offline, made controlled real-image model calls, identified both correct diagnoses and evaluator mistakes, and recorded an instructive **FP-versus-FN tradeoff**.
+## 9. How do we finish without losing the purpose of Assignment 2?
 
-**We cannot claim:** That our official Qwen3-VL validator is accurate, that we have completed the full seed baseline sweep, that v2 is an improvement in general, that we have generated the 15 new agent runs, or that our self-authored Harbor tasks and mutants have passed evaluation. Those milestones remain to be done.
+We can keep studying the assignment's actual *evaluation methodology* with the APIs we have, **provided we preserve honest provenance and keep the official requirements visible**. The following order keeps implementation and evaluation logically separate.
 
-## 9. What comes next?
+### Step 1 — Finish a reproducible, safe chart environment (next offline task)
 
-**First: improve the evaluation method, not simply force a better answer on two known plots.** A possible v3 approach is a requirement-by-requirement checklist: identify explicit chart requirements; check each against figure evidence *and* plotting operations; distinguish confirmed success, confirmed violation, and uncertainty; and avoid confusing data errors with design errors. Then test on independent positive and negative examples to avoid overfitting to seeds 004 and 008.
+On `feature/session-010-chart-agent-controller`, update `integrations/chart_image_recipe.py` to copy the reviewed `requirements/chart-cp312-linux-amd64.txt` into the image and install packages with `pip --require-hashes --only-binary=:all:`. Update `integrations/chart_build_context.py` to stage **only** the approved lockfile alongside the existing vetted CSVs, Dockerfile and trusted extractor. Extend fake/offline tests for the requirement allowlist, tampering, hashes and cleanup; run the suite and check CI.
 
-The broader assignment roadmap remains:
+**Important limitation:** The minimal planned image currently specifies matplotlib, NumPy, pandas and Pillow, plus their dependencies. The course environment also mentions SciPy and seaborn as supported packages. Before running tasks that need either, explicitly add and verify appropriately pinned dependencies or state that our independent environment supports a narrower task subset. Do not imply that a smaller Docker image is identical to the course runtime.
 
-1. **Establish a full baseline:** Run the prescribed Qwen3-VL validator over the released seed set and compute all four confusion matrices, MCCs, and macro-MCC.
-2. **Improve the actual validator:** Implement at least two justified changes in `validator/solution.py`, evaluate them against the baseline, and document FP/FN cases.
-3. **Author adversarial tasks:** Create at least five tasks across two weakness classes (at least two tasks per class), run all three fixed chart agents on each (at least 15 runs), human-label the outputs, and score the validator.
-4. **Package tasks in Harbor:** Create deterministic verifiers and reference solutions, verify expected scores, and include both a caught and an undetected mutant to analyze verifier limits.
-5. **Iterate and report:** Improve the validator again, score seed and newly authored runs, and produce the required final report and submission artifacts.
+Only **after** offline checks should we consider a separately reviewed, approved Docker build, actual wheel integrity/installation verification, library import/render smoke test, and sandbox launch. A Docker container with networking disabled is **not** a hardened security boundary.
 
-Our independent infrastructure route still needs to be completed before we can run these official-model-equivalent experiments locally.
+### Step 2 — Prove one complete chart-making agent run
+
+Connect the controller, provider adapter, sandbox gateway, task staging and PNG extraction through a **new explicitly gated host orchestration path**. Keep model requests and shell commands opt-in, one at a time, with exact role/model and command review, quotas, timeout/cleanup, no sandbox network access or API secrets, and full trajectory records. Start with a simple known task before trying all three agents.
+
+Save a reproducible `result.json`, original inputs, and `figure.png` (or a documented execution failure). Match the official **run evidence/schema** as closely as possible, even if the generating models differ. Do not modify the upstream Modal runner silently; use a clearly named independent runner.
+
+### Step 3 — Get a meaningful independent validator baseline
+
+Wire the Terra adapter into an **experimental** validator that takes one run at a time, sees the task, inputs, trajectory and figure, and emits only the four official error families with concrete evidence. It must **not** receive `seed_labels.json`, a reference plot or predictions from other runs. Keep `validator/solution.py` / `validator/prediction.py` interface and official Qwen path separate unless intentionally implementing the strictly compliant track.
+
+Freeze a baseline evaluator version, evaluate the released seed set (rather than two selected examples), and **only afterward** compare saved predictions with human labels. Report per-family TP/TN/FP/FN, four MCCs and macro-MCC, as well as dataset coverage and any request failures. If a complete run is not affordable or available, explicitly report the subset and avoid claiming a representative baseline.
+
+Then implement at least two **justified evaluator changes** based on observed repeated mistakes, rerun the same cases, and analyze a false positive and false negative. Do not overfit the rubric to just seeds 004 and 008.
+
+### Step 4 — Create genuinely new stress tests
+
+Author **at least five** human-reviewable chart tasks spanning **two** suspected weakness classes (**at least two tasks in each class**). Generate **one** run per task from each of our **three current** chart-agent roles (at least **15 independent-adaptation runs**), freeze the tasks and model provenance, and inspect *every* trajectory/figure yourself.
+
+Label errors independently with the official four-family rubric and terminal `execution_failure` rule. Evaluate the experimental judge against those labels; compute the same confusion matrices and MCCs. Treat results as evidence about **the API-backed agents and Terra**, **not** as a controlled replication of the prescribed Qwen/Ministral/GLM task-generation conditions. For a strictly course-conformant submission, repeat this step using the **three officially required agents**.
+
+### Step 5 — Build Harbor verifiers and measure their blind spots
+
+Package each authored task into `harbor/tasks/<task_id>/`. Require `plot.py` and `plotted_values.json` in the Harbor instructions without rewriting the original seeded chart specification. Create independent deterministic checks and a reference solution that earns **1.0**. Add two plausible wrong-answer mutants: one verifier **catches (0.0)** and one it **misses (1.0)**. Explain what this teaches us about the boundary between rule-based verifiers and visual/trajectory-aware validation.
+
+Then make **at least one further validator improvement**, score both seed and authored runs again, explain successes/regressions, and prepare the report with actual evidence and model-provenance disclosures.
+
+### Step 6 — Decide whether the deliverable is independent or strictly compliant
+
+| Intended deliverable | Requirement before claiming completion |
+| --- | --- |
+| **Independent learning / research report** | The API-backed 3-agent workflow, independently labeled runs, Terra scoring, Harbor checks and honest limitations above; explicitly state this is **not official-model-equivalent**. |
+| **Submission satisfying the original assignment rules** | Deploy/use **`Qwen/Qwen3-VL-30B-A3B-Instruct-FP8`** in the validator **and do not call a different judge model**, generate the required runs with **all three specified original agents**, preserve `validate(run)` and prediction schema, score and package the required artifacts, and pass `workflow check-submission`. Seek course approval for any exception; API access alone does not create one. |
+
+**The key principle:** API limitations justify our *alternative implementation path*, but not silently changing the course's evaluation standard. We can preserve the educational goal with transparent adaptation; we cannot claim literal model-compliant grading without the prescribed models.
+
+### Immediate next session (no paid API calls)
+
+Continue on the **unmerged** `feature/session-010-chart-agent-controller` branch. Pull latest changes, re-run the 14-wheel offline audit, integrate its hash file into the Dockerfile and private build context, add tests, and validate offline before discussing a real build. **Do not rerun Session 009's live model probes**; their per-request authorizations were already consumed.
+
+For exact restart commands and evidence, use `docs/Learning-Progress.md` (pause/resume checkpoint) and `docs/Session-010-Supply-Chain.md`. Documentation changes in this report alone do **not** authorize new model requests, Docker builds, sandbox launches or shell execution.
 
 ## 10. Where to look in the repository
 
 | File/path | Purpose |
 | --- | --- |
-| [`ASSIGNMENT.md`](https://github.com/xqzr2000/cmu-11-768-assignment-2/blob/main/ASSIGNMENT.md) | Authoritative course requirements and definitions. |
-| [`docs/Learning-Progress.md`](https://github.com/xqzr2000/cmu-11-768-assignment-2/blob/feature/session-007-wrong-chart-precision/docs/Learning-Progress.md) | Detailed chronological engineering journal. |
-| [`README.md`](https://github.com/xqzr2000/cmu-11-768-assignment-2/blob/feature/session-007-wrong-chart-precision/README.md) | Our independent setup, safety rules and experimental commands. |
-| `artifacts/<run_id>/result.json` | Released task and agent trajectory. |
-| `artifacts/<run_id>/figure.png` | Agent-generated figure, if present. |
-| `inputs/<run_id>/*.csv` | Released task input CSVs, when required. |
-| `seed_labels.json` | Released **human error annotations**, never an inference input. |
-| `validator/runner.py` | Loads runs and invokes the validator. |
-| `validator/solution.py` | Our main official validator entry point. |
-| `validator/baseline.py` | Starter semantic judge questions and multimodal call path. |
-| `validator/model.py` | Official model endpoint configuration and client. |
-| `scripts/zai_seed_pilot.py` | Independent Z.ai image-judge experiment. |
-| `scripts/openai_seed_pilot.py` | Independent OpenAI experiment, with v1/v2 prompt versions. |
-| `workflow/generate.py` | Official fixed three-agent generation workflow (still Modal-based). |
-| `workflow/evaluate.py` | Compares human labels with predictions and computes MCC. |
-| `harbor/` | Example and template for future deterministic evaluation tasks. |
+| [`ASSIGNMENT.md`](../ASSIGNMENT.md) | Official course objectives, exact required models, metrics, task counts and submission rules. |
+| [`docs/Learning-Progress.md`](Learning-Progress.md) | Detailed history through Session 010 and the latest pause/resume checkpoint. |
+| [`README.md`](../README.md) | The independent Codespaces workflow and safe/offline commands. |
+| [`docs/Provider-Migration-Plan.md`](Provider-Migration-Plan.md) | Why we introduced hosted-provider adapters, message formats and research-scope limits. |
+| [`docs/Session-009-Compatibility-Probes.md`](Session-009-Compatibility-Probes.md) | Individual live API checks and the free-GLM failure / paid-GLM substitution. |
+| [`docs/Session-010-Controller-Design.md`](Session-010-Controller-Design.md) | Pure controller, fake-Docker gateway and artifact-handling design. |
+| [`docs/Session-010-Supply-Chain.md`](Session-010-Supply-Chain.md) | OCI manifest evidence, hashed wheel metadata, verification limits and next offline change. |
+| `integrations/models.py`; `integrations/providers/` | Current four experimental model IDs, API request builders and reply normalizers. |
+| `integrations/judge.py` | Experimental Terra image + structured judgment adapter (not the official validator entry point). |
+| `integrations/chart_controller.py`; `integrations/sandbox_gateway.py` | Offline controller and independently gated sandbox boundary. |
+| `integrations/chart_image_recipe.py`; `integrations/chart_build_context.py` | Inert chart image recipe and allowlisted staging context. |
+| `requirements/chart-cp312-linux-amd64.txt`; `scripts/check_chart_wheel_lock_offline.py` | Audited plotting wheel requirements and no-network consistency checker. |
+| `artifacts/<run_id>/result.json` / `figure.png`; `inputs/<run_id>/` | Original seed task, trajectory, PNG and optional input evidence. |
+| `seed_labels.json` | **Human reference labels**; never include them in judge inference. |
+| `validator/solution.py`; `validator/prediction.py` | Official validator interface and output contract. |
+| `workflow/generate.py`; `workflow/evaluate.py` | Original Modal generation path and label-vs-prediction scoring. |
+| `tasks/`; `runs/`; `harbor/` | Future authored tasks, generated runs and deterministic verifier environments. |
 
 ### A small glossary
 
-- **Run:** One attempt by one chart-making agent on a task.
-- **Trajectory:** The actions/messages/tool calls during that attempt.
-- **Artifact:** A saved output such as `result.json` or `figure.png`.
-- **Validator / judge:** The checker that produces error predictions.
-- **Ground truth / human label:** The human-reviewed reference for whether an error was present.
-- **Confusion matrix:** Counts of correct detections, correct rejections, false alarms and misses.
-- **MCC:** A metric derived from those counts; balances positive and negative performance.
-- **Macro-MCC:** Average MCC across the four error families.
-- **Pilot:** A deliberately small experiment to learn about behavior and integration, not a complete benchmark.
-- **Regression:** A previously correct case becomes incorrect after a change.
-- **Harbor verifier:** Deterministic tests of a task's submitted files or values, rather than a model's free-form visual judgment.
+- **Generator / chart agent:** A model, prompt, tools and run loop working to produce a visualization.
+- **Validator / judge:** The evaluator that returns named errors and concrete evidence for an individual run.
+- **Official model:** The exact model identity prescribed by the course, not merely one with similar capabilities.
+- **Experimental model:** Our API-accessible alternative, which can support learning but changes the benchmark conditions.
+- **API compatibility probe:** One bounded test of model endpoint/request/response parsing; **not** a full chart run or accuracy measurement.
+- **Controller:** A state machine that builds the next model request and records *approved* tool results.
+- **Sandbox gateway:** The separately authorized interface through which a reviewed command might eventually reach Docker.
+- **Trajectory:** The full agent messages, actions and tool results needed for later evaluation.
+- **Human label:** An independently reviewed reference error family and supporting evidence.
+- **TP, TN, FP, FN:** Correct detection, correct rejection, false alarm and missed error.
+- **MCC / macro-MCC:** Classification measure per error family / its four-family average.
+- **Harbor verifier:** Deterministic task checks, which can miss failures that remain visually obvious.
+- **Hash-lock metadata audit:** A check that recorded dependency versions/hashes agree; **not** proof a package was downloaded, installed or safely executed.
 
 ---
 
 ## One-sentence takeaway
 
-**We are building a reliable judge for AI-generated visualizations: three prescribed agents will make charts, our validator must find their mistakes using the task, data, trajectory and image, and human-reviewed error labels let us measure when the judge itself is right or wrong. Our recent progress has shown that eliminating false alarms is not enough—we must also avoid missing real errors.**
+**We changed experimental models primarily because of the hosted APIs we can access, not because the assignment's objectives changed. The goal is still to build and stress-test a trustworthy validator of chart-making agents; to preserve that goal we need full agent trajectories, independent human labels, fair MCC evaluation, adversarial tasks and Harbor checks, while keeping substituted-model findings separate from any claim of strict official-model compliance.**
