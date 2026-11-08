@@ -26,6 +26,7 @@ from integrations.task_artifacts import ArtifactError, TaskInputSnapshot
 
 HELPER_SOURCE = Path(__file__).resolve().parents[1] / "scripts" / "figure_extract_worker.py"
 MAX_HELPER_BYTES = 128 * 1024
+MAX_CONTEXT_BYTES = 512 * 1024
 CONTEXT_FILE_MODE = 0o600
 CONTEXT_DIRECTORY_MODE = 0o700
 SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
@@ -124,6 +125,9 @@ def verify_chart_build_context(context: ChartBuildContext) -> dict[str, object]:
     if stat.S_IMODE(root.stat().st_mode) != CONTEXT_DIRECTORY_MODE:
         raise BuildContextError("Build context root must be private.")
 
+    if not all(isinstance(entry, ContextFile) and isinstance(entry.relative_path, str)
+               for entry in context.files):
+        raise BuildContextError("Invalid context manifest entry.")
     expected = {entry.relative_path for entry in context.files}
     if len(expected) != len(context.files):
         raise BuildContextError("Duplicate context file declarations.")
@@ -139,11 +143,17 @@ def verify_chart_build_context(context: ChartBuildContext) -> dict[str, object]:
     if found_files != expected or found_dirs != {"inputs", "trusted"}:
         raise BuildContextError("Unexpected, missing or extra files in minimal build context.")
 
+    total_bytes = 0
     for entry in context.files:
-        if (not isinstance(entry.size_bytes, int) or type(entry.size_bytes) is not int
-            or entry.size_bytes < 1
+        cap = MAX_HELPER_BYTES if entry.relative_path == "trusted/extract_figure.py" else (
+            64 * 1024 if entry.relative_path.startswith("inputs/") else 16 * 1024
+        )
+        if (type(entry.size_bytes) is not int or not 0 < entry.size_bytes <= cap
             or not isinstance(entry.sha256, str) or not SHA256_PATTERN.fullmatch(entry.sha256)):
             raise BuildContextError("Invalid build context manifest entry.")
+        total_bytes += entry.size_bytes
+        if total_bytes > MAX_CONTEXT_BYTES:
+            raise BuildContextError("Minimal build context exceeds total byte limit.")
         source = root.joinpath(*entry.relative_path.split("/"))
         # Reading back is bounded by declared sizes; no arbitrary host paths.
         with source.open("rb") as stream:
