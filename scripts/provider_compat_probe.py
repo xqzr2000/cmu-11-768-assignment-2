@@ -65,7 +65,7 @@ def build_case(spec: ModelSpec) -> tuple[list[dict[str, Any]], list[dict[str, An
         prompt = (
             "You are checking a synthetic data visualization. The task was: "
             "plot two vertical bars A=1 and B=2 with readable labels. "
-            "Input data.csv contains category,value\\nA,1\\nB,2. "
+            "Input data.csv has rows (category,value): A,1 and B,2. "
             "The synthetic trajectory states that a figure was rendered and saved. "
             "Inspect the PNG; return an errors array with only grounded evidence. "
             "Use an empty errors array if no specified issue is observed. "
@@ -123,7 +123,7 @@ def _write_new(path: Path, data: dict[str, Any]) -> None:
     fd = os.open(path, flags, 0o600)
     with os.fdopen(fd, "w", encoding="utf-8") as stream:
         json.dump(data, stream, indent=2)
-        stream.write("\\n")
+        print(file=stream)
 
 
 def main(argv: list[str] | None = None) -> None:
