@@ -17,10 +17,11 @@ from integrations.chart_build_context import (
     ChartBuildContext,
     ContextFile,
     HELPER_SOURCE,
+    REQUIREMENTS_SOURCE,
     prepare_chart_build_context,
     verify_chart_build_context,
 )
-from integrations.chart_image_recipe import ImageRecipeError
+from integrations.chart_image_recipe import ImageRecipeError, REQUIREMENTS_CONTEXT_PATH
 from integrations.task_artifacts import ArtifactError, CSVAsset, TaskInputSnapshot
 
 # Deliberately fictitious, syntax-valid reference: never used for a real build.
@@ -35,19 +36,20 @@ def snapshot(data: bytes = b"category,value\nA,1\nB,2\n") -> TaskInputSnapshot:
 
 
 class ChartBuildContextOfflineTests(unittest.TestCase):
-    def test_exact_three_file_context_and_private_permissions(self):
+    def test_exact_four_file_context_and_private_permissions(self):
         with tempfile.TemporaryDirectory() as parent:
             with prepare_chart_build_context(snapshot(), FAKE_BASE, parent_dir=Path(parent)) as context:
                 self.assertEqual(
                     {entry.relative_path for entry in context.files},
-                    {"Dockerfile", "inputs/data.csv", "trusted/extract_figure.py"},
+                    {"Dockerfile", "inputs/data.csv", "trusted/extract_figure.py",
+                     REQUIREMENTS_CONTEXT_PATH},
                 )
                 self.assertEqual(
                     stat.S_IMODE(context.root.stat().st_mode), 0o700
                 )
                 self.assertEqual((context.root / "inputs/data.csv").read_bytes(),
                                  b"category,value\nA,1\nB,2\n")
-                for directory in ("inputs", "trusted"):
+                for directory in ("inputs", "trusted", "requirements"):
                     self.assertEqual(
                         stat.S_IMODE((context.root / directory).stat().st_mode), 0o700
                     )
@@ -56,7 +58,7 @@ class ChartBuildContextOfflineTests(unittest.TestCase):
                         stat.S_IMODE((context.root / entry.relative_path).stat().st_mode), 0o600
                     )
                 verify = verify_chart_build_context(context)
-                self.assertEqual(verify["file_count"], 3)
+                self.assertEqual(verify["file_count"], 4)
                 self.assertFalse(verify["docker_build_authorized"])
                 self.assertEqual(verify["docker_builds"], 0)
                 self.assertEqual(verify["model_requests"], 0)
@@ -74,6 +76,10 @@ class ChartBuildContextOfflineTests(unittest.TestCase):
                 (context.root / "Dockerfile").read_text(encoding="utf-8"),
                 context.recipe.dockerfile,
             )
+            self.assertEqual(
+                (context.root / REQUIREMENTS_CONTEXT_PATH).read_bytes(),
+                REQUIREMENTS_SOURCE.read_bytes(),
+            )
 
     def test_multiple_csv_files_staged_by_name_and_digest(self):
         original = snapshot().assets[0]
@@ -84,10 +90,10 @@ class ChartBuildContextOfflineTests(unittest.TestCase):
             self.assertEqual(
                 {entry.relative_path for entry in context.files},
                 {"Dockerfile", "inputs/data.csv", "inputs/other.csv",
-                 "trusted/extract_figure.py"}
+                 "trusted/extract_figure.py", REQUIREMENTS_CONTEXT_PATH}
             )
             self.assertEqual((context.root / "inputs/other.csv").read_bytes(), extra)
-            self.assertEqual(verify_chart_build_context(context)["file_count"], 4)
+            self.assertEqual(verify_chart_build_context(context)["file_count"], 5)
 
     def test_cleanup_on_exception_inside_context(self):
         with tempfile.TemporaryDirectory() as parent:
@@ -124,7 +130,7 @@ class ChartBuildContextOfflineTests(unittest.TestCase):
                 verify_chart_build_context(context)
 
     def test_verify_detects_modified_dockerfile_or_helper(self):
-        for file in ("Dockerfile", "trusted/extract_figure.py"):
+        for file in ("Dockerfile", "trusted/extract_figure.py", REQUIREMENTS_CONTEXT_PATH):
             with self.subTest(file=file):
                 with prepare_chart_build_context(snapshot(), FAKE_BASE) as context:
                     (context.root / file).write_bytes(b"not the trusted source")
@@ -132,7 +138,8 @@ class ChartBuildContextOfflineTests(unittest.TestCase):
                         verify_chart_build_context(context)
 
     def test_verify_rejects_extra_secret_or_repository_content(self):
-        for unexpected in (".env", ".git/config", "src/other.py"):
+        for unexpected in (".env", ".git/config", "src/other.py",
+                           "requirements/extra.txt"):
             with self.subTest(unexpected=unexpected):
                 with prepare_chart_build_context(snapshot(), FAKE_BASE) as context:
                     extra = context.root / unexpected
@@ -176,6 +183,69 @@ class ChartBuildContextOfflineTests(unittest.TestCase):
                 with prepare_chart_build_context(snapshot(), FAKE_BASE,
                                                  parent_dir=parent / "missing"):
                     pass
+
+    def test_rejects_unhashed_extra_requirement_even_with_forged_manifest(self):
+        with prepare_chart_build_context(snapshot(), FAKE_BASE) as context:
+            lock_path = context.root / REQUIREMENTS_CONTEXT_PATH
+            altered = lock_path.read_bytes() + b"unapproved-package==1.0\n"
+            lock_path.write_bytes(altered)
+            entries = tuple(
+                replace(entry, size_bytes=len(altered),
+                        sha256=hashlib.sha256(altered).hexdigest())
+                if entry.relative_path == REQUIREMENTS_CONTEXT_PATH else entry
+                for entry in context.files
+            )
+            forged = ChartBuildContext(context.root, context.recipe, entries)
+            with self.assertRaisesRegex(BuildContextError, "metadata audit"):
+                verify_chart_build_context(forged)
+
+    def test_rejects_changed_hash_even_with_forged_manifest(self):
+        with prepare_chart_build_context(snapshot(), FAKE_BASE) as context:
+            lock_path = context.root / REQUIREMENTS_CONTEXT_PATH
+            original = lock_path.read_bytes()
+            altered = original.replace(
+                b"875f42444c9cf48d56f724f2637e60d0f73b3b12c9041e1484580a233edf9591",
+                b"0" * 64,
+            )
+            self.assertNotEqual(altered, original)
+            lock_path.write_bytes(altered)
+            entries = tuple(
+                replace(entry, size_bytes=len(altered),
+                        sha256=hashlib.sha256(altered).hexdigest())
+                if entry.relative_path == REQUIREMENTS_CONTEXT_PATH else entry
+                for entry in context.files
+            )
+            forged = ChartBuildContext(context.root, context.recipe, entries)
+            with self.assertRaisesRegex(BuildContextError, "metadata audit"):
+                verify_chart_build_context(forged)
+
+    def test_rejects_missing_or_symlinked_source_requirements(self):
+        with tempfile.TemporaryDirectory() as parent:
+            path = Path(parent) / "lock.txt"
+            with patch("integrations.chart_build_context.REQUIREMENTS_SOURCE", path):
+                with self.assertRaises(BuildContextError):
+                    with prepare_chart_build_context(snapshot(), FAKE_BASE,
+                                                     parent_dir=Path(parent)):
+                        pass
+            path.symlink_to(REQUIREMENTS_SOURCE)
+            with patch("integrations.chart_build_context.REQUIREMENTS_SOURCE", path):
+                with self.assertRaises(BuildContextError):
+                    with prepare_chart_build_context(snapshot(), FAKE_BASE,
+                                                     parent_dir=Path(parent)):
+                        pass
+            self.assertEqual([item.name for item in Path(parent).iterdir()], ["lock.txt"])
+
+    def test_rejects_unhashed_source_lock_before_preparing_context(self):
+        with tempfile.TemporaryDirectory() as parent:
+            path = Path(parent) / "lock.txt"
+            path.write_bytes(REQUIREMENTS_SOURCE.read_bytes() +
+                             b"unapproved-package==1.0\n")
+            with patch("integrations.chart_build_context.REQUIREMENTS_SOURCE", path):
+                with self.assertRaisesRegex(BuildContextError, "metadata audit"):
+                    with prepare_chart_build_context(snapshot(), FAKE_BASE,
+                                                     parent_dir=Path(parent)):
+                        pass
+            self.assertEqual([item.name for item in Path(parent).iterdir()], ["lock.txt"])
 
     def test_never_runs_docker_or_subprocess_or_reads_env_secrets(self):
         with patch.object(subprocess, "run",
