@@ -145,6 +145,22 @@ uv run python scripts/openai_seed_pilot.py --run-id 004 --family wrong_data --co
 
 The independent `--compare` path reads human labels locally, reports a single family decision's TP/FP/FN/TN, and makes no model requests. A single selected example is not evidence of MCC or model generalization. The existing Z.ai pilot and official Qwen3-VL configuration remain intact.
 
+## Session 010 — Bounded chart controller (offline foundation)
+
+Session 009 merged into `main` via PR #9 (`65b0a49`), and its old feature branch has been deleted. New development is isolated on `feature/session-010-chart-agent-controller`.
+
+This first slice adds a **pure, manually stepped** `ChartController` that assembles a provider-native request, validates a previously returned function call, tracks pending tool results, and enforces model-turn/tool-call/command/output limits. It **does not contact a provider, run Docker, execute commands, or grant permission** for any future live request. The experimental Terra judge is not a generator.
+
+Run the dedicated mock-only tests:
+
+```bash
+uv run python -m unittest discover -s tests -p 'test_controller_*_offline.py' -v
+```
+
+The CI workflow also runs these new tests. Code changes have been committed, but the new controller test results are **pending Codespace verification**. The next slice will wrap the pinned Assignment 1 `Sandbox` with an explicit `network="none"` policy and bounded task-file / PNG handling, tested with fake Docker interactions before any real sandbox run.
+
+Read [Session 010 controller design](docs/Session-010-Controller-Design.md) for the state machine, per-turn API consent boundary, and security constraints.
+
 ## Session 009 — Completed four-model live API compatibility checks
 
 Session 008's offline provider-adapter foundation was merged via PR #8 (`5833b2b`). Session 007's unmerged wrong-chart experiment is preserved at `archive/session-007-20261107`.
