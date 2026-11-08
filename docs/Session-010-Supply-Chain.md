@@ -1,6 +1,6 @@
 # Session 010 — OCI image and chart wheel-lock provenance
 
-**Status, 2026-11-07 (America/Vancouver) / 2026-11-08 UTC:** The post-integration Codespace run verified the 14-package chart-wheel **metadata** audit and **29/29 focused offline tests** (12 Dockerfile recipe, 17 private context). The prior six-suite **77/77** total predates the changes; a new all-six run is pending. No image was pulled, built or started and no wheel archive was downloaded or installed. A lockfile hash is not proof of a trusted image or functioning chart environment. Session 010 remains active on its unmerged feature branch.
+**Status, 2026-11-07 (America/Vancouver) / 2026-11-08 UTC:** The post-integration Codespace run verified the 14-package chart-wheel **metadata** audit and **29/29 focused offline tests** (12 Dockerfile recipe, 17 private context). A second complete run subsequently verified **82/82** Session 010 offline suites plus provider **37/37**, validator **49/49** and structural **5/5** tests (**173/173** overall); dataset and four-role preview preflights also passed. No image was pulled, built or started and no wheel archive was downloaded or installed. A lockfile hash is not proof of a trusted image or functioning chart environment. Session 010 remains active on its unmerged feature branch.
 
 ## OCI manifest evidence — user Codespace transcript
 
@@ -68,7 +68,7 @@ git status --short --branch
 
 **Decision:** Pinning the observed platform-specific manifest *as a documented candidate* is justified by user-supplied registry metadata. Treating the resulting Docker environment as built, reproducible, secure or assignment-equivalent is not justified yet.
 
-## Offline hashed-wheel staging implementation — focused tests passed
+## Offline hashed-wheel staging implementation — full offline regression passed
 
 The inert image recipe now adds `COPY requirements/chart-cp312-linux-amd64.txt /opt/assignment/chart-requirements.txt` before its pip step. It **requests** `pip install --no-cache-dir --require-hashes --only-binary=:all: -r /opt/assignment/chart-requirements.txt`, rather than installing the four plotting roots as un-hashed command arguments. No such install has actually been executed.
 
@@ -76,13 +76,13 @@ The context allowlist now includes exactly one new file, `requirements/chart-cp3
 
 Updated offline tests cover the Dockerfile copy/install ordering, exact context paths, permission and cleanup policy, extra/unhashed requirements, changed wheel hashes with forged manifests, and missing/symlinked/unhashed source locks. CI continues to run the guarded image/context suites and the separate wheel audit.
 
-**Focused Codespace verification passed at `aee45e6`:** 14 package hashes audited, image recipe **12/12** passed (0.002 s), private context **17/17** passed (4.275 s), clean synchronized working tree. Broader suites were not rerun at this checkpoint. We have not downloaded/rehash-verified wheel bytes, tested pip resolution, built an image or launched Docker. The minimal image still omits SciPy and seaborn supported by the course environment; full environment equivalence cannot be claimed.
+**Focused Codespace verification passed at `aee45e6`:** 14 package hashes audited, image recipe **12/12** passed (0.002 s), private context **17/17** passed (4.275 s), clean synchronized working tree. **Full Codespace verification then passed at `ab3b21d`:** all 82 Session 010 tests, 37 provider tests, 49 validator tests and 5 structural tests (173/173), dataset preflight and zero-network preview. The validator probe's expected malformed-consent CLI diagnostics were followed by an `ok` test result. We have not downloaded/rehash-verified wheel bytes, tested pip resolution, built an image or launched Docker. The minimal image still omits SciPy and seaborn supported by the course environment; full environment equivalence cannot be claimed.
 
 ## Pause / restart handoff
 
-**Last verified local Git state:** clean feature branch `feature/session-010-chart-agent-controller` tracking origin at `aee45e6` (before this verification-journal commit). Keep the branch; do **not** merge, delete it or rerun billable model probes. Pull the journal commit before full regression tests.
+**Last verified local Git state:** clean feature branch `feature/session-010-chart-agent-controller` tracking origin at `ab3b21d` (before these full-verification documentation commits). Keep the branch; do **not** merge, delete it or rerun billable model probes. Pull the journal commit before full regression tests.
 
-**Next verification step (offline-only):** Pull the verification documentation, run all six guarded Session 010 test scripts (expected 82 if unchanged), provider and validator regressions, structural tests/preflight, and inspect CI via PR. Do not attempt a real image build or plotting smoke test until separately reviewed and approved.
+**Next review step:** Pull the full-verification journal commit, inspect the Session 010 draft PR and GitHub Actions status, review scope and diff, and do not merge without approval. Real image builds, pulls and plotting smoke tests require a separate reviewed authorization.
 
 **Resume:**
 
