@@ -154,10 +154,10 @@ This first slice adds a **pure, manually stepped** `ChartController` that assemb
 Run the dedicated mock-only tests:
 
 ```bash
-uv run python -m unittest discover -s tests -p 'test_controller_*_offline.py' -v
+uv run python scripts/check_controller_offline.py
 ```
 
-The CI workflow also runs these new tests. Code changes have been committed, but the new controller test results are **pending Codespace verification**. The next slice will wrap the pinned Assignment 1 `Sandbox` with an explicit `network="none"` policy and bounded task-file / PNG handling, tested with fake Docker interactions before any real sandbox run.
+The first Codespace check inadvertently discovered **0 controller tests** because the original filename did not match the discovery glob; provider (37/37) and validator (49/49) tests passed, and the preflight made zero network requests. We renamed the suite to `tests/test_controller_state_offline.py` and added the offline-only `scripts/check_controller_offline.py` entry point, which **fails when no tests are discovered**. CI now runs this guard. The renamed suite remains **pending Codespace verification**. The next slice will wrap the pinned Assignment 1 `Sandbox` with an explicit `network="none"` policy and bounded task-file / PNG handling, tested with fake Docker interactions before any real sandbox run.
 
 Read [Session 010 controller design](docs/Session-010-Controller-Design.md) for the state machine, per-turn API consent boundary, and security constraints.
 
