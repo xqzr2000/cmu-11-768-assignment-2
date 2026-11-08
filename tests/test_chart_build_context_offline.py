@@ -66,6 +66,35 @@ class ChartBuildContextOfflineTests(unittest.TestCase):
                 self.assertNotIn(parent, repr(context))
             self.assertEqual(list(Path(parent).iterdir()), [])
 
+    def test_zero_csv_build_context_has_only_trusted_files_and_empty_inputs(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            zero_inputs = TaskInputSnapshot("no_csv", ())
+            with prepare_chart_build_context(zero_inputs, FAKE_BASE,
+                                             parent_dir=Path(tmp)) as context:
+                self.assertEqual(
+                    {entry.relative_path for entry in context.files},
+                    {"Dockerfile", "trusted/extract_figure.py", REQUIREMENTS_CONTEXT_PATH},
+                )
+                self.assertEqual(list((context.root / "inputs").iterdir()), [])
+                for folder in ("inputs", "trusted", "requirements"):
+                    self.assertEqual(stat.S_IMODE((context.root / folder).stat().st_mode), 0o700)
+                manifest = verify_chart_build_context(context)
+                self.assertEqual(manifest["file_count"], 3)
+                self.assertFalse(manifest["docker_build_authorized"])
+                self.assertEqual(manifest["docker_builds"], 0)
+                self.assertEqual(manifest["sandbox_launches"], 0)
+                self.assertEqual(manifest["model_requests"], 0)
+                self.assertNotIn(tmp, str(manifest))
+                self.assertIn("COPY inputs/ /opt/assignment/inputs/", context.recipe.dockerfile)
+            self.assertEqual(list(Path(tmp).iterdir()), [])
+
+    def test_zero_csv_context_rejects_undeclared_input_file(self):
+        with prepare_chart_build_context(TaskInputSnapshot("no_csv", ()),
+                                         FAKE_BASE) as context:
+            (context.root / "inputs" / "unexpected.csv").write_bytes(b"key,value\na,1\n")
+            with self.assertRaises(BuildContextError):
+                verify_chart_build_context(context)
+
     def test_context_uses_only_fixed_trusted_extractor_source(self):
         with prepare_chart_build_context(snapshot(), FAKE_BASE) as context:
             self.assertEqual(

@@ -76,6 +76,30 @@ class TaskArtifactsOfflineTests(unittest.TestCase):
             self.assertNotIn("A,1", json.dumps(manifest))
             self.assertNotIn("A,1", repr(snapshot))
 
+    def test_zero_input_task_without_inputs_directory_or_manifest_field(self):
+        for explicit_empty in (True, False):
+            with self.subTest(explicit_empty=explicit_empty):
+                with tempfile.TemporaryDirectory() as tmp:
+                    directory = Path(tmp) / "no_csv"
+                    directory.mkdir()
+                    descriptor = directory / "task.json"
+                    payload = {
+                        "task_id": "no_csv",
+                        "task_class": "bar_chart",
+                        "instructions": "Plot the values 1, 2 and 3 directly.",
+                    }
+                    if explicit_empty:
+                        payload["inputs"] = []
+                    descriptor.write_text(json.dumps(payload), encoding="utf-8")
+                    self.assertFalse((directory / "inputs").exists())
+                    staged = snapshot_task_csvs(descriptor)
+                    self.assertEqual(staged.task_id, "no_csv")
+                    self.assertEqual(staged.assets, ())
+                    self.assertEqual(staged.manifest()["file_count"], 0)
+                    self.assertEqual(staged.manifest()["total_bytes"], 0)
+                    self.assertEqual(staged.manifest()["files"], [])
+                    self.assertEqual(staged.manifest()["network_requests"], 0)
+
     def test_utf8_and_multiple_csv_inputs(self):
         with tempfile.TemporaryDirectory() as tmp:
             descriptor = write_task(Path(tmp), {

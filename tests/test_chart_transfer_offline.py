@@ -74,6 +74,22 @@ class ChartTransferOfflineTests(unittest.TestCase):
             self.assertFalse(source.exists())
             self.assertEqual(list(Path(tmp).iterdir()), [])
 
+    def test_zero_input_staging_is_private_and_cleans_up(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            snap = TaskInputSnapshot("no_csv", ())
+            with stage_input_snapshots(snap, parent_dir=Path(tmp)) as plan:
+                self.assertEqual(plan.task_id, "no_csv")
+                self.assertEqual(plan.inputs, ())
+                self.assertEqual(plan.manifest()["file_count"], 0)
+                self.assertEqual(plan.manifest()["files"], [])
+                self.assertEqual(plan.manifest()["docker_builds"], 0)
+                self.assertEqual(plan.manifest()["model_requests"], 0)
+                staged_root, = Path(tmp).iterdir()
+                self.assertEqual(stat.S_IMODE(staged_root.stat().st_mode), 0o700)
+                self.assertEqual(stat.S_IMODE((staged_root / "inputs").stat().st_mode), 0o700)
+                self.assertEqual(list((staged_root / "inputs").iterdir()), [])
+            self.assertEqual(list(Path(tmp).iterdir()), [])
+
     def test_two_csvs_have_distinct_trusted_destinations(self):
         a = snapshot().assets[0]
         data = b"key,value\nC,3\n"
@@ -93,7 +109,7 @@ class ChartTransferOfflineTests(unittest.TestCase):
     def test_manually_constructed_bad_snapshot_rejected_before_writing(self):
         bad_cases = (
             TaskInputSnapshot("../bad", snapshot().assets),
-            TaskInputSnapshot("demo", ()),
+            TaskInputSnapshot("demo", []),  # A manually forged list is not a tuple.
             TaskInputSnapshot("demo", (snapshot().assets[0],) * 9),
             TaskInputSnapshot("demo", (CSVAsset("../secret.csv", b"x", "f" * 64),)),
             TaskInputSnapshot("demo", (CSVAsset("data.csv", b"x", "f" * 64),)),

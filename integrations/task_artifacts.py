@@ -116,7 +116,7 @@ def _check_no_symlink(root: Path, candidate: Path) -> None:
 
 
 def snapshot_task_csvs(descriptor: Path) -> TaskInputSnapshot:
-    """Load an authored task and copy only small, task-local UTF-8 CSVs.
+    """Load an authored task and copy zero or more small task-local UTF-8 CSVs.
 
     The snapshot is *not* automatically used as a Docker image build context.
     A future image builder must materialize the vetted bytes independently,
@@ -130,8 +130,8 @@ def snapshot_task_csvs(descriptor: Path) -> TaskInputSnapshot:
     if descriptor.stat().st_size > 128 * 1024:
         raise ArtifactError("Task descriptor exceeds the 128 KiB size cap.")
     task = AuthoredTask.load(descriptor)
-    if not 1 <= len(task.inputs) <= MAX_INPUT_FILES:
-        raise ArtifactError("A chart-data task needs between 1 and 8 CSV input files.")
+    if len(task.inputs) > MAX_INPUT_FILES:
+        raise ArtifactError("Chart tasks support at most 8 CSV input files.")
     root = descriptor.parent
     assets: list[CSVAsset] = []
     total = 0

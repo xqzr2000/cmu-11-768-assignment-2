@@ -1,6 +1,6 @@
 """Minimum private Docker build context assembly; no Docker or model calls.
 
-An ephemeral context contains ONLY Dockerfile, vetted CSV snapshots, the
+An ephemeral context contains ONLY Dockerfile, zero or more vetted CSV snapshots, the
 version-controlled fixed extractor and the audited 14-wheel requirements file.
 No repository checkout is copied.
 The context is for future independent human review and authorized build only.
@@ -142,8 +142,8 @@ def verify_chart_build_context(context: ChartBuildContext) -> dict[str, object]:
         raise BuildContextError("Duplicate context file declarations.")
     csv_files = {p for p in expected if p.startswith("inputs/")}
     allowed = csv_files | {"Dockerfile", "trusted/extract_figure.py", REQUIREMENTS_CONTEXT_PATH}
-    if expected != allowed or not csv_files or len(csv_files) > 8:
-        raise BuildContextError("Expected only Dockerfile, audited lock, helper and 1-8 CSV files.")
+    if expected != allowed or len(csv_files) > 8:
+        raise BuildContextError("Expected only Dockerfile, audited lock, helper and 0-8 CSV files.")
     for name in csv_files:
         if not re.fullmatch(r"inputs/[A-Za-z0-9][A-Za-z0-9._-]{0,63}\.csv", name):
             raise BuildContextError("Context includes an unsafe CSV path.")
