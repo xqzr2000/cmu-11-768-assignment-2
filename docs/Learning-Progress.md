@@ -9,7 +9,18 @@
 > **Learning mode:** beginner-friendly; explain purpose, inputs, outputs, commands, observations, failures, and follow-ups.  
 > **Source of truth:** [ASSIGNMENT.md](../ASSIGNMENT.md) for official requirements; [README.md](../README.md) and [docs/ARCHITECTURE.md](ARCHITECTURE.md) for our independent adaptation.
 
-## Current resume checkpoint — 2026-11-08 (America/Vancouver): Session 013
+## Current resume checkpoint — 2026-11-08 (America/Vancouver): Session 014
+
+- **Merged baseline:** User merged [Session 013 PR #13](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/13) to main at **`e0242d6`**. Post-merge [GitHub Actions run 42517131568](https://github.com/xqzr2000/cmu-11-768-assignment-2/actions/runs/42517131568) passed. The user pulled clean `main...origin/main` at `e0242d6`, verified the old branch was contained in main, then deleted `feature/session-013-docker-smoke-readiness` locally and remotely.
+- **Verified historical test baseline:** **193/193** offline tests passed in Codespaces, **14/14** chart wheel hash metadata entries audited against committed `uv.lock`, dataset preflight **110 runs/98 figures/110 labels/16 acceptable** passed, four-role offline provider preview had **zero network requests**. These are not evidence of a built chart image.
+- **Current GitHub feature branch:** `feature/session-014-chart-worker-image-staging`, created from exact main merge `e0242d6`. The user's local Codespace is still on `main` until they fetch and track the new remote branch.
+- **First Session 014 implementation slice:** The inert Dockerfile now `COPY`s a fixed, read-only plotting worker from `trusted/smoke_chart.py` into `/opt/assignment/smoke_chart.py`. Private context staging adds exactly that one 16 KiB-capped, byte-for-byte verified source file. Zero-CSV context grows from 3 to **4** files; one-CSV from 4 to **5**. Tests check exact allowlists, worker forgery resistance, missing/symlinked/oversized script handling and no build-time execution. **Expected total 197 offline tests, not yet verified.**
+- **Next exact Codespaces action:** `git fetch origin --prune`, `git switch --track origin/feature/session-014-chart-worker-image-staging`, confirm `git status --short --branch`, then run the four focused chart suites with `uv run --offline --locked`. Read [Session 014 staging note](Session-014-Chart-Worker-Image-Staging.md) before deciding on further integration.
+- **Unapproved boundary:** No real Docker pull/build/run, BuildKit operation, dependency wheel download/install, model call, agent command or PNG extracted from a real container. Stage B needs a separately reviewed exact-op and resource/cleanup proposal, plus fresh consent.
+
+**Preserve all earlier checkpoint sections below as historical snapshots.**
+
+## Previous checkpoint — Session 013 (historical)
 
 - **Verified remote starting point:** Session 012 [PR #12](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/12) merged to main at `1118bcd`. Latest main GitHub Actions `42459107237` succeeded. User confirmed clean local `main...origin/main` at `1118bcd` after `git fetch origin --prune` and `git pull --ff-only`; no stashing or hard reset is required.
 - **Active verified feature branch:** `feature/session-013-docker-smoke-readiness` created from `1118bcd`. User fetched and switched locally, tracking origin at `200d195`; clean working tree confirmed before and after tests.
@@ -60,7 +71,8 @@
 | 010 (Nov 7–8 UTC) | Controller, fake sandbox, CSV/PNG transfer, hash-locked inert chart image and context; **14/14** wheel metadata audit, **173/173** offline tests; PR #10 GitHub Actions passed twice | **Merged to `main` at `19e0a27`; old feature branch deleted** |
 | 011 (Nov 7 local / Nov 8 UTC) | Zero-CSV task support in snapshots, staging, context and Dockerfile; focused **62/62**, full **178/178**, dataset/provider preflights and GitHub Actions passed | **PR #11 merged to `main` at `55299ad`; feature branches deleted** |
 | 012 (Nov 8 UTC) | Full **185/185 offline regression** passed; dataset 110/98/110 and four-role zero-network preflights passed; chart wheel lock metadata audit **14/14**; safe zero/one-CSV context preview | **PR #12 merged to main at `1118bcd`; latest main CI passed; no Docker or model calls** |
-| 013 (Nov 8 UTC) | Trusted fixed Matplotlib smoke worker; **8/8 focused** and **193/193 full** Codespaces offline tests; **14/14** lock audit and dataset/provider preflights; initial PR CI **20/20 steps passed** | **Draft PR #13 open; no Docker/model operations authorized** |
+| 013 (Nov 8 UTC) | Trusted fixed Matplotlib smoke worker; **8/8 focused** and **193/193 full** Codespaces offline tests; **14/14** lock audit and dataset/provider preflights; final PR and main CI passed | **PR #13 merged at `e0242d6`; feature branches deleted** |
+| 014 (Nov 8 UTC) | Proposed image recipe now includes fixed smoke worker; private context allowlist, strict source-byte check and negative tests; zero/one-CSV inventories updated | **Active feature branch; Codespaces tests pending; no real Docker/model calls** |
 
 See the detailed session history below for exact experiments, commands, model IDs, errors and scope boundaries. This table is a navigation summary, not a replacement for those records.
 
