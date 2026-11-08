@@ -1,6 +1,6 @@
 # Session 010 — Bounded chart-agent controller (offline-first)
 
-**Status (2026-11-07 America/Vancouver):** The pure controller test suite passed **11/11**, and the permission-gated fake-Docker gateway passed **14/14** in Codespaces (25/25 Session 010 tests so far); existing provider **37/37** and validator **49/49** regressions passed previously. A third **pure artifact-boundary** slice and **15 additional offline tests** are now committed but unverified. No live model, real Docker container, chart generation, sandbox command or new judge request has been performed in this session.
+**Status (2026-11-07 America/Vancouver):** The pure controller test suite passed **11/11**, and the permission-gated fake-Docker gateway passed **14/14** in Codespaces (25/25 Session 010 tests so far); existing provider **37/37** and validator **49/49** regressions passed previously. A third **pure artifact-boundary** slice and **16 additional offline tests** are now committed but unverified. No live model, real Docker container, chart generation, sandbox command or new judge request has been performed in this session.
 
 ## Why a controller is necessary
 
@@ -143,12 +143,12 @@ git status --short --branch
 
 New `integrations/task_artifacts.py` implements **pure host-side validation and immutable in-memory snapshots**, not a Docker file-transfer mechanism:
 
-1. `snapshot_task_csvs(task_descriptor)` uses the existing `workflow.tasks.AuthoredTask.load` schema and relative-path protection, then applies stricter staging constraints: **1–8** small task-local `.csv` inputs, safe ASCII filenames, **64 KiB per CSV** and **256 KiB total**, UTF-8 text only, no NUL bytes, and no symlinked CSV paths. Each `CSVAsset` stores a byte snapshot plus SHA-256. `TaskInputSnapshot.manifest()` prints only name, intended `/opt/assignment/inputs/<name>` location, digest and byte length — **not** source data. The snapshot does **not** build an image or copy files into a container.
+1. `snapshot_task_csvs(task_descriptor)` uses the existing `workflow.tasks.AuthoredTask.load` schema and relative-path protection, then applies stricter staging constraints: **1–8** small task-local `.csv` inputs, safe ASCII filenames, **64 KiB per CSV** and **256 KiB total**, UTF-8 text only, no NUL bytes, a 128 KiB task-descriptor cap, and no symlinked descriptor ancestors or CSV paths. Each `CSVAsset` stores a byte snapshot plus SHA-256. `TaskInputSnapshot.manifest()` prints only name, intended `/opt/assignment/inputs/<name>` location, digest and byte length — **not** source data. The snapshot does **not** build an image or copy files into a container.
 2. `validate_figure_png(raw_bytes)` enforces the exact PNG signature, **2 MiB compressed-byte cap**, **4,000,000-pixel cap**, a complete terminal `IEND` chunk with no extra payload, and Pillow structural/decoded pixel validation. Returns an in-memory `ValidatedFigure` with a safe metadata manifest. It does **not** write `figure.png` to the host.
 3. `decode_figure_envelope(json_text)` accepts only the fixed `figure.png` transport format: `{"path":"figure.png","encoding":"base64","size_bytes":...,"sha256":...,"data_base64":"..."}`. It rejects extra fields, alternate or traversal paths, invalid sizes, noncanonical base64, digest mismatch, corrupt PNGs and oversized text. **This is a future trusted extraction-helper output format, not permission to accept raw model text as a file.**
 4. The future transfer layer must create a reviewed, chart-capable **digest-pinned image**, materialize the already-vetted byte snapshots without secrets/host mounts, verify the copies, and extract one bounded figure through a supported and separately approved sandbox mechanism. The pinned DockerImage public API has `add_local_file(..., "/opt/assignment/inputs/<name>")` for **build-time file staging**, but it may start Docker builds and is **not called** by this slice. The gateway's normal 2,048-character command-output cap is **not** an appropriate PNG extraction channel; a separate size-aware transport is required.
 
-New `tests/test_task_artifacts_offline.py` defines **15** synthetic, temporary-file tests for accepted CSV snapshots, ASCII/UTF-8 and file limits, symlink rejection, safe manifests, valid PNGs, invalid formats, truncated/oversized/pixel-bomb/trailing-payload PNGs, and strict base64-envelope checks. The new `scripts/check_task_artifacts_offline.py` fails when no tests are discovered. GitHub Actions now runs that guarded suite. **No actual Codespace pass is claimed yet for these 15 tests.**
+New `tests/test_task_artifacts_offline.py` defines **16** synthetic, temporary-file tests for accepted CSV snapshots, ASCII/UTF-8 and file limits, symlink and descriptor size rejection, safe manifests, valid PNGs, invalid formats, truncated/oversized/pixel-bomb/trailing-payload PNGs, and strict base64-envelope checks. The new `scripts/check_task_artifacts_offline.py` fails when no tests are discovered. GitHub Actions now runs that guarded suite. **No actual Codespace pass is claimed yet for these 15 tests.**
 
 **Next offline verification (zero API requests and zero Docker launches):**
 
@@ -161,7 +161,7 @@ uv run python scripts/check_sandbox_gateway_offline.py
 git status --short --branch
 ```
 
-Expected **15 newly discovered artifact tests**, and **40 total Session 010 tests** if all pass. Fix any actual test failures before adding real transfer operations.
+Expected **16 newly discovered artifact tests**, and **41 total Session 010 tests** if all pass. Fix any actual test failures before adding real transfer operations.
 
 ## Next decisions before any live chart generation
 
