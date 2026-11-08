@@ -1,6 +1,6 @@
 # Session 010 — Bounded chart-agent controller (offline-first)
 
-**Status (2026-11-07 America/Vancouver):** Controller **11/11**, fake-Docker gateway **14/14**, and task CSV/PNG validation **16/16** tests passed in Codespaces (**41/41 Session 010 tests**); earlier provider **37/37** and validator **49/49** regressions also passed. A fourth **offline-only staging/extraction transfer-plan slice with 12 new tests** is now committed, but those new tests have **not yet been verified in Codespaces**. No live model request, actual Docker build/container, or model-proposed command execution has occurred in Session 010.
+**Status (2026-11-07 America/Vancouver):** The four completed offline slices passed **53/53 tests in Codespaces**: 11 controller, 14 fake-Docker gateway, 16 task-artifact, and 12 CSV transfer/PNG extractor tests; earlier provider **37/37** and validator **49/49** regressions passed. A fifth **pure Dockerfile recipe** slice and **11 new tests** are committed but their Codespace results are **pending**. No live model request, real Docker image build/pull, sandbox launch, or model-proposed command execution has occurred in Session 010.
 
 ## Why a controller is necessary
 
@@ -163,7 +163,7 @@ git status --short --branch
 
 **Observed:** 16 artifact, 11 controller and 14 gateway tests all passed (**41/41**); the final Git worktree was clean and synchronized.
 
-## Fourth offline slice — private CSV staging and a fixed PNG extraction protocol (tests pending)
+## Fourth offline slice — private CSV staging and a fixed PNG extraction protocol (verified)
 
 **Goal:** Prepare bounded, reviewable file transport without using a Docker engine, provider SDK, network or unattended tool loop.
 
@@ -177,7 +177,7 @@ New `tests/test_chart_transfer_offline.py` contains **12** pure/offline tests us
 
 New `scripts/check_chart_transfer_offline.py` fails on zero discovered tests, and the offline CI workflow now invokes it.
 
-**Codespace verification (still pending):**
+**Codespace verification (passed):**
 
 ```bash
 cd /workspaces/cmu-11-768-assignment-2
@@ -189,10 +189,39 @@ uv run python scripts/check_sandbox_gateway_offline.py
 git status --short --branch
 ```
 
-Expected: **12 new transfer tests**; if these and all prior suites pass, **53/53 Session 010 tests**. Do not claim this pass until Codespace/CI evidence is available.
+**Observed:** The user pulled the feature branch to `f81f4d1`; 12 chart-transfer tests, 16 artifact tests, 11 controller tests, and 14 fake-gateway tests all passed (**53/53**). Working tree was clean and synchronized; no Docker or model API was used.
+
+## Fifth offline slice — digest-guarded chart image recipe (tests pending)
+
+Session 010 needs a chart-capable image, but a real image digest, build results, and package wheel hashes have **not** yet been verified. We must not invent an immutable base digest or claim that a Docker build has succeeded.
+
+New `integrations/chart_image_recipe.py` is a **pure text renderer**. Its `plan_chart_image(base_image)` accepts only the exact syntax `python:3.12-slim@sha256:<64 lowercase hex digits>`, with the actual digest to be researched and validated separately for the chosen platform. A digest-shaped string **alone proves neither the image's existence nor its trustworthiness**.
+
+The rendered Dockerfile fixes the requested versions already pinned in `pyproject.toml`: `matplotlib==3.10.5`, `numpy==2.3.2`, `pandas==2.3.1`, and `pillow==12.3.0`. It configures headless Matplotlib (`MPLBACKEND=Agg`), a dedicated non-root runtime identity (`10001:10001`), and writable private `/workspace`. It expects a *future independently vetted minimal build context* with exactly `inputs/*.csv` and `trusted/extract_figure.py`, copies these to fixed `/opt/assignment/` paths, and changes their in-image permissions to **read-only**. The source staging paths are never accepted as arbitrary model input. No host mounts, API credentials, Docker socket, exposed ports or model SDKs are configured by this recipe.
+
+**Important supply-chain limitation:** Exact **direct** package versions are not an immutable full dependency lock: transitive wheels, their hashes, their platform availability, and the selected base image architecture are not yet proven. `ChartImageRecipe.preview()` explicitly says `full_dependency_hash_lock_verified=false`, `image_exists_verified=false`, `docker_build_authorized=false`, and reports zero Docker/model operations. The emitted Dockerfile is a reviewable **development plan**, not a trusted, tested or authorized image.
+
+New `tests/test_chart_image_recipe_offline.py` has **11 synthetic checks** for rejecting moving or injected base references, requesting the exact versions, non-root workspace, only fixed context copies, safe file permissions, absence of secrets/mounts/ports, metadata honesty, deterministic Dockerfile checksum, and no subprocess execution. The fake base digest used in unit tests is not a known real artifact. New `scripts/check_chart_image_recipe_offline.py` fails on zero discovered tests; the existing offline GitHub Actions workflow invokes it. These 11 tests **have not yet been run in Codespaces**.
+
+**Next offline verification (zero API requests and zero Docker operations):**
+
+```bash
+cd /workspaces/cmu-11-768-assignment-2
+git pull --ff-only
+uv run python scripts/check_chart_image_recipe_offline.py
+uv run python scripts/check_chart_transfer_offline.py
+uv run python scripts/check_task_artifacts_offline.py
+uv run python scripts/check_controller_offline.py
+uv run python scripts/check_sandbox_gateway_offline.py
+git status --short --branch
+```
+
+If all pass: **11 new recipe tests + 53 verified prior tests = 64/64 Session 010 tests**. This is an expectation, not yet observed.
+
+**Subsequent engineering decision:** Verify a real Python base image digest for a specific architecture; resolve and hash-lock the actual package wheels; create a minimal private Docker build context exclusively from the checked CSV bytes and reviewed extractor source; only then consider a separately approved image build and a trusted large-output extraction path. The current `SandboxGateway` still targets the non-chart-capable floating `python:3.12-slim` transport-test image and cannot silently adopt the new recipe.
 
 ## Next decisions before any live chart generation
 
-First **verify the 12 new transfer-plan tests** and fix any failures. Then decide how to build a reviewed **digest-pinned chart-capable** Docker image and a separately authorized, size-aware fixed-helper extraction operation; validate image staging from checksum-verified temporary files without passing host mounts or secrets. A separate human confirmation is required before any real Docker launch, and a fresh explicit model-specific approval is required **for every potentially billed model turn**. The bounded controller and gateway must not be wired to unattended live execution.
+First **verify the 11 new chart-image recipe tests** and fix any failures. Then separately verify the actual immutable base digest and full wheel lock, followed by a minimal build-context design with only vetted CSVs and the trusted extraction helper. Any real Docker build and fixed-helper extraction operation still require separate authorization. A separate human confirmation is required before any real Docker launch, and a fresh explicit model-specific approval is required **for every potentially billed model turn**. The bounded controller and gateway must not be wired to unattended live execution.
 
 **Non-goals for this slice:** model-quality comparisons, MCC, human-label prediction, a live Terra judgment, course-equivalent results, automatic API retries, and unsupervised multi-turn execution.
