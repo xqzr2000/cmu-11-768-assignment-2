@@ -1,6 +1,6 @@
 # Session 010 — Bounded chart-agent controller (offline-first)
 
-**Status (2026-11-07 America/Vancouver):** Pure controller test-discovery failure was repaired; **11/11 controller tests passed** in Codespaces, along with the previously verified **37/37 provider** and **49/49 validator** suites. A separate, permission-gated sandbox gateway and **14 additional fake-Docker tests** are now committed; their Codespace verification is **pending**. No live model, real Docker container, chart generation, sandbox command or new judge request has been performed in this session.
+**Status (2026-11-07 America/Vancouver):** The pure controller test suite passed **11/11**, and the permission-gated fake-Docker gateway passed **14/14** in Codespaces (25/25 Session 010 tests so far); existing provider **37/37** and validator **49/49** regressions passed previously. A third **pure artifact-boundary** slice and **15 additional offline tests** are now committed but unverified. No live model, real Docker container, chart generation, sandbox command or new judge request has been performed in this session.
 
 ## Why a controller is necessary
 
@@ -137,10 +137,34 @@ uv run python scripts/check_sandbox_gateway_offline.py
 git status --short --branch
 ```
 
-Expect **11 controller + 14 gateway = 25 tests** if the newly added tests all pass; these figures are **not yet verified for the new gateway**.
+**Verified:** User pulled through commit `353fcad`; the guarded runners discovered **11 controller tests** and **14 gateway tests**, with **25/25 passing**, and final Git status was clean. All gateway operations used fake Docker; none started a real container.
+
+## Third offline slice — task CSV and PNG artifact boundary (pending tests)
+
+New `integrations/task_artifacts.py` implements **pure host-side validation and immutable in-memory snapshots**, not a Docker file-transfer mechanism:
+
+1. `snapshot_task_csvs(task_descriptor)` uses the existing `workflow.tasks.AuthoredTask.load` schema and relative-path protection, then applies stricter staging constraints: **1–8** small task-local `.csv` inputs, safe ASCII filenames, **64 KiB per CSV** and **256 KiB total**, UTF-8 text only, no NUL bytes, and no symlinked CSV paths. Each `CSVAsset` stores a byte snapshot plus SHA-256. `TaskInputSnapshot.manifest()` prints only name, intended `/opt/assignment/inputs/<name>` location, digest and byte length — **not** source data. The snapshot does **not** build an image or copy files into a container.
+2. `validate_figure_png(raw_bytes)` enforces the exact PNG signature, **2 MiB compressed-byte cap**, **4,000,000-pixel cap**, a complete terminal `IEND` chunk with no extra payload, and Pillow structural/decoded pixel validation. Returns an in-memory `ValidatedFigure` with a safe metadata manifest. It does **not** write `figure.png` to the host.
+3. `decode_figure_envelope(json_text)` accepts only the fixed `figure.png` transport format: `{"path":"figure.png","encoding":"base64","size_bytes":...,"sha256":...,"data_base64":"..."}`. It rejects extra fields, alternate or traversal paths, invalid sizes, noncanonical base64, digest mismatch, corrupt PNGs and oversized text. **This is a future trusted extraction-helper output format, not permission to accept raw model text as a file.**
+4. The future transfer layer must create a reviewed, chart-capable **digest-pinned image**, materialize the already-vetted byte snapshots without secrets/host mounts, verify the copies, and extract one bounded figure through a supported and separately approved sandbox mechanism. The pinned DockerImage public API has `add_local_file(..., "/opt/assignment/inputs/<name>")` for **build-time file staging**, but it may start Docker builds and is **not called** by this slice. The gateway's normal 2,048-character command-output cap is **not** an appropriate PNG extraction channel; a separate size-aware transport is required.
+
+New `tests/test_task_artifacts_offline.py` defines **15** synthetic, temporary-file tests for accepted CSV snapshots, ASCII/UTF-8 and file limits, symlink rejection, safe manifests, valid PNGs, invalid formats, truncated/oversized/pixel-bomb/trailing-payload PNGs, and strict base64-envelope checks. The new `scripts/check_task_artifacts_offline.py` fails when no tests are discovered. GitHub Actions now runs that guarded suite. **No actual Codespace pass is claimed yet for these 15 tests.**
+
+**Next offline verification (zero API requests and zero Docker launches):**
+
+```bash
+cd /workspaces/cmu-11-768-assignment-2
+git pull --ff-only
+uv run python scripts/check_task_artifacts_offline.py
+uv run python scripts/check_controller_offline.py
+uv run python scripts/check_sandbox_gateway_offline.py
+git status --short --branch
+```
+
+Expected **15 newly discovered artifact tests**, and **40 total Session 010 tests** if all pass. Fix any actual test failures before adding real transfer operations.
 
 ## Next decisions before any live chart generation
 
-First **verify the new fake-Docker gateway tests** and fix any failures. Then design a reviewed task-local Docker image, safe data injection (no secret or host mounts), and size-limited PNG extraction using only supported pinned runtime interfaces. A separate human confirmation is required before any real Docker launch, and a fresh explicit model-specific approval is required **for every potentially billed model turn**. The bounded controller and gateway must not be wired to unattended live execution.
+First **verify the new 15-task-artifact tests** and fix any failures. Then design a reviewed task-local Docker image, safe data injection (no secret or host mounts), and size-limited PNG extraction using only supported pinned runtime interfaces. A separate human confirmation is required before any real Docker launch, and a fresh explicit model-specific approval is required **for every potentially billed model turn**. The bounded controller and gateway must not be wired to unattended live execution.
 
 **Non-goals for this slice:** model-quality comparisons, MCC, human-label prediction, a live Terra judgment, course-equivalent results, automatic API retries, and unsupervised multi-turn execution.
