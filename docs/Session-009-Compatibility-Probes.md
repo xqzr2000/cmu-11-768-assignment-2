@@ -1,6 +1,6 @@
 # Session 009 — One-request live compatibility probes (independent adaptation)
 
-**Status:** Offline preparation and tests committed on the Session 009 feature branch; Codespace test results and live API access **not yet verified**. No model call has been made in this session.
+**Status (2026-11-07):** Session 009 offline preparation verified in Codespaces (**34/34** provider tests and **49/49** validator tests passed; four request previews reported zero network requests). One separately authorized live DeepSeek `deepseek-flash` compatibility request **succeeded**. Luna, GLM, and Terra have not been called in Session 009. Account access to those three models remains unverified.
 
 ## Goal and decisions
 
@@ -60,6 +60,28 @@ Expected previews: `mode=offline`, `network_requests=0`, one inert function desc
 No live command is approved or provided in this document. After confirming offline verification, present the **exact planned model**, fixed synthetic prompt, expected maximum output tokens, estimated/request charge basis and **one-request** consent question to the user. Only when that specific request is approved, provide the corresponding live CLI invocation. Next role needs a separate approval regardless of whether the prior request worked.
 
 Record the response from `output/provider_compat_<role>.json` and identify whether a function call was actually returned for a generator; a text-only response is **inconclusive** for tool-call compatibility, not a pass. No automatic retries.
+
+## Verified live compatibility: Agent A, DeepSeek
+
+**Date:** 2026-11-07 (America/Vancouver; user Codespace transcript). The user separately authorized exactly one potentially billed DeepSeek call, after confirming the environment key existed without printing it.
+
+| Field | Observed |
+| --- | --- |
+| Role | `agent_a` |
+| Requested / reported model | `deepseek-flash` / `deepseek-flash` |
+| Provider interface | Responses |
+| Status | `completed` |
+| Function calls | One inert `run_shell` request |
+| Parsed compatibility | `expected_tool_called=true`, `tool_call_compatibility=true` |
+| Usage | 346 input tokens, 59 output tokens, 405 total tokens |
+| Retries / commands actually executed | 0 / 0 |
+| Local ignored result | `output/provider_compat_agent_a.json` |
+| Confirmed Git status after the request | Clean / tracking remote |
+| Monetary charge | Not independently verified |
+
+The model returned one function call and the normalized adapter parsed it. The probe **did not execute a shell command** or run a Docker container. This proves only a successful one-turn live API/function-call compatibility probe, not the chart-making controller, complete tool-call loop, successful plotting, or judge/metric accuracy. The reported model string does not independently identify the checkpoint behind a moving alias.
+
+**The previously approved DeepSeek request has been consumed.** Do not issue any retry or Luna/GLM/Terra request without another explicit one-request approval.
 
 ## After the four approved checks
 
