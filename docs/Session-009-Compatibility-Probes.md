@@ -1,6 +1,6 @@
 # Session 009 — One-request live compatibility probes (independent adaptation)
 
-**Status (2026-11-07):** Session 009 offline preparation verified in Codespaces (**34/34** provider tests and **49/49** validator tests passed; four request previews reported zero network requests). Two separately authorized live compatibility requests **succeeded**: DeepSeek `deepseek-flash` (Agent A) and OpenAI `gpt-5.6-luna` (Agent B). GLM and Terra have not been called in Session 009; their account-specific access remains unverified.
+**Status (2026-11-07):** Session 009 offline preparation verified in Codespaces (**34/34** provider tests and **49/49** validator tests passed; four request previews reported zero network requests). Two separately authorized live compatibility requests **succeeded**: DeepSeek `deepseek-flash` (Agent A) and OpenAI `gpt-5.6-luna` (Agent B). The separately authorized Z.ai `glm-4.7-flash` (Agent C) call **failed with `RateLimitError` and zero retries**; its model/tool compatibility remains unverified. Terra has not been called; its access remains unverified.
 
 ## Goal and decisions
 
@@ -102,6 +102,28 @@ The model returned one function call and the normalized adapter parsed it. The p
 | Monetary charge | Not independently verified |
 
 This confirms actual one-turn API/function-call interoperability and the local parser for Luna, but **not** multi-turn tool execution, plotting quality, Docker sandbox integration, or human-label judgment. The Luna request's authorization has been consumed. Z.ai GLM and OpenAI Terra each require their own separately approved request.
+
+## Blocked live compatibility: Agent C, Z.ai GLM
+
+**Date:** 2026-11-07 (America/Vancouver; user Codespace transcript). User separately authorized exactly one potentially billed request to `glm-4.7-flash`, no retries or shell execution, and confirmed `ZAI_API_KEY` was configured without displaying its value.
+
+| Field | Observed |
+| --- | --- |
+| Role | `agent_c` |
+| Requested model | `glm-4.7-flash` |
+| Provider / API style | Z.ai / Chat Completions |
+| Status | `failed` |
+| Error type | `RateLimitError` |
+| Retry attempts | 0 |
+| Provider-reported model / token usage | Not returned |
+| Function-call compatibility | **Not tested** — no parseable response |
+| Local ignored result | `output/provider_compat_agent_c.json` |
+| Git status afterward | Clean and synchronized |
+| Billing | May have been billed; actual charge not verified |
+
+`RateLimitError` alone cannot determine whether the account encountered transient request throttling, a credit/balance restriction, a limit window, or another Z.ai quota condition. The probe intentionally records only the Python exception type and does not retain the vendor's business error code, body, or headers. Consequently **do not assert Z.ai model incompatibility** from this result.
+
+Safe next steps: inspect Z.ai account dashboard for key class/plan, standard API balance or quota, per-model rate/concurrency limits and usage/failure records. Do not reveal API keys or sensitive logs. There is no permission to retry this request or substitute models; any follow-up live model request requires a fresh explicit user approval.
 
 ## After the four approved checks
 
