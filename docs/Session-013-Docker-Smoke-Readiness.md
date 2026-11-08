@@ -33,8 +33,31 @@ git status --short --branch
 
 ## Verification and limits
 
-At creation, GitHub source, tests and CI were prepared, but **Codespaces tests on the new head were not yet verified**. Do not mark them passed until user or CI output confirms. Session 012's 185/185 remains historical evidence. This slice adds 8 host-only tests, giving an **expected** 193 total if all previous tests still pass.
+### Verified in Codespaces — 2026-11-08 UTC
+
+At the synchronized feature head `200d195`, the user ran the guarded synthetic-worker suite separately (**8/8 passed**, 6.085 seconds), then ran the entire offline regression with `uv run --offline --locked`. **All 193/193 tests passed**:
+
+| Suite | Passed |
+| --- | ---: |
+| Structural | 5 |
+| Provider adapters (mocked) | 37 |
+| Validator | 49 |
+| Chart controller | 11 |
+| Sandbox gateway (fake Docker) | 14 |
+| Task artifacts | 17 |
+| Chart transfer | 13 |
+| Image recipe | 13 |
+| Build context | 19 |
+| Stage A chart smoke preview | 7 |
+| Fixed chart smoke worker | 8 |
+| **Total** | **193** |
+
+Also verified: 14/14 plotting wheel entries matched committed `uv.lock` metadata (four direct and ten transitive); `scripts/offline_preflight.py` reported **110 runs**, **98 figures**, **110 labeled runs**, **16 acceptable**, and **PASS**; `scripts/provider_preflight.py` reported **four roles**, `network_requests: 0`. The final `git status --short --branch` reported a clean, tracking `feature/session-013-docker-smoke-readiness...origin/feature/session-013-docker-smoke-readiness`. The unit-test CLI `usage:` diagnostics and synthetic worker error lines were expected negative-consent/negative-case checks; every suite ended in `OK`.
+
+**Scope of evidence:** host-only and fake/mock checks; no actual container run, registry access, package download/install in the chart image, build authorization, model call, or judged chart accuracy. This observation is from the user's Codespaces terminal output, not from GitHub Actions.
+
+**CI gate:** Review the draft PR's current-head GitHub Actions checks separately; do not assume local success establishes CI success.
 
 No paid model requests, actual Docker-built chart, BuildKit performance test, model-agent chart generation, judge MCC or official-model-equivalent results are claimed.
 
-**Next:** Verify the guarded tests and full offline regression in Codespaces, inspect draft PR CI, and then design a separately reviewed exact-command Stage B proposal.
+**Next:** Review the draft PR diff and latest-head GitHub Actions. Keep this branch unmerged pending explicit review. Stage B remains blocked until a separately reviewed build/run proposal and fresh authorization.
