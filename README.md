@@ -161,7 +161,7 @@ uv run python -m unittest discover -s tests -p 'test_provider_*_offline.py' -v
 
 The live path is **not authorized yet**. Every possibly billed call needs separate user approval for that exact model. There are no automatic retries, model-proposed shell commands are never executed, results are stored in ignored `output/*.json`, and full plotting-agent/Docker integration is still future work. See [docs/Session-009-Compatibility-Probes.md](docs/Session-009-Compatibility-Probes.md). Offline tests added in this branch remain **pending Codespace verification**.
 
-## Session 008 — offline-only multi-provider adapters (in progress)
+## Session 008 — offline-only multi-provider adapters (completed, merged via PR #8)
 
 This is an **independent research adaptation**. The course requires its Qwen3-VL validator and fixed generation models; we have **not replaced or re-scored** the official validator. Session 007's wrong-chart v1/v2 findings remain separate on their feature branch.
 
