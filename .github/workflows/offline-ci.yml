@@ -28,6 +28,6 @@ jobs:
       - name: Test experimental provider adapters with mocked clients only
         run: uv run python -m unittest discover -s tests -p "test_provider_*_offline.py" -v
       - name: Test bounded chart controller with offline state transitions only
-        run: uv run python -m unittest discover -s tests -p "test_controller_*_offline.py" -v
+        run: uv run python scripts/check_controller_offline.py
       - name: Preview provider registry without network calls
         run: uv run python scripts/provider_preflight.py
