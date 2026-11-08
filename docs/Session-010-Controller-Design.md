@@ -1,6 +1,6 @@
 # Session 010 — Bounded chart-agent controller (offline-first)
 
-**Status (2026-11-07 America/Vancouver):** Initial pure state-machine implementation and mock-only tests committed to the feature branch; **Codespaces regression results are pending**. No live model, Docker container, chart generation, sandbox command or new judge request has been performed in this session.
+**Status (2026-11-07 America/Vancouver):** Pure controller test-discovery failure was repaired; **11/11 controller tests passed** in Codespaces, along with the previously verified **37/37 provider** and **49/49 validator** suites. A separate, permission-gated sandbox gateway and **14 additional fake-Docker tests** are now committed; their Codespace verification is **pending**. No live model, real Docker container, chart generation, sandbox command or new judge request has been performed in this session.
 
 ## Why a controller is necessary
 
@@ -103,10 +103,44 @@ The user pulled the initial Session 010 branch at commit `43a24ac` and ran the p
 2. Add `scripts/check_controller_offline.py`, a deterministic test runner that checks `suite.countTestCases()` and **exits nonzero when discovery returns zero tests**, then executes the suite.
 3. Update GitHub Actions to run the new guarded script rather than unguarded `unittest discover`; update README and this design report accordingly.
 
-**Pending:** User must pull these remediation commits and run `uv run python scripts/check_controller_offline.py`. Expected discovery is **11 tests**, but no pass result is claimed until the actual user output or CI run confirms it. Do not begin a live model request, actual Docker operation, or controller-to-sandbox coupling until this baseline is verified.
+**Resolution verified in Codespaces:** The user pulled the corrected commits at `e828672` and ran `uv run python scripts/check_controller_offline.py`: **11 tests discovered and all 11/11 passed** in 0.004 s. Git remained clean/synchronized. No network or Docker was involved.
+
+## Second implementation slice — strictly gated sandbox gateway (pending tests)
+
+New `integrations/sandbox_gateway.py` imports and instantiates the pinned `Sandbox` **only after** an explicit `launch(confirm_launch=True, approve_image=IMAGE)` call. It is an opt-in host wrapper and **not yet connected to the chart controller or CLI**.
+
+- `preview_launch()` is pure metadata: reports `docker_launches=0` and an explicit policy, without importing Docker or reading credentials. It is only available before any launch attempt.
+- First-slice image is **exactly `python:3.12-slim`**. This is a **mutable, plain Python transport-test base image**, *not* the final pinned/chart-capable image. Changing the allowed image requires a future reviewed code change. Docker could pull the image on a real launch; none was performed here.
+- The gateway invokes the pinned sandbox with `network="none"`, `ports=()`, `cwd="/workspace"`, `deployment_timeout=120`, `runtime_timeout=15`, `cpus=1.0`, and `memory="512m"`. The dependency itself provides `--cap-drop ALL`, `no-new-privileges`, `--pids-limit`, engine-enforced lifetime, no bind mounts, and context-manager cleanup.
+- `propose_command("...")` validates the candidate and exposes the **exact command and one-step SHA-256 fingerprint** for human review, but **never executes** it. A pending proposal blocks another proposal until consumed or explicitly rejected.
+- `execute_approved(confirm_one_command=True, approve_sha256=exact_fingerprint)` can execute **one** proposed command *only in an already-authorized sandbox*. It passes `env={}`, a bounded timeout and `check=False`, and returns only validated/truncated `returncode`, `stdout` and `stderr` fields. A failed attempt consumes a command budget slot. It does **not retry**.
+- `close()` / context-manager exit stop the container without additional approval. The wrapper refuses repeated launches, prevents reuse after closure, and does not expose any general Docker CLI methods or host filesystem mounts.
+- `SandboxLimits` validates bounded configurations (default maximum **6 commands**, **2,000 command characters**, **2,048 characters per output stream**, max 300-second lifetime). This command quota does **not** authorize actual execution.
+
+**Crucial distinction:** The boolean flag and SHA-256 fingerprint are **guardrails, not proof of independent human consent**. A future host must present the exact proposed command for review, obtain consent, and only then call `execute_approved`. The gateway deliberately has **no automatic model-to-command execution path**. A real Docker container is **not a hardened VM security boundary**; treat model-generated shell commands as untrusted even with networking disabled.
+
+**Not implemented:** task input transfer, safe `figure.png` extraction, chart-capable Docker image, binding the controller's `pending_calls` to a human approval UI, or any real Docker smoke run.
+
+### New mock-only tests
+
+New `tests/test_sandbox_gateway_offline.py` has **14 test cases**, using a `FakeSandbox` rather than Docker. The cases check denied launches, exact image approval, launch kwargs, proposal/approval mismatch, command budgets, malformed/NUL/oversized commands, result truncation, no secret environment forwarding, one-shot failure, no silent retry, and cleanup after exceptions.
+
+New `scripts/check_sandbox_gateway_offline.py` explicitly **fails on zero discovered tests**. GitHub Actions runs this guarded suite in addition to the verified controller and existing provider/validator suites.
+
+**To verify in Codespaces, with zero model requests and zero Docker launches:**
+
+```bash
+cd /workspaces/cmu-11-768-assignment-2
+git pull --ff-only
+uv run python scripts/check_controller_offline.py
+uv run python scripts/check_sandbox_gateway_offline.py
+git status --short --branch
+```
+
+Expect **11 controller + 14 gateway = 25 tests** if the newly added tests all pass; these figures are **not yet verified for the new gateway**.
 
 ## Next decisions before any live chart generation
 
-First verify the pure controller and its tests. Then implement and mock-test a restricted `Sandbox` gateway using the pinned package, with explicit user permission before any real Docker launch. Design task-file staging and bounded PNG retrieval. Only after those pass should we propose any additional paid model request, approved **individually per turn**.
+First **verify the new fake-Docker gateway tests** and fix any failures. Then design a reviewed task-local Docker image, safe data injection (no secret or host mounts), and size-limited PNG extraction using only supported pinned runtime interfaces. A separate human confirmation is required before any real Docker launch, and a fresh explicit model-specific approval is required **for every potentially billed model turn**. The bounded controller and gateway must not be wired to unattended live execution.
 
 **Non-goals for this slice:** model-quality comparisons, MCC, human-label prediction, a live Terra judgment, course-equivalent results, automatic API retries, and unsupervised multi-turn execution.
