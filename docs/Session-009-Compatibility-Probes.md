@@ -1,6 +1,6 @@
 # Session 009 — One-request live compatibility probes (independent adaptation)
 
-**Status (2026-11-07):** Session 009 offline preparation verified in Codespaces (**34/34** provider tests and **49/49** validator tests passed; four request previews reported zero network requests). One separately authorized live DeepSeek `deepseek-flash` compatibility request **succeeded**. Luna, GLM, and Terra have not been called in Session 009. Account access to those three models remains unverified.
+**Status (2026-11-07):** Session 009 offline preparation verified in Codespaces (**34/34** provider tests and **49/49** validator tests passed; four request previews reported zero network requests). Two separately authorized live compatibility requests **succeeded**: DeepSeek `deepseek-flash` (Agent A) and OpenAI `gpt-5.6-luna` (Agent B). GLM and Terra have not been called in Session 009; their account-specific access remains unverified.
 
 ## Goal and decisions
 
@@ -82,6 +82,26 @@ Record the response from `output/provider_compat_<role>.json` and identify wheth
 The model returned one function call and the normalized adapter parsed it. The probe **did not execute a shell command** or run a Docker container. This proves only a successful one-turn live API/function-call compatibility probe, not the chart-making controller, complete tool-call loop, successful plotting, or judge/metric accuracy. The reported model string does not independently identify the checkpoint behind a moving alias.
 
 **The previously approved DeepSeek request has been consumed.** Do not issue any retry or Luna/GLM/Terra request without another explicit one-request approval.
+
+## Verified live compatibility: Agent B, OpenAI Luna
+
+**Date:** 2026-11-07 (America/Vancouver, user Codespace transcript). The user separately and explicitly authorized one OpenAI Luna request with no retries and no tool execution; confirmed `OPENAI_API_KEY` was available without showing its value.
+
+| Field | Observed |
+| --- | --- |
+| Role | `agent_b` |
+| Requested / reported model | `gpt-5.6-luna` / `gpt-5.6-luna` |
+| Provider interface | OpenAI Responses |
+| Status | `completed` |
+| Function calls | One inert `run_shell` request |
+| Parsed compatibility | `expected_tool_called=true`, `tool_call_compatibility=true` |
+| Usage | 94 input tokens, 33 output tokens, 127 total tokens |
+| Retries / commands actually executed | 0 / 0 |
+| Local ignored result | `output/provider_compat_agent_b.json` |
+| Confirmed Git status after request | Clean / tracking remote |
+| Monetary charge | Not independently verified |
+
+This confirms actual one-turn API/function-call interoperability and the local parser for Luna, but **not** multi-turn tool execution, plotting quality, Docker sandbox integration, or human-label judgment. The Luna request's authorization has been consumed. Z.ai GLM and OpenAI Terra each require their own separately approved request.
 
 ## After the four approved checks
 
