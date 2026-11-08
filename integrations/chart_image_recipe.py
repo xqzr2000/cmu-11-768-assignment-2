@@ -5,8 +5,9 @@ reference, renders a fixed Dockerfile and reports its digest. It never calls
 Docker, a package index, a model API, or reads host secrets.
 
 A valid-looking sha256 string is NOT proof that its image exists or is trusted.
-The pip pins below lack complete transitive dependency/wheel hashes, so this
-is a reviewable development recipe, NOT a reproducible/authorized image build.
+The Dockerfile now references a full-transitive, audited wheel hash file, but
+this module only renders text. No wheel bytes or actual pip/Docker installation
+have been verified, and no build is authorized.
 """
 
 from __future__ import annotations
@@ -18,8 +19,8 @@ from typing import Any
 
 BASE_REF_PATTERN = re.compile(r"^python:3\.12-slim@sha256:[0-9a-f]{64}$")
 
-# Exactly the plotting packages pinned by the Assignment 2 pyproject.toml.
-# They are direct-version pins, not a complete immutable package resolution.
+# Direct plotting roots pinned in the project; the Dockerfile must NOT install
+# these separately, only through the audited full-transitive requirements file.
 PLOT_PACKAGES = (
     "matplotlib==3.10.5",
     "numpy==2.3.2",
@@ -30,6 +31,8 @@ RUNTIME_USER = "10001:10001"
 WORKSPACE = "/workspace"
 INPUT_DIRECTORY = "/opt/assignment/inputs"
 EXTRACTOR_DESTINATION = "/opt/assignment/extract_figure.py"
+REQUIREMENTS_CONTEXT_PATH = "requirements/chart-cp312-linux-amd64.txt"
+REQUIREMENTS_DESTINATION = "/opt/assignment/chart-requirements.txt"
 
 
 class ImageRecipeError(ValueError):
@@ -58,6 +61,8 @@ class ChartImageRecipe:
             "fixed_extractor_destination": EXTRACTOR_DESTINATION,
             "required_context_inputs_directory": "inputs/",
             "required_context_helper_path": "trusted/extract_figure.py",
+            "required_context_requirements_path": REQUIREMENTS_CONTEXT_PATH,
+            "hash_locked_install_requested": True,
             "staging_context_prepared": False,
             "direct_dependency_versions_pinned": True,
             "full_dependency_hash_lock_verified": False,
@@ -82,19 +87,20 @@ def plan_chart_image(base_image: str) -> ChartImageRecipe:
         raise ImageRecipeError(
             "Supply an exact python:3.12-slim@sha256:<64 lowercase hex> base image."
         )
-    dependencies = " ".join(PLOT_PACKAGES)
     dockerfile = (
         f"FROM {base_image}\n"
         "ENV MPLBACKEND=Agg \\\n"
         "    PYTHONDONTWRITEBYTECODE=1 \\\n"
         "    PYTHONUNBUFFERED=1 \\\n"
         "    HOME=/workspace\n"
-        f"RUN python -m pip install --no-cache-dir --only-binary=:all: {dependencies}\n"
+        f"COPY {REQUIREMENTS_CONTEXT_PATH} {REQUIREMENTS_DESTINATION}\n"
+        "RUN python -m pip install --no-cache-dir --require-hashes --only-binary=:all: "
+        f"-r {REQUIREMENTS_DESTINATION}\n"
         "RUN mkdir -p /opt/assignment/inputs /workspace \\\n"
         "    && chmod 0755 /opt/assignment /opt/assignment/inputs \\\n"
         "    && chown 10001:10001 /workspace \\\n"
         "    && chmod 0700 /workspace\n"
-        "# Requires a separately vetted minimal build context with only checked CSVs and helper.\n"
+        "# Requires a separately audited wheel lock and vetted CSV/helper context.\n"
         "COPY inputs/ /opt/assignment/inputs/\n"
         "COPY trusted/extract_figure.py /opt/assignment/extract_figure.py\n"
         "# Files arrive from private 0600 staging; give non-root read-only access.\n"
