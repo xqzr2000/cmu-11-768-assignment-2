@@ -31,6 +31,8 @@ RUNTIME_USER = "10001:10001"
 WORKSPACE = "/workspace"
 INPUT_DIRECTORY = "/opt/assignment/inputs"
 EXTRACTOR_DESTINATION = "/opt/assignment/extract_figure.py"
+SMOKE_WORKER_CONTEXT_PATH = "trusted/smoke_chart.py"
+SMOKE_WORKER_DESTINATION = "/opt/assignment/smoke_chart.py"
 REQUIREMENTS_CONTEXT_PATH = "requirements/chart-cp312-linux-amd64.txt"
 REQUIREMENTS_DESTINATION = "/opt/assignment/chart-requirements.txt"
 
@@ -59,6 +61,8 @@ class ChartImageRecipe:
             "workspace": WORKSPACE,
             "task_csv_directory": INPUT_DIRECTORY,
             "fixed_extractor_destination": EXTRACTOR_DESTINATION,
+            "fixed_smoke_worker_destination": SMOKE_WORKER_DESTINATION,
+            "required_context_smoke_worker_path": SMOKE_WORKER_CONTEXT_PATH,
             "required_context_inputs_directory": "inputs/",
             "required_context_helper_path": "trusted/extract_figure.py",
             "required_context_requirements_path": REQUIREMENTS_CONTEXT_PATH,
@@ -100,11 +104,13 @@ def plan_chart_image(base_image: str) -> ChartImageRecipe:
         "    && chmod 0755 /opt/assignment /opt/assignment/inputs \\\n"
         "    && chown 10001:10001 /workspace \\\n"
         "    && chmod 0700 /workspace\n"
-        "# Requires a separately audited wheel lock and vetted CSV/helper context.\n"
+        "# Requires audited wheel lock and vetted CSV/trusted-script context.\n"
         "COPY inputs/ /opt/assignment/inputs/\n"
         "COPY trusted/extract_figure.py /opt/assignment/extract_figure.py\n"
+        f"COPY {SMOKE_WORKER_CONTEXT_PATH} {SMOKE_WORKER_DESTINATION}\n"
         "# Files arrive from private 0600 staging; handle zero CSVs and set read-only access.\n"
         "RUN chmod 0444 /opt/assignment/extract_figure.py \\\n"
+        f"    && chmod 0444 {SMOKE_WORKER_DESTINATION} \\\n"
         "    && find /opt/assignment/inputs -maxdepth 1 -type f -name '*.csv' \\\n"
         "       -exec chmod 0444 {} +\n"
         f"USER {RUNTIME_USER}\n"

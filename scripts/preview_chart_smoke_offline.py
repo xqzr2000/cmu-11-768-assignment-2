@@ -32,12 +32,14 @@ CASE_FILES = {
     "zero_csv": frozenset({
         "Dockerfile",
         "trusted/extract_figure.py",
+        "trusted/smoke_chart.py",
         "requirements/chart-cp312-linux-amd64.txt",
     }),
     "one_csv": frozenset({
         "Dockerfile",
         "inputs/synthetic.csv",
         "trusted/extract_figure.py",
+        "trusted/smoke_chart.py",
         "requirements/chart-cp312-linux-amd64.txt",
     }),
 }

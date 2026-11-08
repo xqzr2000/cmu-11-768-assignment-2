@@ -17,11 +17,12 @@ from integrations.chart_build_context import (
     ChartBuildContext,
     ContextFile,
     HELPER_SOURCE,
+    SMOKE_WORKER_SOURCE,
     REQUIREMENTS_SOURCE,
     prepare_chart_build_context,
     verify_chart_build_context,
 )
-from integrations.chart_image_recipe import ImageRecipeError, REQUIREMENTS_CONTEXT_PATH
+from integrations.chart_image_recipe import ImageRecipeError, REQUIREMENTS_CONTEXT_PATH, SMOKE_WORKER_CONTEXT_PATH
 from integrations.task_artifacts import ArtifactError, CSVAsset, TaskInputSnapshot
 
 # Deliberately fictitious, syntax-valid reference: never used for a real build.
@@ -36,13 +37,13 @@ def snapshot(data: bytes = b"category,value\nA,1\nB,2\n") -> TaskInputSnapshot:
 
 
 class ChartBuildContextOfflineTests(unittest.TestCase):
-    def test_exact_four_file_context_and_private_permissions(self):
+    def test_exact_five_file_context_and_private_permissions(self):
         with tempfile.TemporaryDirectory() as parent:
             with prepare_chart_build_context(snapshot(), FAKE_BASE, parent_dir=Path(parent)) as context:
                 self.assertEqual(
                     {entry.relative_path for entry in context.files},
                     {"Dockerfile", "inputs/data.csv", "trusted/extract_figure.py",
-                     REQUIREMENTS_CONTEXT_PATH},
+                     SMOKE_WORKER_CONTEXT_PATH, REQUIREMENTS_CONTEXT_PATH},
                 )
                 self.assertEqual(
                     stat.S_IMODE(context.root.stat().st_mode), 0o700
@@ -58,7 +59,7 @@ class ChartBuildContextOfflineTests(unittest.TestCase):
                         stat.S_IMODE((context.root / entry.relative_path).stat().st_mode), 0o600
                     )
                 verify = verify_chart_build_context(context)
-                self.assertEqual(verify["file_count"], 4)
+                self.assertEqual(verify["file_count"], 5)
                 self.assertFalse(verify["docker_build_authorized"])
                 self.assertEqual(verify["docker_builds"], 0)
                 self.assertEqual(verify["model_requests"], 0)
@@ -73,13 +74,14 @@ class ChartBuildContextOfflineTests(unittest.TestCase):
                                              parent_dir=Path(tmp)) as context:
                 self.assertEqual(
                     {entry.relative_path for entry in context.files},
-                    {"Dockerfile", "trusted/extract_figure.py", REQUIREMENTS_CONTEXT_PATH},
+                    {"Dockerfile", "trusted/extract_figure.py", SMOKE_WORKER_CONTEXT_PATH,
+                     REQUIREMENTS_CONTEXT_PATH},
                 )
                 self.assertEqual(list((context.root / "inputs").iterdir()), [])
                 for folder in ("inputs", "trusted", "requirements"):
                     self.assertEqual(stat.S_IMODE((context.root / folder).stat().st_mode), 0o700)
                 manifest = verify_chart_build_context(context)
-                self.assertEqual(manifest["file_count"], 3)
+                self.assertEqual(manifest["file_count"], 4)
                 self.assertFalse(manifest["docker_build_authorized"])
                 self.assertEqual(manifest["docker_builds"], 0)
                 self.assertEqual(manifest["sandbox_launches"], 0)
@@ -95,11 +97,15 @@ class ChartBuildContextOfflineTests(unittest.TestCase):
             with self.assertRaises(BuildContextError):
                 verify_chart_build_context(context)
 
-    def test_context_uses_only_fixed_trusted_extractor_source(self):
+    def test_context_uses_only_fixed_trusted_script_sources(self):
         with prepare_chart_build_context(snapshot(), FAKE_BASE) as context:
             self.assertEqual(
                 (context.root / "trusted/extract_figure.py").read_bytes(),
                 HELPER_SOURCE.read_bytes(),
+            )
+            self.assertEqual(
+                (context.root / SMOKE_WORKER_CONTEXT_PATH).read_bytes(),
+                SMOKE_WORKER_SOURCE.read_bytes(),
             )
             self.assertEqual(
                 (context.root / "Dockerfile").read_text(encoding="utf-8"),
@@ -119,10 +125,11 @@ class ChartBuildContextOfflineTests(unittest.TestCase):
             self.assertEqual(
                 {entry.relative_path for entry in context.files},
                 {"Dockerfile", "inputs/data.csv", "inputs/other.csv",
-                 "trusted/extract_figure.py", REQUIREMENTS_CONTEXT_PATH}
+                 "trusted/extract_figure.py", SMOKE_WORKER_CONTEXT_PATH,
+                 REQUIREMENTS_CONTEXT_PATH}
             )
             self.assertEqual((context.root / "inputs/other.csv").read_bytes(), extra)
-            self.assertEqual(verify_chart_build_context(context)["file_count"], 5)
+            self.assertEqual(verify_chart_build_context(context)["file_count"], 6)
 
     def test_cleanup_on_exception_inside_context(self):
         with tempfile.TemporaryDirectory() as parent:
@@ -159,12 +166,58 @@ class ChartBuildContextOfflineTests(unittest.TestCase):
                 verify_chart_build_context(context)
 
     def test_verify_detects_modified_dockerfile_or_helper(self):
-        for file in ("Dockerfile", "trusted/extract_figure.py", REQUIREMENTS_CONTEXT_PATH):
+        for file in ("Dockerfile", "trusted/extract_figure.py", SMOKE_WORKER_CONTEXT_PATH,
+                     REQUIREMENTS_CONTEXT_PATH):
             with self.subTest(file=file):
                 with prepare_chart_build_context(snapshot(), FAKE_BASE) as context:
                     (context.root / file).write_bytes(b"not the trusted source")
                     with self.assertRaises(BuildContextError):
                         verify_chart_build_context(context)
+
+    def test_rejects_forged_manifest_for_altered_smoke_worker(self):
+        with prepare_chart_build_context(snapshot(), FAKE_BASE) as context:
+            staged = context.root / SMOKE_WORKER_CONTEXT_PATH
+            forged_bytes = b"# deliberately replaced worker\n"
+            staged.write_bytes(forged_bytes)
+            entries = tuple(
+                replace(entry, size_bytes=len(forged_bytes),
+                        sha256=hashlib.sha256(forged_bytes).hexdigest())
+                if entry.relative_path == SMOKE_WORKER_CONTEXT_PATH else entry
+                for entry in context.files
+            )
+            forged = ChartBuildContext(context.root, context.recipe, entries)
+            with self.assertRaisesRegex(BuildContextError, "differs from trusted source"):
+                verify_chart_build_context(forged)
+
+    def test_missing_staged_smoke_worker_is_rejected(self):
+        with prepare_chart_build_context(snapshot(), FAKE_BASE) as context:
+            (context.root / SMOKE_WORKER_CONTEXT_PATH).unlink()
+            with self.assertRaises(BuildContextError):
+                verify_chart_build_context(context)
+
+    def test_missing_symlinked_or_oversized_smoke_source_is_rejected(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            parent = Path(tmp)
+            source = parent / "source.py"
+            with patch("integrations.chart_build_context.SMOKE_WORKER_SOURCE", source):
+                with self.assertRaises(BuildContextError):
+                    with prepare_chart_build_context(snapshot(), FAKE_BASE,
+                                                     parent_dir=parent):
+                        pass
+            source.symlink_to(SMOKE_WORKER_SOURCE)
+            with patch("integrations.chart_build_context.SMOKE_WORKER_SOURCE", source):
+                with self.assertRaises(BuildContextError):
+                    with prepare_chart_build_context(snapshot(), FAKE_BASE,
+                                                     parent_dir=parent):
+                        pass
+            source.unlink()
+            source.write_bytes(b"p" * (16 * 1024 + 1))
+            with patch("integrations.chart_build_context.SMOKE_WORKER_SOURCE", source):
+                with self.assertRaises(BuildContextError):
+                    with prepare_chart_build_context(snapshot(), FAKE_BASE,
+                                                     parent_dir=parent):
+                        pass
+            self.assertEqual({entry.name for entry in parent.iterdir()}, {"source.py"})
 
     def test_verify_rejects_extra_secret_or_repository_content(self):
         for unexpected in (".env", ".git/config", "src/other.py",

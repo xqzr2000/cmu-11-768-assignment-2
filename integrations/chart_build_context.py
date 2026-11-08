@@ -1,7 +1,7 @@
 """Minimum private Docker build context assembly; no Docker or model calls.
 
 An ephemeral context contains ONLY Dockerfile, zero or more vetted CSV snapshots, the
-version-controlled fixed extractor and the audited 14-wheel requirements file.
+version-controlled extractor, fixed plotting worker and audited 14-wheel requirements file.
 No repository checkout is copied.
 The context is for future independent human review and authorized build only.
 
@@ -23,6 +23,7 @@ from typing import Iterator
 
 from integrations.chart_image_recipe import (
     REQUIREMENTS_CONTEXT_PATH,
+    SMOKE_WORKER_CONTEXT_PATH,
     ChartImageRecipe,
     plan_chart_image,
 )
@@ -31,6 +32,8 @@ from integrations.chart_transfer import stage_input_snapshots
 from integrations.task_artifacts import ArtifactError, TaskInputSnapshot
 
 HELPER_SOURCE = Path(__file__).resolve().parents[1] / "scripts" / "figure_extract_worker.py"
+SMOKE_WORKER_SOURCE = Path(__file__).resolve().parents[1] / "scripts" / "chart_smoke_worker.py"
+MAX_SMOKE_WORKER_BYTES = 16 * 1024
 REQUIREMENTS_SOURCE = Path(__file__).resolve().parents[1] / REQUIREMENTS_CONTEXT_PATH
 MAX_REQUIREMENTS_BYTES = 16 * 1024
 MAX_HELPER_BYTES = 128 * 1024
@@ -141,9 +144,10 @@ def verify_chart_build_context(context: ChartBuildContext) -> dict[str, object]:
     if len(expected) != len(context.files):
         raise BuildContextError("Duplicate context file declarations.")
     csv_files = {p for p in expected if p.startswith("inputs/")}
-    allowed = csv_files | {"Dockerfile", "trusted/extract_figure.py", REQUIREMENTS_CONTEXT_PATH}
+    allowed = csv_files | {"Dockerfile", "trusted/extract_figure.py",
+                           SMOKE_WORKER_CONTEXT_PATH, REQUIREMENTS_CONTEXT_PATH}
     if expected != allowed or len(csv_files) > 8:
-        raise BuildContextError("Expected only Dockerfile, audited lock, helper and 0-8 CSV files.")
+        raise BuildContextError("Expected only Dockerfile, audited lock, trusted scripts and 0-8 CSV files.")
     for name in csv_files:
         if not re.fullmatch(r"inputs/[A-Za-z0-9][A-Za-z0-9._-]{0,63}\.csv", name):
             raise BuildContextError("Context includes an unsafe CSV path.")
@@ -154,11 +158,16 @@ def verify_chart_build_context(context: ChartBuildContext) -> dict[str, object]:
 
     total_bytes = 0
     for entry in context.files:
-        cap = MAX_HELPER_BYTES if entry.relative_path == "trusted/extract_figure.py" else (
-            MAX_REQUIREMENTS_BYTES if entry.relative_path == REQUIREMENTS_CONTEXT_PATH else (
-                64 * 1024 if entry.relative_path.startswith("inputs/") else 16 * 1024
-            )
-        )
+        if entry.relative_path == "trusted/extract_figure.py":
+            cap = MAX_HELPER_BYTES
+        elif entry.relative_path == SMOKE_WORKER_CONTEXT_PATH:
+            cap = MAX_SMOKE_WORKER_BYTES
+        elif entry.relative_path == REQUIREMENTS_CONTEXT_PATH:
+            cap = MAX_REQUIREMENTS_BYTES
+        elif entry.relative_path.startswith("inputs/"):
+            cap = 64 * 1024
+        else:
+            cap = 16 * 1024  # Dockerfile only, enforced by the exact allowlist.
         if (type(entry.size_bytes) is not int or not 0 < entry.size_bytes <= cap
             or not isinstance(entry.sha256, str) or not SHA256_PATTERN.fullmatch(entry.sha256)):
             raise BuildContextError("Invalid build context manifest entry.")
@@ -171,6 +180,14 @@ def verify_chart_build_context(context: ChartBuildContext) -> dict[str, object]:
             content = stream.read(entry.size_bytes + 1)
         if len(content) != entry.size_bytes or hashlib.sha256(content).hexdigest() != entry.sha256:
             raise BuildContextError("Build context file content differs from its manifest.")
+
+    # Revalidate the trusted worker against checked-in source, even if a caller
+    # supplies a forged size/hash manifest for the staged worker.
+    if (SMOKE_WORKER_SOURCE.is_symlink() or not SMOKE_WORKER_SOURCE.is_file()
+            or not 0 < SMOKE_WORKER_SOURCE.stat().st_size <= MAX_SMOKE_WORKER_BYTES):
+        raise BuildContextError("Trusted chart smoke worker source is missing or unsafe.")
+    if (root / SMOKE_WORKER_CONTEXT_PATH).read_bytes() != SMOKE_WORKER_SOURCE.read_bytes():
+        raise BuildContextError("Staged chart smoke worker differs from trusted source.")
 
     actual_dockerfile = (root / "Dockerfile").read_bytes()
     if actual_dockerfile.decode("utf-8") != context.recipe.dockerfile:
@@ -227,6 +244,15 @@ def prepare_chart_build_context(
                 raise BuildContextError("Trusted extractor source is empty or oversized.")
             # Keep this source fixed; never let task data or a model replace it.
             files.append(_write_only(root, "trusted/extract_figure.py", helper_bytes))
+
+            if SMOKE_WORKER_SOURCE.is_symlink() or not SMOKE_WORKER_SOURCE.is_file():
+                raise BuildContextError("Trusted chart smoke worker source is missing or symlinked.")
+            if SMOKE_WORKER_SOURCE.stat().st_size > MAX_SMOKE_WORKER_BYTES:
+                raise BuildContextError("Trusted chart smoke worker source exceeds 16 KiB.")
+            worker_bytes = SMOKE_WORKER_SOURCE.read_bytes()
+            if not worker_bytes or len(worker_bytes) > MAX_SMOKE_WORKER_BYTES:
+                raise BuildContextError("Trusted chart smoke worker is empty or oversized.")
+            files.append(_write_only(root, SMOKE_WORKER_CONTEXT_PATH, worker_bytes))
 
             if REQUIREMENTS_SOURCE.is_symlink() or not REQUIREMENTS_SOURCE.is_file():
                 raise BuildContextError("Trusted chart wheel lock is missing or symlinked.")
