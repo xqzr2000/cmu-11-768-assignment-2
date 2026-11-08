@@ -32,6 +32,10 @@ class ChartSmokePreviewOfflineTests(unittest.TestCase):
             self.assertFalse(case["context"]["docker_build_authorized"])
             self.assertEqual(case["context"]["docker_builds"], 0)
             self.assertEqual(case["context"]["model_requests"], 0)
+        self.assertEqual(output["cases"][0]["context"]["file_count"], 4)
+        self.assertEqual(output["cases"][1]["context"]["file_count"], 5)
+        self.assertIn("trusted/smoke_chart.py", preview.CASE_FILES["zero_csv"])
+        self.assertIn("trusted/smoke_chart.py", preview.CASE_FILES["one_csv"])
         self.assertEqual(output["cases"][0]["declared_csv_count"], 0)
         self.assertEqual(output["cases"][1]["declared_csv_count"], 1)
 
@@ -46,6 +50,8 @@ class ChartSmokePreviewOfflineTests(unittest.TestCase):
         )
         self.assertIn("--require-hashes --only-binary=:all:", recipe.dockerfile)
         self.assertIn("COPY inputs/ /opt/assignment/inputs/", recipe.dockerfile)
+        self.assertIn("COPY trusted/smoke_chart.py /opt/assignment/smoke_chart.py",
+                      recipe.dockerfile)
 
     def test_preview_exposes_neither_csv_bytes_nor_private_host_paths(self):
         raw = json.dumps(preview.build_offline_preview(), sort_keys=True)
