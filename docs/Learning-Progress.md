@@ -935,7 +935,15 @@ git status --short --branch
 - Saved local ignored result: `output/provider_compat_agent_a.json` (contents supplied by user match CLI output). Final `git status --short --branch` remained clean and synchronized; the committed files were unchanged before this documentation update.
 - **Interpretation:** DeepSeek's live endpoint supports this exact one-turn function-call request and our parser accepts its response. This is not an end-to-end plotting agent, Docker/shell execution test, data-visualization quality evaluation, Terra judge inference or MCC benchmark.
 
-**Next:** Sync the documentation commit, then request a separate explicit authorization for **one OpenAI `gpt-5.6-luna` compatibility call** before providing any Luna live command. Z.ai and Terra must each also receive their own approval. Do not automatically retry any provider test.
+**Second approved live compatibility request (OpenAI Luna, Agent B, 2026-11-07 America/Vancouver, user Codespace transcript):**
+
+- Following the successful DeepSeek probe and its journal commits, user explicitly authorized **exactly one** potentially billed OpenAI `gpt-5.6-luna` compatibility request, without retries or tool execution. They verified the feature branch remained clean/synchronized and checked that `OPENAI_API_KEY` was configured without revealing it.
+- User executed `uv run python scripts/provider_compat_probe.py --role agent_b --live --confirm-one-request --approve-model gpt-5.6-luna` **exactly once**. The real OpenAI Responses API request completed. Requested model: `gpt-5.6-luna`; reported model: `gpt-5.6-luna`; one inert `run_shell` function call was returned and correctly parsed (`expected_tool_called=true`, `tool_call_compatibility=true`).
+- Reported usage: **94 input tokens, 33 output tokens, 127 total tokens**; retries=0; proposed commands executed=0; `official_qwen_equivalent=false`. Actual monetary charge was not independently verified.
+- Ignored local record: `output/provider_compat_agent_b.json`, which user read back and verified matched the CLI's result. Final Git status was clean/synchronized before the documentation commit.
+- **Interpretation:** Both DeepSeek Agent A and OpenAI Luna Agent B have now passed one-turn live function-call compatibility checks. Neither was a chart-generation agent run; Docker/shell behavior, plotting quality, and Terra judgment remain untested. No Z.ai or Terra calls have been made in Session 009.
+
+**Next:** Sync this documentation-only commit, then request fresh explicit authorization for **one Z.ai `glm-4.7-flash` Agent C compatibility call** before providing its live command. The Terra judge requires its own independent approval later. No automatic retries or model substitution.
 
 ### Template for future sessions
 
