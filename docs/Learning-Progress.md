@@ -981,7 +981,23 @@ git status --short --branch
 - **Interpretation:** All three **current** generator roles now pass a one-request live tool-call compatibility smoke test: DeepSeek Flash, OpenAI GPT-5.6 Luna and Z.ai GLM-5.3 Flash. This demonstrates that the configured endpoints accept the synthetic request and the adapters parse one inert function call; **not** actual code/shell execution, multi-turn agent operations, plotting quality or benchmark equivalence. The earlier `glm-4.7-flash` failure remains unexplained; a successful new-model request does not prove the prior rate error was model-specific.
 - The authorization for the GLM-5.3-Flash request has been **consumed**. Never retry it without fresh authorization. No live Terra judgment has yet been performed in this session.
 
-**Next:** Pull these documentation commits. Separately present and request explicit consent for **exactly one** potentially billed `gpt-6.1-terra` synthetic PNG + strict JSON compatibility probe, no retries and no model-suggested tool execution. Only after that separate approval should the user run Terra; no other model requests are authorized.
+**Fourth approved live compatibility request — OpenAI Terra synthetic PNG and strict JSON (2026-11-07 America/Vancouver, user-supplied Codespace transcript):**
+
+- User separately and explicitly authorized **exactly one potentially billed `gpt-6.1-terra` request**, with no retries and no tool execution. They verified `OPENAI_API_KEY` was configured without printing it and that the Session 009 feature branch was clean and synchronized.
+- User invoked **once**: `uv run python scripts/provider_compat_probe.py --role experimental_judge --live --confirm-one-request --approve-model gpt-6.1-terra`.
+- The OpenAI Responses API request **completed**. Requested model and reported model: `gpt-6.1-terra`. Input was the local synthetic bar-chart PNG and synthetic task description; strict local JSON parsing reported `schema_valid=true`. The parsed `judgment_families=[]` indicates no error families were returned for this synthetic case. `accuracy_evaluated=false`.
+- Provider-reported usage: **215 input tokens, 73 output tokens, 288 total tokens**. Tool calls=0; SDK retries=0; model-proposed shell commands executed=0; `official_qwen_equivalent=false`. Monetary charge is not independently verified.
+- Ignored output `output/provider_compat_experimental_judge_gpt-6.1-terra.json` was read back and matched the CLI result. Final `git status --short --branch` remained clean and tracking the feature branch.
+- **Interpretation:** Terra's API accepts this synthetic PNG and its response validates against the existing strict error-family schema. This **does not** establish error-detection accuracy, confusion matrices, MCC, calibration, or equivalence to the course Qwen judge. The one-call Terra authorization has been fully consumed.
+
+**Session 009 compatibility milestone conclusion (2026-11-07 America/Vancouver):**
+
+- All **four current roles** passed exactly one separately authorized live compatibility probe: Agent A DeepSeek `deepseek-flash`, Agent B OpenAI `gpt-5.6-luna`, Agent C paid Z.ai `glm-5.3-flash`, and experimental OpenAI judge `gpt-6.1-terra`. The first three each returned a parsable inert `run_shell` function call; Terra returned structured JSON from synthetic PNG input.
+- A **fifth, historical model attempt** using free `glm-4.7-flash` failed with `RateLimitError`, zero retries and no parseable model response. This remains preserved separately from the successful paid GLM-5.3 result; we do not claim to know the original rate-limit cause.
+- Latest Codespace offline verification before the final live probes: **37/37 provider tests, 49/49 validator tests**, four zero-network previews; no code changed following this verification (documentation updates only). Model-reported usage and model-ID strings were logged; monetary charges were not independently verified.
+- **Not implemented:** a multi-turn agent controller, any model-generated chart inside Docker, a real Terra `validate(run)` integration, a human-label accuracy experiment, MCC analysis, authored-task suite, or the official course model setup.
+
+**Next:** Pull the documentation-only completion commits, run one final offline regression/preflight and review the Session 009 branch diff; open a **draft PR to `main`** and check CI before considering merge. No further paid API calls are required for Session 009 or authorized by earlier consents. Plan the bounded Docker chart-agent controller as a **new feature branch** after Session 009 is merged.
 
 ### Template for future sessions
 
