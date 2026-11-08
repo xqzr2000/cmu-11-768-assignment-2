@@ -1,6 +1,6 @@
 # Session 010 — OCI image and chart wheel-lock provenance
 
-**Status, 2026-11-07 (America/Vancouver):** The user inspected live public registry *metadata* and then verified the chart-only wheel hash audit in Codespaces: **14 fully hashed packages, 4 direct + 10 transitive, PASS**. The six earlier Session 010 offline test suites passed **77/77**; this latest audit is a separate metadata check, not an additional unit test. No image layer was pulled, built or started, and no wheel archive was downloaded or installed. A digest-shaped reference or lockfile hash is not proof of a trusted image or functioning chart environment. **Session 010 is paused on its unmerged feature branch**, pending offline Dockerfile/build-context hash-lock integration.
+**Status, 2026-11-07 (America/Vancouver) / 2026-11-08 UTC:** The post-integration Codespace run verified the 14-package chart-wheel **metadata** audit and **29/29 focused offline tests** (12 Dockerfile recipe, 17 private context). The prior six-suite **77/77** total predates the changes; a new all-six run is pending. No image was pulled, built or started and no wheel archive was downloaded or installed. A lockfile hash is not proof of a trusted image or functioning chart environment. Session 010 remains active on its unmerged feature branch.
 
 ## OCI manifest evidence — user Codespace transcript
 
@@ -61,14 +61,14 @@ git status --short --branch
 ## Remaining gaps before a real chart-capable image
 
 1. **Wheel retrieval/install:** We have only lockfile-published wheel hashes. No wheel bytes have been downloaded and rehashed or installed against this OCI image. A future approved build must enforce `pip install --require-hashes --only-binary=:all:` using the complete reviewed file and confirm dependency compatibility and plotting imports.
-2. **Dockerfile/build-context integration:** The sixth-slice `chart_image_recipe.py` still emits a direct-pins `pip install` command, not this 14-package hash-lock, and the minimal context currently includes only Dockerfile, verified CSVs, and the extractor. A future reviewed code update must add **exactly** this lock to the allowlist, stage it securely, and consume it from the Dockerfile. Do not claim that our current Dockerfile is hash-locked.
+2. **Dockerfile/build-context integration:** Implemented and **focused-test verified**: `chart_image_recipe.py` now requests a hashed pip install; the minimal context includes the reviewed 14-package lock, and both source and staged requirements are audited against `uv.lock`. The full suite and actual installer execution remain unverified. Do not equate validated Dockerfile text with a completed image build.
 3. **Platform and image integrity:** The observed manifest corresponds to `linux/amd64` as reported by the public registry. No actual layer pull or signed-origin verification was performed; building a chart image requires separately approved Docker operations and a fixed target platform.
 4. **Sandbox architecture:** Current gateway's default image is still the historical floating `python:3.12-slim` transport test; it is not the chart-capable image and must not be silently repointed. The large PNG output path, explicit independent launch/command consent and end-to-end plotting must be reviewed separately.
 5. **Model consent and academic scope:** No potentially billed model request is authorized. Session 009's provider transport checks are not an official model-equivalent chart benchmark or Terra-accuracy evaluation.
 
 **Decision:** Pinning the observed platform-specific manifest *as a documented candidate* is justified by user-supplied registry metadata. Treating the resulting Docker environment as built, reproducible, secure or assignment-equivalent is not justified yet.
 
-## Offline hashed-wheel staging implementation — tests pending
+## Offline hashed-wheel staging implementation — focused tests passed
 
 The inert image recipe now adds `COPY requirements/chart-cp312-linux-amd64.txt /opt/assignment/chart-requirements.txt` before its pip step. It **requests** `pip install --no-cache-dir --require-hashes --only-binary=:all: -r /opt/assignment/chart-requirements.txt`, rather than installing the four plotting roots as un-hashed command arguments. No such install has actually been executed.
 
@@ -76,13 +76,13 @@ The context allowlist now includes exactly one new file, `requirements/chart-cp3
 
 Updated offline tests cover the Dockerfile copy/install ordering, exact context paths, permission and cleanup policy, extra/unhashed requirements, changed wheel hashes with forged manifests, and missing/symlinked/unhashed source locks. CI continues to run the guarded image/context suites and the separate wheel audit.
 
-**This code is committed but the updated Python tests have not yet been run in Codespaces.** The previous 14-wheel metadata audit PASS and 77/77 test result predate this wiring. We have not retrieved/rehashed actual wheels, verified pip resolution, built an image or launched Docker. The minimal image still omits SciPy and seaborn supported by the course environment, so we cannot claim full environment equivalence.
+**Focused Codespace verification passed at `aee45e6`:** 14 package hashes audited, image recipe **12/12** passed (0.002 s), private context **17/17** passed (4.275 s), clean synchronized working tree. Broader suites were not rerun at this checkpoint. We have not downloaded/rehash-verified wheel bytes, tested pip resolution, built an image or launched Docker. The minimal image still omits SciPy and seaborn supported by the course environment; full environment equivalence cannot be claimed.
 
 ## Pause / restart handoff
 
-**Last verified local Git state:** clean feature branch `feature/session-010-chart-agent-controller` tracking origin at `b3983cc`, before the subsequent documentation-only handoff updates. Keep the branch; do **not** merge, delete it or rerun any billable model probe just to stop the Codespace.
+**Last verified local Git state:** clean feature branch `feature/session-010-chart-agent-controller` tracking origin at `aee45e6` (before this verification-journal commit). Keep the branch; do **not** merge, delete it or rerun billable model probes. Pull the journal commit before full regression tests.
 
-**Next verification step (offline-only):** Pull the new hash-lock integration commits, run the independent wheel audit plus guarded chart-image and private-context test scripts, and report the actual output. Review CI before considering any separately approved real image build or plotting smoke test.
+**Next verification step (offline-only):** Pull the verification documentation, run all six guarded Session 010 test scripts (expected 82 if unchanged), provider and validator regressions, structural tests/preflight, and inspect CI via PR. Do not attempt a real image build or plotting smoke test until separately reviewed and approved.
 
 **Resume:**
 
