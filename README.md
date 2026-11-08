@@ -180,6 +180,14 @@ On `feature/session-012-docker-smoke-preflight`, the user verified the existing 
 
 See [Session 012 smoke-test preflight and approval gates](docs/Session-012-Docker-Smoke-Preflight.md). The previously observed Python AMD64 manifest is only a review candidate. No real image pull/build/launch, wheel installation, PNG from Docker or model API call is authorized. The preview prints metadata and inert Dockerfile text, *not* an execution-ready Docker build context. Dataset preflight (110 runs, 98 figures, 110 labels), 14-package wheel metadata audit, and four-role zero-network provider preview also passed; Git was clean. **PR #12 merged into main at `1118bcd` on 2026-11-08 UTC; main-branch CI passed.** Historical source/preflight evidence remains offline-only. Real Docker operations still require a separate exact-command review and explicit authorization.
 
+## Session 014 — Stage the trusted smoke worker in a planned chart image (offline only)
+
+Starting from clean merged main at `e0242d6`, we created `feature/session-014-chart-worker-image-staging`. This first slice **changes the fixed Dockerfile text and private staging plan only**: the trusted, version-controlled `scripts/chart_smoke_worker.py` is copied as `trusted/smoke_chart.py` into the short-lived context and declared as a read-only `/opt/assignment/smoke_chart.py` in the *future* chart image. The context verifies script bytes against source even if an attacker rewrites the staged file's declared SHA-256.
+
+The zero-/one-CSV context counts become **4/5** files (previously 3/4); expected full offline regression is **197 tests** after four new checks, but **Session 014 tests are still pending Codespaces verification**. No Docker build, image pull, container launch, shell execution, wheel download or model request has been performed. See the [Session 014 staging report](docs/Session-014-Chart-Worker-Image-Staging.md) for exact files and outstanding build-time resource, runtime isolation, artifact-channel and approval requirements.
+
+**Session 013 completed:** [PR #13 merged](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/13) at `e0242d6` with post-merge CI success; the feature branch was cleaned up locally and remotely.
+
 ## Session 013 — Trusted synthetic plotting smoke worker (offline only)
 
 From clean synchronized main at `1118bcd`, we created `feature/session-013-docker-smoke-readiness` for the next *offline* readiness slice. The new fixed `scripts/chart_smoke_worker.py` draws a small 640×480 PNG from hard-coded values using the Matplotlib Agg backend; it never reads task data, executes Docker, calls a model, or accepts CLI parameters. It creates `figure.png` exclusively, refuses overwrite, and enforces a 2 MiB cap.
