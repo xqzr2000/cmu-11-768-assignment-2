@@ -157,7 +157,18 @@ Run the dedicated mock-only tests:
 uv run python scripts/check_controller_offline.py
 ```
 
-The first Codespace check inadvertently discovered **0 controller tests** because the original filename did not match the discovery glob; provider (37/37) and validator (49/49) tests passed, and the preflight made zero network requests. We renamed the suite to `tests/test_controller_state_offline.py` and added the offline-only `scripts/check_controller_offline.py` entry point, which **fails when no tests are discovered**. CI now runs this guard. The renamed suite remains **pending Codespace verification**. The next slice will wrap the pinned Assignment 1 `Sandbox` with an explicit `network="none"` policy and bounded task-file / PNG handling, tested with fake Docker interactions before any real sandbox run.
+The first Codespace check inadvertently discovered **0 controller tests** because the original filename did not match the discovery glob. The test file was renamed to `tests/test_controller_state_offline.py`; a guarded runner now prevents empty discoveries. The user reran the suite and verified **11/11 controller tests passed**. Existing provider **37/37** and validator **49/49** tests passed in the preceding Codespace run, and the model-registry preflight reported zero network requests.
+
+**Second offline slice:** `integrations/sandbox_gateway.py` wraps the pinned Assignment 1 Docker `Sandbox`, but **never starts it without explicit exact-image approval**. It enforces `network="none"`, no exposed ports/host mounts, bounded CPU/memory/lifetime, a user-reviewed command proposal/approval fingerprint for every command, a six-command default budget, output truncation and cleanup. This gateway **is not connected** to the controller or a live CLI. All **14 fake-Docker tests** in `tests/test_sandbox_gateway_offline.py` are newly committed and **await Codespace verification**; no actual Docker commands were run.
+
+Run the two guarded suites without network or Docker:
+
+```bash
+uv run python scripts/check_controller_offline.py
+uv run python scripts/check_sandbox_gateway_offline.py
+```
+
+A real Docker smoke test, a chart-capable image, task-file staging, and `figure.png` extraction remain separate future decisions requiring explicit consent where appropriate.
 
 Read [Session 010 controller design](docs/Session-010-Controller-Design.md) for the state machine, per-turn API consent boundary, and security constraints.
 
