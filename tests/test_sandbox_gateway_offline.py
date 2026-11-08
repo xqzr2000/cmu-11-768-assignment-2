@@ -80,6 +80,8 @@ class SandboxGatewayOfflineTests(unittest.TestCase):
         gateway.launch(confirm_launch=True, approve_image=IMAGE)
         self.assertEqual(len(sandboxes), 1)
         with self.assertRaises(GatewayError):
+            gateway.preview_launch()
+        with self.assertRaises(GatewayError):
             gateway.launch(confirm_launch=True, approve_image=IMAGE)
         gateway.close()
 
