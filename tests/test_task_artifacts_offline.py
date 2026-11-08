@@ -172,6 +172,10 @@ class TaskArtifactsOfflineTests(unittest.TestCase):
         with self.assertRaises(ArtifactError):
             validate_figure_png(oversized_dimensions)
 
+    def test_png_rejects_appended_bytes_after_iend(self):
+        with self.assertRaises(ArtifactError):
+            validate_figure_png(make_png() + b"appended-untrusted-content")
+
     def test_envelope_decodes_valid_png_without_host_writes(self):
         png = make_png()
         payload = make_envelope(png)
