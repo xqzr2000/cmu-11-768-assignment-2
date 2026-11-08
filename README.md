@@ -162,15 +162,17 @@ The following components remain separately gated and **do not yet form a live ag
 
 **Supply-chain checkpoint:** User Codespace registry inspection verified an `x86_64` (`linux/amd64`) host, the official Python image's **multi-platform index** `sha256:4840d514c583a4d3d8cad3940e68dee6f0f6f3635c12fcd0a3d74c21a5b93a54`, and its distinct **AMD64 image manifest** `sha256:05a994d2344eb364cc186910f4fc8786a38215f39f00d0acc25bff33a08f4177` (version `3.12.16-slim-trixie`). No image was pulled, built or launched.
 
-**New chart-only wheel hash file (audit pending):** `requirements/chart-cp312-linux-amd64.txt` records the exact versions and selected wheel hashes for **14 plotting packages** derived from the existing committed `uv.lock`: four direct and ten transitive. The offline checker `scripts/check_chart_wheel_lock_offline.py` re-derives that dependency closure and rejects missing, extra, modified or ambiguously marked dependencies. CI runs the audit. In Codespaces, run:
+**Chart-only wheel hash file (audit verified in Codespaces):** `requirements/chart-cp312-linux-amd64.txt` records the exact versions and selected wheel hashes for **14 plotting packages** derived from the existing committed `uv.lock`: four direct and ten transitive. The offline checker `scripts/check_chart_wheel_lock_offline.py` re-derives that dependency closure and rejects missing, extra, modified or ambiguously marked dependencies. CI runs the audit. In Codespaces, run:
 
 ```bash
 uv run python scripts/check_chart_wheel_lock_offline.py
 ```
 
-This check performs no PyPI download, pip installation, Docker command, or model request. It has **not yet been verified in Codespaces**. The existing chart Dockerfile and minimal build context still **do not consume the hashed requirements file**; adopting it must be separately reviewed and tested. Metadata hashes alone do not prove that a wheel can be downloaded or installed.
+**Verified in Codespaces:** The audit checked all **14 package hashes** (4 direct, 10 transitive) against the committed `uv.lock` and reported **PASS**. This was an additional metadata audit after the existing **77/77 offline tests**, not a seventh set of counted unit tests. It performed no PyPI download, pip installation, Docker command, or model request. The current chart Dockerfile and minimal build context still **do not consume the hashed requirements file**. That is the next offline change; metadata hashes do not establish successful wheel retrieval or installation.
 
 See [Session 010 supply-chain provenance](docs/Session-010-Supply-Chain.md) for full observed digests, platform evidence, package closure and remaining build-trust gaps.
+
+**Session paused:** Continue later on `feature/session-010-chart-agent-controller` without merging/deleting it. See the [pause / resume checkpoint](docs/Learning-Progress.md#pause--resume-checkpoint--2026-11-07-americavancouver) for the full Session 001–010 summary, last verified commit, and exact next task: integrate the 14-package hash lock into the Dockerfile and the private build context, then test offline before considering a separately approved real build.
 
 No additional model API requests, real Docker builds, sandbox launches, live chart-generation runs, or Terra accuracy evaluations are authorized by Session 010's offline verification. The official Modal runner and assignment requirements are unchanged.
 
