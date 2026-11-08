@@ -12,6 +12,8 @@ from integrations.chart_image_recipe import (
     PLOT_PACKAGES,
     REQUIREMENTS_CONTEXT_PATH,
     REQUIREMENTS_DESTINATION,
+    SMOKE_WORKER_CONTEXT_PATH,
+    SMOKE_WORKER_DESTINATION,
     plan_chart_image,
 )
 
@@ -84,13 +86,27 @@ class ChartImageRecipeOfflineTests(unittest.TestCase):
             "COPY requirements/chart-cp312-linux-amd64.txt /opt/assignment/chart-requirements.txt",
             "COPY inputs/ /opt/assignment/inputs/",
             "COPY trusted/extract_figure.py /opt/assignment/extract_figure.py",
+            "COPY trusted/smoke_chart.py /opt/assignment/smoke_chart.py",
         ])
         self.assertNotIn("COPY .", content)
         self.assertNotIn("ADD ", content)
         self.assertIn("chmod 0444 /opt/assignment/extract_figure.py", content)
+        self.assertIn("chmod 0444 /opt/assignment/smoke_chart.py", content)
         self.assertIn("find /opt/assignment/inputs -maxdepth 1 -type f -name '*.csv'", content)
         self.assertIn("-exec chmod 0444 {} +", content)
         self.assertNotIn("chmod 0444 /opt/assignment/inputs/*.csv", content)
+
+    def test_trusted_smoke_worker_is_staged_once_and_not_executed_on_build(self):
+        dockerfile = plan_chart_image(FAKE_BASE).dockerfile
+        self.assertEqual(dockerfile.count(f"COPY {SMOKE_WORKER_CONTEXT_PATH} "), 1)
+        self.assertIn(f"COPY {SMOKE_WORKER_CONTEXT_PATH} {SMOKE_WORKER_DESTINATION}",
+                      dockerfile)
+        self.assertIn(f"chmod 0444 {SMOKE_WORKER_DESTINATION}", dockerfile)
+        self.assertLess(dockerfile.index(f"COPY {SMOKE_WORKER_CONTEXT_PATH}"),
+                        dockerfile.index("USER 10001:10001"))
+        self.assertNotIn("RUN python /opt/assignment/smoke_chart.py", dockerfile)
+        self.assertNotIn("ENTRYPOINT", dockerfile)
+        self.assertNotIn("CMD ", dockerfile)
 
     def test_zero_csv_input_directory_has_no_failing_chmod_glob(self):
         content = plan_chart_image(FAKE_BASE).dockerfile
@@ -128,6 +144,8 @@ class ChartImageRecipeOfflineTests(unittest.TestCase):
         manifest = plan_chart_image(FAKE_BASE).preview()
         self.assertEqual(manifest["required_context_inputs_directory"], "inputs/")
         self.assertEqual(manifest["required_context_helper_path"], "trusted/extract_figure.py")
+        self.assertEqual(manifest["required_context_smoke_worker_path"], SMOKE_WORKER_CONTEXT_PATH)
+        self.assertEqual(manifest["fixed_smoke_worker_destination"], SMOKE_WORKER_DESTINATION)
         self.assertFalse(manifest["staging_context_prepared"])
         self.assertEqual(manifest["runtime_user"], "10001:10001")
         self.assertEqual(manifest["task_csv_directory"], "/opt/assignment/inputs")
