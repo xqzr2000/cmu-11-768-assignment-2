@@ -103,8 +103,10 @@ def plan_chart_image(base_image: str) -> ChartImageRecipe:
         "# Requires a separately audited wheel lock and vetted CSV/helper context.\n"
         "COPY inputs/ /opt/assignment/inputs/\n"
         "COPY trusted/extract_figure.py /opt/assignment/extract_figure.py\n"
-        "# Files arrive from private 0600 staging; give non-root read-only access.\n"
-        "RUN chmod 0444 /opt/assignment/inputs/*.csv /opt/assignment/extract_figure.py\n"
+        "# Files arrive from private 0600 staging; handle zero CSVs and set read-only access.\n"
+        "RUN chmod 0444 /opt/assignment/extract_figure.py \\\n"
+        "    && find /opt/assignment/inputs -maxdepth 1 -type f -name '*.csv' \\\n"
+        "       -exec chmod 0444 {} +\n"
         f"USER {RUNTIME_USER}\n"
         f"WORKDIR {WORKSPACE}\n"
     )
