@@ -124,9 +124,9 @@ The new local architecture is still **offline-first and incomplete**:
 - `integrations/sandbox_gateway.py` is a separately gated interface to our **pinned Assignment 1 Docker sandbox**. It rejects unapproved launches/commands, limits resources, does not forward model API keys, and requests a fingerprint-based check of exact commands. The tests use fake Docker.
 - `integrations/task_artifacts.py`, `integrations/chart_transfer.py` and `scripts/figure_extract_worker.py` validate task CSVs, stage controlled inputs, and define a strict bounded PNG extraction format. These are not yet wired into a live chart loop.
 - `integrations/chart_image_recipe.py` and `integrations/chart_build_context.py` generate an **inert** non-root Dockerfile recipe and a tightly limited private build context; they have not built an image.
-- `requirements/chart-cp312-linux-amd64.txt` pins **14** plotting dependencies (4 direct, 10 transitive) to selected wheel hashes derived from `uv.lock`. The independent offline audit **passed** in Codespaces. **A newly committed integration now stages and consumes the hash file in the planned Dockerfile and context, but its updated Python tests still require Codespace verification.** No wheels have been downloaded or installed. A registry-inspected `python:3.12-slim` AMD64 manifest is only a *candidate image pin*, not a built or trusted environment.
+- `requirements/chart-cp312-linux-amd64.txt` pins **14** plotting dependencies (4 direct, 10 transitive) to selected wheel hashes derived from `uv.lock`. The independent offline audit **passed** in Codespaces. **The hash-lock integration now passes its 29/29 focused offline Codespace tests, including staged-lock tampering checks.** No wheels have been downloaded or installed, and the broader suite has not yet been rerun. A registry-inspected `python:3.12-slim` AMD64 manifest is only a *candidate image pin*, not a built or trusted environment.
 
-**Current verified boundary:** Session 010's six offline suites passed **77/77** tests *before the new hash-lock integration*; the earlier provider **37/37** and validator **49/49** regressions also passed. The later 14-wheel hash audit separately passed. The new integration tests are pending. None of this constitutes an end-to-end agent run, model-accuracy benchmark, real Docker build, or official reproduction.
+**Current verified boundary:** Session 010's six offline suites passed **77/77** tests *before the new hash-lock integration*; the earlier provider **37/37** and validator **49/49** regressions also passed. The later 14-wheel hash audit separately passed. The new integration's focused tests **29/29 have now passed**, while broader regressions remain pending. None of this constitutes an end-to-end agent run, model-accuracy benchmark, real Docker build, or official reproduction.
 
 ### The rule that keeps our experiment scientifically honest
 
@@ -340,7 +340,7 @@ The earlier sections' seed examples and confusion-matrix lesson remain valid **h
 | **007 — Chart-design rubric** | Tested versioned `wrong_chart` prompt v2 against seeds 004 and 008. | 008 FP→TN **but** 004 TP→FN; experiment archived, not universal improvement. |
 | **008 — API model migration** | Added DeepSeek/OpenAI/Z.ai adapters, immutable four-role registry, normalizers and Terra judge parser. | Mocked provider integration merged via PR #8; no agent chart run. |
 | **009 — API compatibility** | Ran separately authorized one-call checks for three generators and Terra, including a documented GLM rate-limit failure and later paid GLM replacement. | Four current roles successfully parsed a tool call / synthetic-image JSON; no shell execution or MCC. Merged via PR #9. |
-| **010 — Chart controller and environment** | Built pure controller, gated fake-Docker gateway, CSV/PNG guards, extractor protocol, inert Docker image/context planning, and chart-only wheel hash audit. | **77/77** Session 010 offline tests before newest code changes, **14/14** wheel hashes audited; newest wiring tests pending. **No** real build, launch, model-agent loop or generated chart. Feature branch **not merged**. |
+| **010 — Chart controller and environment** | Built pure controller, gated fake-Docker gateway, CSV/PNG guards, extractor protocol, inert Docker image/context planning, and chart-only wheel hash audit. | **77/77** Session 010 offline tests before newest code changes, **14/14** wheel hashes audited; newest wiring tests **29/29 passed**, full regressions pending. **No** real build, launch, model-agent loop or generated chart. Feature branch **not merged**. |
 
 ### What we can and cannot claim at this checkpoint
 
@@ -356,7 +356,7 @@ We can keep studying the assignment's actual *evaluation methodology* with the A
 
 ### Step 1 — Finish a reproducible, safe chart environment (next offline task)
 
-On `feature/session-010-chart-agent-controller`, the new commits **implement** the inert Dockerfile copy/install instructions with `pip --require-hashes --only-binary=:all:` and stage the approved requirements alongside vetted CSVs, Dockerfile and extractor. They also add source/staged lock auditing and tampering tests. **Next: run the new guarded offline suites in Codespaces and inspect CI** before treating the change as verified.
+On `feature/session-010-chart-agent-controller`, the new commits **implement** the inert Dockerfile copy/install instructions with `pip --require-hashes --only-binary=:all:` and stage the approved requirements alongside vetted CSVs, Dockerfile and extractor. They also add source/staged lock auditing and tampering tests. **The two updated guarded suites passed 29/29 in Codespaces. Next: run all remaining offline regressions and inspect CI** before advancing.
 
 **Important limitation:** The minimal planned image currently specifies matplotlib, NumPy, pandas and Pillow, plus their dependencies. The course environment also mentions SciPy and seaborn as supported packages. Before running tasks that need either, explicitly add and verify appropriately pinned dependencies or state that our independent environment supports a narrower task subset. Do not imply that a smaller Docker image is identical to the course runtime.
 
@@ -399,7 +399,7 @@ Then make **at least one further validator improvement**, score both seed and au
 
 ### Immediate next session (no paid API calls)
 
-Continue on the **unmerged** `feature/session-010-chart-agent-controller` branch. Pull latest changes, rerun the 14-wheel offline audit and the updated Dockerfile/private-context tests, and inspect CI before discussing a real build. **Do not rerun Session 009's live model probes**; their per-request authorizations were already consumed.
+Continue on the **unmerged** `feature/session-010-chart-agent-controller` branch. Pull latest changes, run the complete offline regression suite and inspect CI; the 14-wheel audit and updated Dockerfile/private-context tests already passed. Do not begin a real build without separate approval. **Do not rerun Session 009's live model probes**; their per-request authorizations were already consumed.
 
 For exact restart commands and evidence, use `docs/Learning-Progress.md` (pause/resume checkpoint) and `docs/Session-010-Supply-Chain.md`. Documentation changes in this report alone do **not** authorize new model requests, Docker builds, sandbox launches or shell execution.
 
