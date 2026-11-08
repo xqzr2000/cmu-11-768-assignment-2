@@ -37,5 +37,7 @@ jobs:
         run: uv run python scripts/check_chart_transfer_offline.py
       - name: Test digest-guarded chart image Dockerfile recipe without Docker
         run: uv run python scripts/check_chart_image_recipe_offline.py
+      - name: Test private minimal Docker build context without Docker
+        run: uv run python scripts/check_chart_build_context_offline.py
       - name: Preview provider registry without network calls
         run: uv run python scripts/provider_preflight.py
