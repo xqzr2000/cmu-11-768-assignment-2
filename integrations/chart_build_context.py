@@ -158,12 +158,16 @@ def verify_chart_build_context(context: ChartBuildContext) -> dict[str, object]:
 
     total_bytes = 0
     for entry in context.files:
-        cap = MAX_HELPER_BYTES if entry.relative_path == "trusted/extract_figure.py" else (
-            MAX_SMOKE_WORKER_BYTES if entry.relative_path == SMOKE_WORKER_CONTEXT_PATH else (
-            MAX_REQUIREMENTS_BYTES if entry.relative_path == REQUIREMENTS_CONTEXT_PATH else (
-                64 * 1024 if entry.relative_path.startswith("inputs/") else 16 * 1024
-            ))
-        )
+        if entry.relative_path == "trusted/extract_figure.py":
+            cap = MAX_HELPER_BYTES
+        elif entry.relative_path == SMOKE_WORKER_CONTEXT_PATH:
+            cap = MAX_SMOKE_WORKER_BYTES
+        elif entry.relative_path == REQUIREMENTS_CONTEXT_PATH:
+            cap = MAX_REQUIREMENTS_BYTES
+        elif entry.relative_path.startswith("inputs/"):
+            cap = 64 * 1024
+        else:
+            cap = 16 * 1024  # Dockerfile only, enforced by the exact allowlist.
         if (type(entry.size_bytes) is not int or not 0 < entry.size_bytes <= cap
             or not isinstance(entry.sha256, str) or not SHA256_PATTERN.fullmatch(entry.sha256)):
             raise BuildContextError("Invalid build context manifest entry.")
