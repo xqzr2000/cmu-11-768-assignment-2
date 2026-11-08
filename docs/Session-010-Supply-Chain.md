@@ -1,6 +1,6 @@
 # Session 010 — OCI image and chart wheel-lock provenance
 
-**Status, 2026-11-07 (America/Vancouver):** The user inspected live public registry *metadata* from the Codespace; no image layer was pulled, built, or started. The chart-only hash file and its offline checker are committed, but **the checker has not yet been executed in Codespaces**. Do not confuse a digest-shaped reference or a lockfile hash with a successful pull, wheel download, or reproducible image build.
+**Status, 2026-11-07 (America/Vancouver):** The user inspected live public registry *metadata* and then verified the chart-only wheel hash audit in Codespaces: **14 fully hashed packages, 4 direct + 10 transitive, PASS**. The six earlier Session 010 offline test suites passed **77/77**; this latest audit is a separate metadata check, not an additional unit test. No image layer was pulled, built or started, and no wheel archive was downloaded or installed. A digest-shaped reference or lockfile hash is not proof of a trusted image or functioning chart environment. **Session 010 is paused on its unmerged feature branch**, pending offline Dockerfile/build-context hash-lock integration.
 
 ## OCI manifest evidence — user Codespace transcript
 
@@ -47,7 +47,7 @@ The committed `uv.lock` (Git blob `546d4d0839cc287c1b29b7c8b74ea4582737964a` at 
 
 **New** `requirements/chart-cp312-linux-amd64.txt` records the 14 exact package versions with one SHA-256 wheel hash per package. Native wheels were selected with `cp312-cp312` and `manylinux`/`x86_64` tags when present, otherwise a universal `py3-none-any` or `py2.py3-none-any` wheel. The accompanying comments identify the exact expected wheel filenames.
 
-`scripts/check_chart_wheel_lock_offline.py` reads the **actual committed** `uv.lock` and requirements file; it recursively checks the four roots' **unconditional** dependency closure, exact versions, registry provenance, selected wheel labels, and hashes. It fails closed if new marker/extra dependency behavior appears or a pinned hash or package changes. It neither downloads nor installs wheels. The checker has **not yet passed in Codespaces** and is the next required verification.
+`scripts/check_chart_wheel_lock_offline.py` reads the **actual committed** `uv.lock` and requirements file; it recursively checks the four roots' **unconditional** dependency closure, exact versions, registry provenance, selected wheel labels, and hashes. It fails closed if new marker/extra dependency behavior appears or a pinned hash or package changes. It neither downloads nor installs wheels. The checker **passed in the user Codespace** after pulling branch commit `b3983cc`; it reported 14 checked hashes (4 direct, 10 transitive) and finished with a metadata-consistency PASS. It has **not** downloaded, rehashed or installed the actual wheel bytes.
 
 ```bash
 cd /workspaces/cmu-11-768-assignment-2
@@ -56,7 +56,7 @@ uv run python scripts/check_chart_wheel_lock_offline.py
 git status --short --branch
 ```
 
-Expected *only after verification*: audit of **14** packages (4 direct, 10 transitive). If a future dependency graph changes, the offline auditor should block rather than silently omit a package.
+**Observed result (user terminal log):** `Chart wheel lock audit: 14 fully hashed package(s), CPython 3.12 / linux/amd64 (manylinux)`; `Direct roots: 4; transitive: 10`; all 14 wheel filenames listed; final `PASS: requirements match the committed uv.lock metadata; no network/download/install.` The script also explicitly printed `NOT VERIFIED: actual package download, wheel integrity, pip resolution or Docker build.` If the graph changes, the offline auditor must block rather than silently omit a package.
 
 ## Remaining gaps before a real chart-capable image
 
@@ -67,3 +67,21 @@ Expected *only after verification*: audit of **14** packages (4 direct, 10 trans
 5. **Model consent and academic scope:** No potentially billed model request is authorized. Session 009's provider transport checks are not an official model-equivalent chart benchmark or Terra-accuracy evaluation.
 
 **Decision:** Pinning the observed platform-specific manifest *as a documented candidate* is justified by user-supplied registry metadata. Treating the resulting Docker environment as built, reproducible, secure or assignment-equivalent is not justified yet.
+
+## Pause / restart handoff
+
+**Last verified local Git state:** clean feature branch `feature/session-010-chart-agent-controller` tracking origin at `b3983cc`, before the subsequent documentation-only handoff updates. Keep the branch; do **not** merge, delete it or rerun any billable model probe just to stop the Codespace.
+
+**Next implementation step (offline-only):** Modify `integrations/chart_image_recipe.py` so its Dockerfile stages `chart-cp312-linux-amd64.txt` and installs packages with `pip --require-hashes --only-binary=:all:`; modify `integrations/chart_build_context.py` to add exactly that reviewed hash-file path to the private build-context allowlist. Expand fake/test-based checks for tampering, extra/unhashed requirements, manifests and cleanup. Update CI and the chronological journal. Only after this offline verification should we separately discuss a real image build and plotting smoke test.
+
+**Resume:**
+
+```bash
+cd /workspaces/cmu-11-768-assignment-2
+git switch feature/session-010-chart-agent-controller
+git pull --ff-only
+git status --short --branch
+uv run python scripts/check_chart_wheel_lock_offline.py
+```
+
+For a concise map of all sessions and the full restart plan, see [Learning Progress — Pause / resume checkpoint](Learning-Progress.md#pause--resume-checkpoint--2026-11-07-americavancouver).
