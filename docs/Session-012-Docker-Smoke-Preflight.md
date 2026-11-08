@@ -31,7 +31,34 @@ An earlier metadata-only registry inspection recorded the `linux/amd64` Python m
 5. Review a later trusted plotting script with hard-coded synthetic numeric values and a bounded PNG export to `/workspace/figure.png`. No model-proposed shell commands and no user secrets; if using CSV, read only the vetted `/opt/assignment/inputs/` location. Ensure the run uses constrained CPU/memory/time and non-root permissions.
 6. Define pass/fail evidence before execution: actual Docker exit code, package import/version checks, PNG created, output size/pixels and figure envelope verified, cleanup, and no unreviewed network or extra commands.
 
-**Current Stage A status:** This document establishes the checklist; a complete offline command preview and review have **not** yet run in Codespaces.
+**Current Stage A status:** The user verified the existing 14-package wheel metadata audit (**PASS**), recipe **13/13**, and private build context **19/19** in Codespaces, with a clean `feature/session-012-docker-smoke-preflight` branch. We then committed a new **offline-only zero/one-CSV preview**, seven synthetic tests, a guarded test runner and a CI test step; **the new preview code/tests have NOT been run in Codespaces yet**. No Docker operations have occurred.
+
+### Preview entry point: safe metadata, real private host staging, zero container execution
+
+The new `scripts/preview_chart_smoke_offline.py` evaluates two *synthetic* input snapshots: `smoke_zero` (no CSV) and `smoke_one` (one tiny `synthetic.csv`). Within separate short-lived temporary host contexts it checks **exactly** the allowlisted relative filenames, the private `0700` directory modes, the static Dockerfile's exact SHA-256, and the 14-item audited requirements closure. It discards each context before returning. The only output is JSON with relative paths, sizes, hashes and the **actual inert Dockerfile text**, not CSV data, absolute host paths, API keys, commands that were run, or Docker handles.
+
+Run this `uv` command once the new branch commit is pulled:
+
+```bash
+uv run python scripts/check_chart_smoke_preview_offline.py
+uv run python scripts/preview_chart_smoke_offline.py
+```
+
+**Important:** `preview_chart_smoke_offline.py` is not a builder; its contexts are cleaned on exit, so **no build can reference those discarded directories**. A future separately approved build runner would have to keep a vetted context open through build, re-verify immediately before use and clean it afterward. The preview uses the **previously observed** Python AMD64 manifest as a **candidate only**, not a rechecked/trusted base or working Docker artifact.
+
+### Conditional Stage B build-command *template* (NOT executable from this preview)
+
+The following is an **unapproved review template**, not a command to run now. `<private-verified-context>` is deliberately a placeholder because the temporary preview context is destroyed:
+
+```text
+timeout 900s docker buildx build --load --platform linux/amd64 --pull --network default --progress plain --tag cmu-chart-smoke:session012-review --file <private-verified-context>/Dockerfile <private-verified-context>
+```
+
+The template fixes the target platform, candidate tag and build-time network intent, and has a client-side timeout. **It does not yet provide independently verified CPU/memory limits for the BuildKit builder**, guarantee that timeout interrupts server-side work, revalidate the base image from registry signatures/attestation, or establish reproducible wheel installation. Those items remain blockers for a real attempt. An approved and audited runner must not expose the host Docker socket inside the chart container, inject secrets, copy the full checkout, or quietly substitute the gateway's floating test image. No build or run command is included in the safe preview's JSON.
+
+**Proposed trusted runtime smoke case, still not authorized:** a hard-coded Matplotlib `Agg` drawing using constants (no model text), writing `/workspace/figure.png` as uid/gid `10001:10001` with network disabled, bounded CPU/RAM/PIDs/time, and a private writable workspace. A future vetted extractor may transfer the PNG only over a trusted size-aware output channel; the existing bounded text-command channel must **not** receive a multi-megabyte base64 envelope. We must review exact container flags and output retrieval before this stage.
+
+**Before Stage B can be approved:** confirm base digest+platform against registry, actual selected wheel bytes/hashes and install, BuildKit builder resource/time controls, the exact in-context build/run orchestration, cleanup even on exceptions, artifact extraction protocol, and user's explicit approval of the exact resulting operations.
 
 ## Stage B — Separately approved real environment smoke test (NOT AUTHORIZED)
 
@@ -58,4 +85,4 @@ uv run python scripts/check_chart_build_context_offline.py
 git status --short --branch
 ```
 
-After Stage A review, record test output, approved vs unapproved commands, and remaining unknowns in `docs/Learning-Progress.md`. Do not claim Stage B results until observed.
+After the **new** guarded preview tests and JSON preview pass in Codespaces, record their observed results in `docs/Learning-Progress.md` and inspect draft-PR CI. Stage B remains blocked until the control and approval gaps above are resolved. Do not claim any actual chart image results.
