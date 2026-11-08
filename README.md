@@ -145,6 +145,22 @@ uv run python scripts/openai_seed_pilot.py --run-id 004 --family wrong_data --co
 
 The independent `--compare` path reads human labels locally, reports a single family decision's TP/FP/FN/TN, and makes no model requests. A single selected example is not evidence of MCC or model generalization. The existing Z.ai pilot and official Qwen3-VL configuration remain intact.
 
+## Session 009 — One-model-at-a-time compatibility probes (offline preparation)
+
+Session 008's provider adapters are merged through PR #8 (`5833b2b`); its 27 provider tests, 49 validator tests, 5 infrastructure tests and dataset preflight passed locally, and GitHub Actions passed on the PR. Session 007 remains safely archived at `archive/session-007-20261107`.
+
+Session 009 adds `scripts/provider_compat_probe.py`, an **offline-by-default** per-model compatibility preview and a strictly gated, one-request transport probe for a later separately authorized live check. For a fully offline preview, run:
+
+```bash
+uv run python scripts/provider_compat_probe.py --role agent_a
+uv run python scripts/provider_compat_probe.py --role agent_b
+uv run python scripts/provider_compat_probe.py --role agent_c
+uv run python scripts/provider_compat_probe.py --role experimental_judge
+uv run python -m unittest discover -s tests -p 'test_provider_*_offline.py' -v
+```
+
+The live path is **not authorized yet**. Every possibly billed call needs separate user approval for that exact model. There are no automatic retries, model-proposed shell commands are never executed, results are stored in ignored `output/*.json`, and full plotting-agent/Docker integration is still future work. See [docs/Session-009-Compatibility-Probes.md](docs/Session-009-Compatibility-Probes.md). Offline tests added in this branch remain **pending Codespace verification**.
+
 ## Session 008 — offline-only multi-provider adapters (in progress)
 
 This is an **independent research adaptation**. The course requires its Qwen3-VL validator and fixed generation models; we have **not replaced or re-scored** the official validator. Session 007's wrong-chart v1/v2 findings remain separate on their feature branch.
