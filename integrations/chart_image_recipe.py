@@ -56,6 +56,9 @@ class ChartImageRecipe:
             "workspace": WORKSPACE,
             "task_csv_directory": INPUT_DIRECTORY,
             "fixed_extractor_destination": EXTRACTOR_DESTINATION,
+            "required_context_inputs_directory": "inputs/",
+            "required_context_helper_path": "trusted/extract_figure.py",
+            "staging_context_prepared": False,
             "direct_dependency_versions_pinned": True,
             "full_dependency_hash_lock_verified": False,
             "image_platform_and_architecture_verified": False,
@@ -91,6 +94,11 @@ def plan_chart_image(base_image: str) -> ChartImageRecipe:
         "    && chmod 0755 /opt/assignment /opt/assignment/inputs \\\n"
         "    && chown 10001:10001 /workspace \\\n"
         "    && chmod 0700 /workspace\n"
+        "# Requires a separately vetted minimal build context with only checked CSVs and helper.\n"
+        "COPY inputs/ /opt/assignment/inputs/\n"
+        "COPY trusted/extract_figure.py /opt/assignment/extract_figure.py\n"
+        "# Files arrive from private 0600 staging; give non-root read-only access.\n"
+        "RUN chmod 0444 /opt/assignment/inputs/*.csv /opt/assignment/extract_figure.py\n"
         f"USER {RUNTIME_USER}\n"
         f"WORKDIR {WORKSPACE}\n"
     )
