@@ -144,6 +144,13 @@ See the detailed session history below for exact experiments, commands, model ID
 - **Scope of proof:** no wheel download/installation, registry re-authentication, Docker image build or pull, container launch, PNG rendered inside a container, model-proposed shell execution, live model API request, Terra judgment/MCC or official model-equivalence test. The observed 185/185 verifies only offline logic and unit tests.
 - **Next:** record the result in README and [Session 012 preflight](Session-012-Docker-Smoke-Preflight.md), create a **draft PR** against `main`, inspect the diff and CI on the PR head; do not merge automatically. Stage B remains blocked until a separately reviewed specific Docker build/run plan and fresh explicit authorization.
 
+### Session 012 — 2026-11-08 UTC — draft PR #12 opened, CI review in progress
+
+- Opened [draft PR #12](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/12), **Session 012: Offline Docker chart smoke-test preflight and audited previews**, comparing `feature/session-012-docker-smoke-preflight` to `main`. The initial PR compares **7 changed files** (guarded preview runner and script, seven offline tests, offline CI workflow, README, learning journal, Session 012 preflight). GitHub subsequently reported `mergeable=true`. **No merge was performed.**
+- The PR includes the user-verified **185/185 Codespaces offline tests**, seed dataset preflight, four-role zero-network provider preview, wheel-lock 14/14 metadata audit, and explicit **not-authorized/not-verified** Docker and model boundaries. The initial PR-triggered [GitHub Actions run 42458847883](https://github.com/xqzr2000/cmu-11-768-assignment-2/actions/runs/42458847883) was **queued** at commit `49e6095` when checked. **Do not interpret queued CI as passed; verify latest-head run status separately.**
+- The draft PR is for review of **Stage A offline planning only**. Real Docker pull/build/run, base-image attestation, downloaded wheel integrity, chart PNG from Docker, model-generated shell commands, potentially billed API calls and MCC remain unperformed/unapproved.
+- **Next operator action:** `git pull --ff-only && git status --short --branch`, review the PR's file diff and GitHub Actions on the latest feature commit. Only merge if explicitly reviewed; keep Stage B a future, separately authorized operation.
+
 ## How to use this journal
 
 1. Start with **What we are building**, then **How information flows**.
