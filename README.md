@@ -145,42 +145,32 @@ uv run python scripts/openai_seed_pilot.py --run-id 004 --family wrong_data --co
 
 The independent `--compare` path reads human labels locally, reports a single family decision's TP/FP/FN/TN, and makes no model requests. A single selected example is not evidence of MCC or model generalization. The existing Z.ai pilot and official Qwen3-VL configuration remain intact.
 
-## Session 010 — Bounded chart controller (offline foundation)
+## Session 010 — Bounded chart controller, offline-first sandbox and artifact transport
 
-Session 009 merged into `main` via PR #9 (`65b0a49`), and its old feature branch has been deleted. New development is isolated on `feature/session-010-chart-agent-controller`.
+Session 009 merged into `main` via PR #9 (`65b0a49`); its feature branch has been deleted. Session 010 is developed separately on `feature/session-010-chart-agent-controller`.
 
-This first slice adds a **pure, manually stepped** `ChartController` that assembles a provider-native request, validates a previously returned function call, tracks pending tool results, and enforces model-turn/tool-call/command/output limits. It **does not contact a provider, run Docker, execute commands, or grant permission** for any future live request. The experimental Terra judge is not a generator.
+**Verified Codespace progress:** **41/41 Session 010 offline tests passed**: 11 pure controller state-machine tests, 14 fake-Docker sandbox gateway tests, and 16 restricted task-CSV / PNG-artifact validation tests. Previously, provider **37/37** and validator **49/49** regression tests also passed. Git status was clean. A previous test-discovery mistake was fixed by adding runners that refuse zero discovered tests.
 
-Run the dedicated mock-only tests:
+The building blocks remain **independent and not connected to any live agent loop**:
 
-```bash
-uv run python scripts/check_controller_offline.py
-```
+- `integrations/chart_controller.py`: manually stepped provider conversation replay, tool-call validation, and request/tool budgets. No model requests are sent.
+- `integrations/sandbox_gateway.py`: an opt-in wrapper for the pinned Assignment 1 Docker runtime; requires explicit launch and per-command approvals, uses `network="none"`, no mounts or ports, bounded resources and cleanup. Its tests use only fake containers; it has not launched Docker.
+- `integrations/task_artifacts.py`: snapshots at most eight small UTF-8 task-local CSVs, rejects unsafe paths, and strictly validates `figure.png` byte streams and extraction envelopes.
 
-The first Codespace check inadvertently discovered **0 controller tests** because the original filename did not match the discovery glob. The test file was renamed to `tests/test_controller_state_offline.py`; a guarded runner now prevents empty discoveries. The user reran the suite and verified **11/11 controller tests passed**. Existing provider **37/37** and validator **49/49** tests passed in the preceding Codespace run, and the model-registry preflight reported zero network requests.
-
-**Second offline slice:** `integrations/sandbox_gateway.py` wraps the pinned Assignment 1 Docker `Sandbox`, but **never starts it without explicit exact-image approval**. It enforces `network="none"`, no exposed ports/host mounts, bounded CPU/memory/lifetime, a user-reviewed command proposal/approval fingerprint for every command, a six-command default budget, output truncation and cleanup. This gateway **is not connected** to the controller or a live CLI. All **14 fake-Docker tests** in `tests/test_sandbox_gateway_offline.py` are newly committed and **await Codespace verification**; no actual Docker commands were run.
-
-Run the two guarded suites without network or Docker:
+**Fourth offline slice (new; Codespace tests pending):** `integrations/chart_transfer.py` validates in-memory CSV snapshots again and writes them to private, temporary **host** files (0600) for a future separately reviewed image build. `scripts/figure_extract_worker.py` is a fixed, bounded Python helper intended for a future image; it would output a canonical JSON/base64 `figure.png` envelope. Neither component builds an image, launches Docker, sends a model request, or executes a model-proposed shell command. The **12 new tests** use synthetic temporary files only. Run:
 
 ```bash
+uv run python scripts/check_chart_transfer_offline.py
+uv run python scripts/check_task_artifacts_offline.py
 uv run python scripts/check_controller_offline.py
 uv run python scripts/check_sandbox_gateway_offline.py
 ```
 
-A real Docker smoke test, a chart-capable image, task-file staging, and `figure.png` extraction remain separate future decisions requiring explicit consent where appropriate.
+All four runners fail if no tests are discovered. The expected Session 010 total after verified fourth-slice results is **53 tests**. No pass is claimed yet for the 12 new transfer tests.
 
-**Verified in Codespaces:** **11/11 controller** and **14/14 fake-Docker gateway** tests passed (25/25 total); Git status was clean. The provider (37/37) and validator (49/49) suites passed in the preceding offline verification.
+**Still missing:** a vetted digest-pinned, chart-capable Docker image; an approved image build and task-file injection; a size-aware fixed PNG extraction gateway path (the current command output is truncated to 2,048 characters); a real Docker smoke run; and a human-approved per-turn live model controller. Each billed model request requires fresh separate consent. The original Modal runner and official model requirements are unchanged.
 
-**Third offline slice (tests pending):** `integrations/task_artifacts.py` creates a bounded, task-local snapshot of at most eight UTF-8 CSV inputs, rejecting symlinks and oversized files. It also strictly validates PNG byte streams and JSON/base64 envelopes for a *future* `figure.png` extraction helper, with checksum, size, pixel and trailing-payload checks. No input is copied into Docker; no actual container is launched; no model is called. The **16 new artifact tests** are guarded against zero discovery:
-
-```bash
-uv run python scripts/check_task_artifacts_offline.py
-```
-
-A digest-pinned chart-capable image, real task staging and extraction, and approved Docker smoke run remain future work.
-
-Read [Session 010 controller design](docs/Session-010-Controller-Design.md) for the state machine, per-turn API consent boundary, and security constraints.
+See [Session 010 controller and transfer design](docs/Session-010-Controller-Design.md) and [learning journal](docs/Learning-Progress.md).
 
 ## Session 009 — Completed four-model live API compatibility checks
 
