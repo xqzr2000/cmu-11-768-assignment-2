@@ -26,6 +26,7 @@ MAX_CSV_BYTES = 64 * 1024
 MAX_TOTAL_CSV_BYTES = 256 * 1024
 MAX_FIGURE_BYTES = 2 * 1024 * 1024
 MAX_FIGURE_PIXELS = 4_000_000
+MAX_ENVELOPE_CHARS = ((MAX_FIGURE_BYTES + 2) // 3) * 4 + 512
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 CSV_FILENAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}\.csv$")
 SHA256_LOWER = re.compile(r"^[0-9a-f]{64}$")
@@ -156,10 +157,31 @@ def snapshot_task_csvs(descriptor: Path) -> TaskInputSnapshot:
 
 def validate_figure_png(data: bytes) -> ValidatedFigure:
     """Fail closed on oversized, corrupt, mislabeled or huge PNG images."""
-    if not isinstance(data, bytes) or not PNG_SIGNATURE or not data.startswith(PNG_SIGNATURE):
+    if not isinstance(data, bytes) or not data.startswith(PNG_SIGNATURE):
         raise ArtifactError("Artifact is not a PNG file.")
     if not 0 < len(data) <= MAX_FIGURE_BYTES:
         raise ArtifactError("PNG exceeds the 2 MiB size cap.")
+    # A PNG must end exactly at its IEND chunk, not hide appended payloads.
+    offset = len(PNG_SIGNATURE)
+    first = True
+    while offset < len(data):
+        if len(data) - offset < 12:
+            raise ArtifactError("PNG chunk header is truncated.")
+        length = int.from_bytes(data[offset:offset + 4], "big")
+        chunk_type = data[offset + 4:offset + 8]
+        end = offset + 12 + length
+        if end > len(data):
+            raise ArtifactError("PNG chunk exceeds the available bytes.")
+        if first and chunk_type != b"IHDR":
+            raise ArtifactError("PNG must begin with IHDR.")
+        first = False
+        offset = end
+        if chunk_type == b"IEND":
+            if length != 0 or offset != len(data):
+                raise ArtifactError("PNG has invalid or trailing data after IEND.")
+            break
+    else:
+        raise ArtifactError("PNG does not contain a terminal IEND chunk.")
     try:
         with Image.open(io.BytesIO(data)) as image:
             if image.format != "PNG":
@@ -184,7 +206,7 @@ def decode_figure_envelope(raw: str) -> ValidatedFigure:
     The future fixed Docker extraction helper may emit this format. This
     decoder never accesses Docker and never writes data to the host.
     """
-    if not isinstance(raw, str) or len(raw) > 2 * ((MAX_FIGURE_BYTES + 2) // 3 * 4 + 512):
+    if not isinstance(raw, str) or len(raw) > MAX_ENVELOPE_CHARS:
         raise ArtifactError("Figure transport envelope exceeds the size limit.")
     try:
         payload = json.loads(raw)
