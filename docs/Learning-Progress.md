@@ -971,7 +971,17 @@ git status --short --branch
 - Existing validator tests: **49/49 passed**. Expected argparse errors while testing incomplete live-consent flags did not indicate a failing test. Total **86/86 offline unit tests passed**.
 - Final `git status --short --branch`: clean/synchronized. No additional API call, model output, shell execution, or cloud infrastructure invoked during these checks.
 
-**Next:** Record this verified preparation and request a **separate explicit approval** for exactly one potentially billed Z.ai `glm-5.3-flash` function-call compatibility request (512 max output tokens, 60-second timeout, no retries, no execution). If approved, user runs it once in Codespaces and inspects new `output/provider_compat_agent_c_glm-5.3-flash.json`; preserve older `output/provider_compat_agent_c.json` from failed GLM-4.7 attempt. Terra remains a separate test requiring its own authorization.
+**Agent C paid-model live probe — GLM-5.3-Flash success (2026-11-07 America/Vancouver, user Codespace transcript):**
+
+- User **separately and explicitly approved one** potentially billed `glm-5.3-flash` Chat Completions compatibility request with `reasoning_effort=low`, maximum 512 output tokens, 60-second timeout, no retries and no execution of model-proposed tools.
+- Before testing, user confirmed the Session 009 branch was clean and synchronized (`git pull --ff-only` said already up to date), and `ZAI_API_KEY` was configured (without displaying it).
+- User executed **once**: `uv run python scripts/provider_compat_probe.py --role agent_c --live --confirm-one-request --approve-model glm-5.3-flash`. The request **completed**. Requested model = reported model = `glm-5.3-flash`. API style: `chat_completions`. Exactly **one** inert `run_shell` tool call was returned, and the adapter reported `expected_tool_called=true` and `tool_call_compatibility=true`.
+- Provider-reported usage: **212 input tokens, 15 output tokens, 227 total tokens**; `retries=0`, `model_proposed_commands_executed=0`. Monetary charge is not independently verified.
+- Saved ignored result to `output/provider_compat_agent_c_glm-5.3-flash.json`. User also read the older `output/provider_compat_agent_c.json`, which **still contains the failed `glm-4.7-flash` `RateLimitError` record** with zero retries; neither was overwritten. Git status remained clean/synchronized.
+- **Interpretation:** All three **current** generator roles now pass a one-request live tool-call compatibility smoke test: DeepSeek Flash, OpenAI GPT-5.6 Luna and Z.ai GLM-5.3 Flash. This demonstrates that the configured endpoints accept the synthetic request and the adapters parse one inert function call; **not** actual code/shell execution, multi-turn agent operations, plotting quality or benchmark equivalence. The earlier `glm-4.7-flash` failure remains unexplained; a successful new-model request does not prove the prior rate error was model-specific.
+- The authorization for the GLM-5.3-Flash request has been **consumed**. Never retry it without fresh authorization. No live Terra judgment has yet been performed in this session.
+
+**Next:** Pull these documentation commits. Separately present and request explicit consent for **exactly one** potentially billed `gpt-6.1-terra` synthetic PNG + strict JSON compatibility probe, no retries and no model-suggested tool execution. Only after that separate approval should the user run Terra; no other model requests are authorized.
 
 ### Template for future sessions
 
