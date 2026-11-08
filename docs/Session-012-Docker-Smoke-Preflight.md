@@ -31,7 +31,7 @@ An earlier metadata-only registry inspection recorded the `linux/amd64` Python m
 5. Review a later trusted plotting script with hard-coded synthetic numeric values and a bounded PNG export to `/workspace/figure.png`. No model-proposed shell commands and no user secrets; if using CSV, read only the vetted `/opt/assignment/inputs/` location. Ensure the run uses constrained CPU/memory/time and non-root permissions.
 6. Define pass/fail evidence before execution: actual Docker exit code, package import/version checks, PNG created, output size/pixels and figure envelope verified, cleanup, and no unreviewed network or extra commands.
 
-**Current Stage A status:** The user verified the existing 14-package wheel metadata audit (**PASS**), recipe **13/13**, and private build context **19/19** in Codespaces, with a clean `feature/session-012-docker-smoke-preflight` branch. We then committed a new **offline-only zero/one-CSV preview**, seven synthetic tests, a guarded test runner and a CI test step; **the new preview code/tests have NOT been run in Codespaces yet**. No Docker operations have occurred.
+**Current Stage A status:** In Codespaces, the user verified the 14-package wheel **metadata** audit (**PASS**), Dockerfile recipe **13/13**, private build context **19/19**, and subsequent synthetic zero/one-CSV preview **7/7** (**39/39 focused unit tests across two runs**). The JSON preview completed at branch commit `b0e617f` with a clean worktree; **no Docker or model operations occurred**. A post-change full regression and PR CI remain pending.
 
 ### Preview entry point: safe metadata, real private host staging, zero container execution
 
@@ -60,6 +60,22 @@ The template fixes the target platform, candidate tag and build-time network int
 
 **Before Stage B can be approved:** confirm base digest+platform against registry, actual selected wheel bytes/hashes and install, BuildKit builder resource/time controls, the exact in-context build/run orchestration, cleanup even on exceptions, artifact extraction protocol, and user's explicit approval of the exact resulting operations.
 
+
+### Verified preview evidence — 2026-11-08 UTC
+
+`uv run python scripts/check_chart_smoke_preview_offline.py` discovered **7 tests** and reported **7/7 OK**. `uv run python scripts/preview_chart_smoke_offline.py` produced the following deterministic, **offline-only** manifest:
+
+| Case | Allowed files | Total bytes | CSV bytes | Temporary context |
+| --- | ---: | ---: | ---: | --- |
+| `zero_csv` | 3 | 6,304 | 0 | Destroyed on exit |
+| `one_csv` | 4 | 6,327 | 23 | Destroyed on exit |
+
+Both cases used the same proposed Dockerfile SHA-256 `6244671c37420b80e4d70477147c2b59caa730e1e4c72d8831d2c29a2a2185b1` (1,020 bytes). The trusted extractor checksum is `c049a80fea8c1e9e2e2d2a6f9089133664291d780dae9f5c9f2aa55df9ffa1fa`; the staged requirements checksum is `c38ba34e122c68e9cd2b4db3c744169131d7a8b704464d3e867098ab7b1d6f4d`. `zero_csv` contains `Dockerfile`, `trusted/extract_figure.py`, and `requirements/chart-cp312-linux-amd64.txt`; `one_csv` adds only `inputs/synthetic.csv`. Both retain an empty or populated private `inputs/` directory.
+
+The JSON records `docker_builds=0`, `docker_launches=0`, `network_requests=0`, `model_requests=0`, `docker_build_authorized=false`, `pip_install_verified=false`, `wheel_byte_integrity_verified=false`, and `private_contexts_destroyed=true`. No live registry, wheel download, actual Docker build or real plotting was part of this confirmation.
+
+**Next offline acceptance gate:** run the full current regression (expected **185 tests**, including these seven new preview tests), dataset preflight and zero-network provider preview, and review draft PR/CI before any merge. Stage B is **not authorized**. The Stage B command template is reference text only, not a runnable instruction for this checkpoint.
+
 ## Stage B — Separately approved real environment smoke test (NOT AUTHORIZED)
 
 **Do not start Stage B without a fresh, explicit user approval for the exact reviewed build/pull and smoke-run commands.** The approval should identify: immutable base digest and platform, image tag, Dockerfile/context, network policy during build, max resources/time, whether image pull/wheel download is permitted, test script and expected files, and cleanup.
@@ -85,4 +101,4 @@ uv run python scripts/check_chart_build_context_offline.py
 git status --short --branch
 ```
 
-After the **new** guarded preview tests and JSON preview pass in Codespaces, record their observed results in `docs/Learning-Progress.md` and inspect draft-PR CI. Stage B remains blocked until the control and approval gaps above are resolved. Do not claim any actual chart image results.
+The new guarded preview tests and JSON manifest have **passed** in Codespaces. **Next:** full offline regression (expected 185 tests), dataset and provider preflights, then draft PR/CI review. Stage B remains blocked until the control and approval gaps above are resolved and a fresh, explicit authorization is given. Do not claim any actual chart image results.
