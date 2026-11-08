@@ -145,6 +145,39 @@ uv run python scripts/openai_seed_pilot.py --run-id 004 --family wrong_data --co
 
 The independent `--compare` path reads human labels locally, reports a single family decision's TP/FP/FN/TN, and makes no model requests. A single selected example is not evidence of MCC or model generalization. The existing Z.ai pilot and official Qwen3-VL configuration remain intact.
 
+## Session 010 — Offline-first chart controller and chart environment
+
+PR #9 merged Session 009 into `main` at `65b0a49`. Session 010 continues on `feature/session-010-chart-agent-controller`.
+
+**Verified in Codespaces: 82/82 Session 010 offline tests passed** after hash-lock wiring, with a clean working tree. The suites cover the controller (11), fake-Docker gateway (14), bounded task CSV/PNG validation (16), file staging and extraction helper (12), inert Dockerfile recipe (12), and private build context (17). Provider **37/37**, validator **49/49**, and structural **5/5** regressions also passed, totaling **173/173** offline tests.
+
+The following components remain separately gated and **do not yet form a live agent**:
+
+- `integrations/chart_controller.py`: provider conversation replay and strict turn/tool budgets, with no model transport.
+- `integrations/sandbox_gateway.py`: explicit sandbox launch and per-command approval; `network="none"`, no host mounts or ports; tested with fake Docker only.
+- `integrations/task_artifacts.py`: bounded task-local CSV snapshots and strict PNG/JSON-envelope validation.
+- `integrations/chart_transfer.py` and `scripts/figure_extract_worker.py`: private temporary host-file staging and a fixed bounded PNG extraction protocol, not connected to Docker.
+- `integrations/chart_image_recipe.py`: inert digest-shaped Python 3.12 Dockerfile, direct plotting library pins and unprivileged runtime.
+- `integrations/chart_build_context.py`: temporary, verified context containing only the Dockerfile, approved CSVs, and trusted extraction helper. No Docker build has been attempted.
+
+**Supply-chain checkpoint:** User Codespace registry inspection verified an `x86_64` (`linux/amd64`) host, the official Python image's **multi-platform index** `sha256:4840d514c583a4d3d8cad3940e68dee6f0f6f3635c12fcd0a3d74c21a5b93a54`, and its distinct **AMD64 image manifest** `sha256:05a994d2344eb364cc186910f4fc8786a38215f39f00d0acc25bff33a08f4177` (version `3.12.16-slim-trixie`). No image was pulled, built or launched.
+
+**Chart-only wheel hash file (audit verified in Codespaces):** `requirements/chart-cp312-linux-amd64.txt` records the exact versions and selected wheel hashes for **14 plotting packages** derived from the existing committed `uv.lock`: four direct and ten transitive. The offline checker `scripts/check_chart_wheel_lock_offline.py` re-derives that dependency closure and rejects missing, extra, modified or ambiguously marked dependencies. CI runs the audit. In Codespaces, run:
+
+```bash
+uv run python scripts/check_chart_wheel_lock_offline.py
+```
+
+**Verified in Codespaces:** The audit checked all **14 package hashes** (4 direct, 10 transitive) against the committed `uv.lock` and reported **PASS**. This was an additional metadata audit after the existing **77/77 offline tests**, not a seventh set of counted unit tests. It performed no PyPI download, pip installation, Docker command, or model request. The hash-locked Dockerfile and vetted private-context integration passed **29/29 focused Codespace offline tests** (12 image recipe, 17 context), and the 14-wheel metadata audit passed again. The subsequent full offline regression passed **173/173** tests; these checks still do not establish wheel download integrity, successful installation or an actual Docker image.
+
+See [Session 010 supply-chain provenance](docs/Session-010-Supply-Chain.md) for full observed digests, platform evidence, package closure and remaining build-trust gaps.
+
+**Session paused:** Continue later on `feature/session-010-chart-agent-controller` without merging/deleting it. See the [pause / resume checkpoint](docs/Learning-Progress.md#pause--resume-checkpoint--2026-11-07-americavancouver) for the full Session 001–010 summary and latest verification state. Next, **review the Session 010 draft PR and CI** before considering a separately approved real build.
+
+No additional model API requests, real Docker builds, sandbox launches, live chart-generation runs, or Terra accuracy evaluations are authorized by Session 010's offline verification. The official Modal runner and assignment requirements are unchanged.
+
+See [Session 010 engineering design](docs/Session-010-Controller-Design.md) and [Learning-Progress.md](docs/Learning-Progress.md).
+
 ## Session 009 — Completed four-model live API compatibility checks
 
 Session 008's offline provider-adapter foundation was merged via PR #8 (`5833b2b`). Session 007's unmerged wrong-chart experiment is preserved at `archive/session-007-20261107`.

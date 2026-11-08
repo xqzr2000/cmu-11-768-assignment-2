@@ -27,5 +27,19 @@ jobs:
         run: uv run python -m unittest discover -s tests -p "test_validator_*_offline.py" -v
       - name: Test experimental provider adapters with mocked clients only
         run: uv run python -m unittest discover -s tests -p "test_provider_*_offline.py" -v
+      - name: Test bounded chart controller with offline state transitions only
+        run: uv run python scripts/check_controller_offline.py
+      - name: Test sandbox gateway with fake Docker and no network calls
+        run: uv run python scripts/check_sandbox_gateway_offline.py
+      - name: Test bounded task CSV snapshots and PNG decoding offline
+        run: uv run python scripts/check_task_artifacts_offline.py
+      - name: Test private CSV staging and fixed PNG extraction with local fakes only
+        run: uv run python scripts/check_chart_transfer_offline.py
+      - name: Test digest-guarded chart image Dockerfile recipe without Docker
+        run: uv run python scripts/check_chart_image_recipe_offline.py
+      - name: Test private build context and tamper-resistant wheel staging without Docker
+        run: uv run python scripts/check_chart_build_context_offline.py
+      - name: Independently audit all Linux AMD64 wheel hashes against committed uv.lock
+        run: uv run python scripts/check_chart_wheel_lock_offline.py
       - name: Preview provider registry without network calls
         run: uv run python scripts/provider_preflight.py
