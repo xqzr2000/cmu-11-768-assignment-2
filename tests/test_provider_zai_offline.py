@@ -28,7 +28,7 @@ class ZaiProviderOfflineTests(unittest.TestCase):
 
     def test_uses_chat_completions_and_converts_function_schema(self):
         request = prepare_request(self.spec, self.messages, tools=[SHELL_TOOL])
-        self.assertEqual(request["model"], "glm-4.7-flash")
+        self.assertEqual(request["model"], "glm-5.3-flash")
         self.assertEqual(request["messages"], self.messages)
         self.assertEqual(request["tool_choice"], "auto")
         self.assertEqual(request["tools"][0]["function"]["name"], "run_shell")
@@ -43,7 +43,7 @@ class ZaiProviderOfflineTests(unittest.TestCase):
 
     def test_parses_tool_call_and_keeps_chat_turn(self):
         response = {
-            "model": "glm-4.7-flash",
+            "model": "glm-5.3-flash",
             "choices": [{"finish_reason": "tool_calls", "message": {
                 "content": None,
                 "tool_calls": [{"id": "c1", "type": "function",
@@ -88,7 +88,7 @@ class ZaiProviderOfflineTests(unittest.TestCase):
     def test_one_mocked_chat_completion(self):
         client = MagicMock()
         client.chat.completions.create.return_value = {
-            "model": "glm-4.7-flash",
+            "model": "glm-5.3-flash",
             "choices": [{"finish_reason": "stop", "message": {
                 "content": "Use a line graph.",
             }}],
