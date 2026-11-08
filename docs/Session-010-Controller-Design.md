@@ -1,6 +1,6 @@
 # Session 010 — Bounded chart-agent controller (offline-first)
 
-**Status (2026-11-07 America/Vancouver):** The six Session 010 suites passed **77/77 offline tests** in Codespaces: controller 11, fake-Docker gateway 14, task artifact 16, chart transfer 12, image recipe 11, and minimal build context 13. Existing provider 37/37 and validator 49/49 passed earlier. No model API request, real Docker build/pull/launch, or container-based PNG extraction has been performed. The next gate is actual base-image and package supply-chain verification, not more mocked execution.
+**Status (2026-11-07 America/Vancouver):** All **77/77 Session 010 offline tests passed** in Codespaces; existing provider 37/37 and validator 49/49 tests passed previously. The user subsequently verified the real OCI index and `linux/amd64` manifest metadata of `python:3.12-slim` without pulling or building any image. A derived **14-package CPython 3.12 Linux AMD64 chart wheel hash file** and **offline uv.lock audit script** are now committed, but the audit is **pending Codespace verification**. No actual Docker image build/pull, model API request, or container execution has occurred.
 
 ## Why a controller is necessary
 
@@ -276,8 +276,34 @@ The committed `uv.lock` already contains versions and SHA-256 artifact metadata 
 
 We should first capture reliable registry/platform evidence, then review a hash-locked installation plan and only later ask the user to approve a real Docker image pull/build. **Do not automatically advance from a metadata lookup to any image or shell execution.**
 
+## Registry verification result and chart-only wheel hash audit
+
+**User Codespace evidence (2026-11-07 America/Vancouver):**
+
+- `uname -m` returned `x86_64`, corresponding to `linux/amd64`.
+- `docker buildx imagetools inspect docker.io/library/python:3.12-slim` reported OCI multi-platform **index digest** `sha256:4840d514c583a4d3d8cad3940e68dee6f0f6f3635c12fcd0a3d74c21a5b93a54` and distinct **linux/amd64 image manifest digest** `sha256:05a994d2344eb364cc186910f4fc8786a38215f39f00d0acc25bff33a08f4177`.
+- Corresponding version: `3.12.16-slim-trixie`. A third digest shown in the image annotations belongs to the underlying `debian:trixie-slim` base, not the Python image. The repository remained clean.
+- Candidate reviewed `linux/amd64` base reference: `python:3.12-slim@sha256:05a994d2344eb364cc186910f4fc8786a38215f39f00d0acc25bff33a08f4177`. It has **not** been pulled or cryptographically verified against downloaded layers.
+
+**New committed dependency evidence:** The existing `uv.lock` contains a complete unconditional 14-package closure for Matplotlib, NumPy, Pandas and Pillow. `requirements/chart-cp312-linux-amd64.txt` pins all fourteen selected CPython 3.12 / Linux x86-64 wheel SHA-256 hashes from that lock, including ten transitive dependencies. These are **metadata-derived hashes**, not the result of downloading/checking wheel bytes or installing the package graph.
+
+`scripts/check_chart_wheel_lock_offline.py` re-derives the dependency closure from the actual `uv.lock` and checks package versions, recognized Linux CPython 3.12 wheels, SHA-256 hashes, no missing/extra package rows, and no unreviewed dependency markers/extras. It performs **no network access, pip installation, Docker command, or model request**. CI runs this audit.
+
+```bash
+cd /workspaces/cmu-11-768-assignment-2
+git pull --ff-only
+uv run python scripts/check_chart_wheel_lock_offline.py
+git status --short --branch
+```
+
+Expected only if the audit passes: **14 hashes checked: four roots and ten transitive dependencies**. The audit has **not yet run in Codespaces**.
+
+The current Dockerfile still installs four direct pinned versions without `--require-hashes`, and the private build-context allowlist does not yet include this requirements file. We intentionally did **not** silently change the image recipe, default SandboxGateway image, or model-execution path. Later, after the offline audit passes, we can review a narrow integration of the hashed file into the build context and Dockerfile. Actual artifact retrieval/installation/build/testing still require separate approval and evidence.
+
+Full manifest observations, dependency closure and unresolved security boundaries: [Session 010 Supply Chain](Session-010-Supply-Chain.md).
+
 ## Next decisions before any live chart generation
 
-The **13 minimal build-context tests are verified**. Next inspect registry metadata and the Codespace architecture, then design a complete chart-only wheel hash lock. No Docker image build/pull, sandbox command, or model request is authorized by these checks; any real execution requires separate explicit user approval. A separate human confirmation is required before any real Docker launch, and a fresh explicit model-specific approval is required **for every potentially billed model turn**. The bounded controller and gateway must not be wired to unattended live execution.
+The registry metadata and host architecture are now observed; the chart-only requirements file and offline hash audit are committed. **First run the 14-package offline wheel audit** and resolve any failures. Only then review how the hashed file enters the minimal Docker build context and how the Dockerfile enforces it. A real Docker build/pull, sandbox command or model request still requires separate explicit user authorization. A separate human confirmation is required before any real Docker launch, and a fresh explicit model-specific approval is required **for every potentially billed model turn**. The bounded controller and gateway must not be wired to unattended live execution.
 
 **Non-goals for this slice:** model-quality comparisons, MCC, human-label prediction, a live Terra judgment, course-equivalent results, automatic API retries, and unsupervised multi-turn execution.
