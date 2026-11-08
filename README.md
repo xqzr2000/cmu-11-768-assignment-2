@@ -170,6 +170,16 @@ uv run python scripts/check_sandbox_gateway_offline.py
 
 A real Docker smoke test, a chart-capable image, task-file staging, and `figure.png` extraction remain separate future decisions requiring explicit consent where appropriate.
 
+**Verified in Codespaces:** **11/11 controller** and **14/14 fake-Docker gateway** tests passed (25/25 total); Git status was clean. The provider (37/37) and validator (49/49) suites passed in the preceding offline verification.
+
+**Third offline slice (tests pending):** `integrations/task_artifacts.py` creates a bounded, task-local snapshot of at most eight UTF-8 CSV inputs, rejecting symlinks and oversized files. It also strictly validates PNG byte streams and JSON/base64 envelopes for a *future* `figure.png` extraction helper, with checksum, size, pixel and trailing-payload checks. No input is copied into Docker; no actual container is launched; no model is called. The **16 new artifact tests** are guarded against zero discovery:
+
+```bash
+uv run python scripts/check_task_artifacts_offline.py
+```
+
+A digest-pinned chart-capable image, real task staging and extraction, and approved Docker smoke run remain future work.
+
 Read [Session 010 controller design](docs/Session-010-Controller-Design.md) for the state machine, per-turn API consent boundary, and security constraints.
 
 ## Session 009 — Completed four-model live API compatibility checks
