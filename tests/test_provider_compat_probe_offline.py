@@ -109,7 +109,7 @@ class ProviderCompatibilityProbeOfflineTests(unittest.TestCase):
                 self.assertEqual(output["requested_model"], spec.model_id)
                 self.assertEqual(output["retries"], 0)
                 self.assertEqual(output["model_proposed_commands_executed"], 0)
-                saved = Path(tmp) / "output" / f"provider_compat_{role}.json"
+                saved = probe.result_path(spec)
                 self.assertTrue(saved.is_file())
                 record = json.loads(saved.read_text())
                 self.assertEqual(record["usage"]["total_tokens"], 18)
@@ -139,6 +139,62 @@ class ProviderCompatibilityProbeOfflineTests(unittest.TestCase):
                 probe.main(args)
             self.assertEqual(execute.call_count, 1)
 
+    def test_legacy_old_model_error_does_not_block_new_agent_c(self):
+        role = "agent_c"
+        spec = get_model(role)
+        self.assertEqual(spec.model_id, "glm-5.3-flash")
+        with tempfile.TemporaryDirectory() as tmp, patch.object(
+            probe, "RELEASE", Path(tmp)
+        ), patch.dict(os.environ, {spec.key_env: "fake-key"}), patch.object(
+            probe, "execute_one", return_value=_mock_reply(role)
+        ) as execute:
+            previous = Path(tmp) / "output" / "provider_compat_agent_c.json"
+            previous.parent.mkdir(parents=True)
+            old_text = json.dumps({
+                "status": "failed", "requested_model": "glm-4.7-flash",
+                "error_type": "RateLimitError", "retries": 0,
+            })
+            previous.write_text(old_text)
+            result = self._main("--role", role, "--live",
+                                "--confirm-one-request", "--approve-model", spec.model_id)
+            self.assertEqual(result["status"], "completed")
+            self.assertEqual(result["saved"], f"output/provider_compat_{role}_{spec.model_id}.json")
+            self.assertEqual(execute.call_count, 1)
+            self.assertEqual(previous.read_text(), old_text)
+            self.assertEqual(json.loads(probe.result_path(spec).read_text())["requested_model"],
+                             "glm-5.3-flash")
+
+    def test_legacy_same_model_blocks_before_network(self):
+        spec = get_model("agent_b")
+        with tempfile.TemporaryDirectory() as tmp, patch.object(
+            probe, "RELEASE", Path(tmp)
+        ), patch.dict(os.environ, {spec.key_env: "fake-key"}), patch.object(
+            probe, "execute_one"
+        ) as execute, redirect_stderr(io.StringIO()):
+            legacy = Path(tmp) / "output" / "provider_compat_agent_b.json"
+            legacy.parent.mkdir(parents=True)
+            legacy.write_text(json.dumps({"status": "completed",
+                                          "requested_model": spec.model_id}))
+            with self.assertRaises(SystemExit):
+                probe.main(["--role", spec.role, "--live",
+                            "--confirm-one-request", "--approve-model", spec.model_id])
+            execute.assert_not_called()
+
+    def test_unreadable_legacy_record_blocks_before_network(self):
+        spec = get_model("agent_c")
+        with tempfile.TemporaryDirectory() as tmp, patch.object(
+            probe, "RELEASE", Path(tmp)
+        ), patch.dict(os.environ, {spec.key_env: "fake-key"}), patch.object(
+            probe, "execute_one"
+        ) as execute, redirect_stderr(io.StringIO()):
+            legacy = Path(tmp) / "output" / "provider_compat_agent_c.json"
+            legacy.parent.mkdir(parents=True)
+            legacy.write_text("invalid json")
+            with self.assertRaises(SystemExit):
+                probe.main(["--role", spec.role, "--live",
+                            "--confirm-one-request", "--approve-model", spec.model_id])
+            execute.assert_not_called()
+
     def test_provider_error_is_sanitized_and_never_auto_retried(self):
         role = "agent_a"
         spec = get_model(role)
@@ -151,7 +207,7 @@ class ProviderCompatibilityProbeOfflineTests(unittest.TestCase):
                 probe.main(["--role", role, "--live",
                             "--confirm-one-request", "--approve-model", spec.model_id])
             self.assertEqual(execute.call_count, 1)
-            saved = (Path(tmp) / "output" / f"provider_compat_{role}.json").read_text()
+            saved = probe.result_path(spec).read_text()
             self.assertIn('"status": "failed"', saved)
             self.assertIn('"error_type": "RuntimeError"', saved)
             self.assertNotIn("private-provider-message", saved)
