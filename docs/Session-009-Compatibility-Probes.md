@@ -1,6 +1,6 @@
 # Session 009 — One-request live compatibility probes (independent adaptation)
 
-**Status (2026-11-07):** Session 009 offline preparation verified in Codespaces (**34/34** provider tests and **49/49** validator tests passed; four request previews reported zero network requests). Two separately authorized live compatibility requests **succeeded**: DeepSeek `deepseek-flash` (Agent A) and OpenAI `gpt-5.6-luna` (Agent B). The separately authorized Z.ai `glm-4.7-flash` (Agent C) call **failed with `RateLimitError` and zero retries**; its model/tool compatibility remains unverified. Terra has not been called; its access remains unverified.
+**Status (2026-11-07):** Session 009 offline preparation verified in Codespaces (**34/34** provider tests and **49/49** validator tests passed; four request previews reported zero network requests). Two separately authorized live compatibility requests **succeeded**: DeepSeek `deepseek-flash` (Agent A) and OpenAI `gpt-5.6-luna` (Agent B). The separately authorized Z.ai `glm-4.7-flash` (Agent C) call **failed with `RateLimitError` and zero retries**; its model/tool compatibility remains unverified. Terra has not been called; its access remains unverified. **New Agent C configuration:** `glm-5.3-flash` with low reasoning effort, pending new Codespace offline verification and a fresh, separately approved live request.
 
 ## Goal and decisions
 
@@ -12,7 +12,7 @@ The project's user requires **an explicit new authorization before every live pa
 | --- | --- | --- | --- |
 | 1 | `agent_a` | `deepseek-flash` | Stateless Responses with inert `run_shell` function descriptor |
 | 2 | `agent_b` | `gpt-5.6-luna` | OpenAI Responses function descriptor |
-| 3 | `agent_c` | `glm-4.7-flash` | Z.ai Chat Completions function descriptor |
+| 3 | `agent_c` | `glm-5.3-flash` | Z.ai Chat Completions function descriptor, `reasoning_effort=low` |
 | 4 | `experimental_judge` | `gpt-6.1-terra` | OpenAI Responses, synthetic PNG, strict JSON error-family schema |
 
 **Public API documentation is not account entitlement**. An unsupported-model/provider error is a compatibility result, never a reason to silently switch model ID.
@@ -29,7 +29,7 @@ Provider sources:
 1. `scripts/provider_compat_probe.py` **defaults to offline** and prints request metadata only. Importing or previewing never reads a key, sends an API request, sends a synthetic PNG, invokes a Docker sandbox, or executes a tool.
 2. Live execution is possible **only with all** `--live --confirm-one-request --approve-model EXACT_ID` and one `--role`. A missing role, mismatched ID, incomplete flags or missing provider key blocks the call.
 3. No automatic retry (`max_retries=0`), no agent loops, 60s timeout and maximum 512 generated tokens. Provider/model errors are not hidden by fallback. A failed/incomplete request can still be billed; inspect billing/console separately.
-4. The CLI creates `output/provider_compat_<role>.json` with restrictive permissions and `O_EXCL` (never overwrites an earlier result). The entire `/output/*.json` is gitignored. Never move raw credentials or output into committed files.
+4. Since the model migration, the CLI creates `output/provider_compat_<role>_<model>.json` with restrictive permissions and `O_EXCL` (never overwrites an earlier result). It also refuses a repeated request when a legacy `provider_compat_<role>.json` already contains that same model ID. The original three legacy results remain untouched, including GLM-4.7's failed attempt. The entire `/output/*.json` is gitignored. Never move raw credentials or output into committed files.
 5. Saved results contain **only** role/provider, requested and returned model IDs, normalized token usage, number/names of inert tool requests, strict-schema success for Terra, and any safe error *type*. Raw prompts, provider error messages, model text, tool arguments, PNG bytes and secrets are omitted.
 6. Model-proposed tools are **never run**. A successful function-call parse only indicates compatibility with a tool descriptor, not that agent execution works.
 7. Terra receives a small synthetic PNG and instructions for bars A=1 and B=2. A syntactically valid JSON verdict only confirms schema compatibility, **not** accuracy, sensitivity, specificity or MCC.
@@ -59,7 +59,7 @@ Expected previews: `mode=offline`, `network_requests=0`, one inert function desc
 
 No live command is approved or provided in this document. After confirming offline verification, present the **exact planned model**, fixed synthetic prompt, expected maximum output tokens, estimated/request charge basis and **one-request** consent question to the user. Only when that specific request is approved, provide the corresponding live CLI invocation. Next role needs a separate approval regardless of whether the prior request worked.
 
-Record the response from `output/provider_compat_<role>.json` and identify whether a function call was actually returned for a generator; a text-only response is **inconclusive** for tool-call compatibility, not a pass. No automatic retries.
+Record the response from `output/provider_compat_<role>_<model>.json` and identify whether a function call was actually returned for a generator; a text-only response is **inconclusive** for tool-call compatibility, not a pass. No automatic retries.
 
 ## Verified live compatibility: Agent A, DeepSeek
 
@@ -124,6 +124,19 @@ This confirms actual one-turn API/function-call interoperability and the local p
 `RateLimitError` alone cannot determine whether the account encountered transient request throttling, a credit/balance restriction, a limit window, or another Z.ai quota condition. The probe intentionally records only the Python exception type and does not retain the vendor's business error code, body, or headers. Consequently **do not assert Z.ai model incompatibility** from this result.
 
 Safe next steps: inspect Z.ai account dashboard for key class/plan, standard API balance or quota, per-model rate/concurrency limits and usage/failure records. Do not reveal API keys or sensitive logs. There is no permission to retry this request or substitute models; any follow-up live model request requires a fresh explicit user approval.
+
+## Agent C replacement selected — GLM-5.3-Flash
+
+**Decision (2026-11-07, America/Vancouver):** User requested a switch from the free `glm-4.7-flash` to paid `glm-5.3-flash` and compatibility testing after the previous attempt failed with `RateLimitError`. This is a **new model configuration**, not a retry of the rejected request.
+
+Code changes on `feature/session-009-provider-compatibility`:
+- `integrations/models.py`: Agent C now requests `glm-5.3-flash`; all other roles, keys, and base URLs unchanged.
+- `integrations/providers/zai.py`: Keep native Chat Completions plus function descriptor; send `reasoning_effort=low` through OpenAI SDK `extra_body` to bound mandatory model reasoning in a short one-turn test. The default `max` reasoning could use the 512-token budget before producing a tool call.
+- `scripts/provider_compat_probe.py`: Save the new test to **`output/provider_compat_agent_c_glm-5.3-flash.json`**, without changing `output/provider_compat_agent_c.json` (the `glm-4.7-flash` `RateLimitError` record). Same-model legacy records still prevent repeat requests, and no automatic retry is possible.
+- Offline tests update model assertions and verify preservation of the older GLM record and rejection of attempted repeated probes.
+- No changes to course runner, official judge, sandbox integration, human labels or metrics. Changing a model may improve access, but does not prove that the previous `RateLimitError` was model-specific.
+
+**Verification:** New tests and model selection have been committed remotely; Codespace results are **pending**. This documentation records **no actual GLM-5.3-Flash API request** and no account entitlement confirmation. Its only allowed next action without explicit new call approval is an offline preview and mocked tests. A later live request needs a fresh, explicit, model-specific authorization; paid usage and possible failures remain.
 
 ## After the four approved checks
 
