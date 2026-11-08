@@ -1021,13 +1021,19 @@ git status --short --branch
 **Changes committed in Session 010's first offline slice:**
 
 1. New `integrations/chart_controller.py`: Pure `ChartController` state machine for the three generator roles, an inert `run_shell` descriptor, provider-specific request preparation, explicitly accepted normalized replies, pending tool-call tracking, and pure recording of externally obtained sandbox outputs. Default caps: 4 model turns, 6 tools, 2,000 command characters, 2,048-character stdout/stderr fields. Every call remains separately approved by a future host; the budgets never grant authorization.
-2. New `tests/test_controller_offline.py`: Mock-only tests for three-provider request shapes and Responses-vs-Chat continuation, no-transport preview, terminal replies, pending tools, command arguments and IDs, strict budgets, malformed outputs, and truncation.
+2. New `tests/test_controller_state_offline.py` (renamed from initially committed `tests/test_controller_offline.py` following discovery failure): Mock-only tests for three-provider request shapes and Responses-vs-Chat continuation, no-transport preview, terminal replies, pending tools, command arguments and IDs, strict budgets, malformed outputs, and truncation.
 3. Updated `.github/workflows/offline-ci.yml` to run the dedicated mock-only controller suite.
 4. New `docs/Session-010-Controller-Design.md` explains the runtime boundary and unresolved task-file/PNG transport decisions. Updated README with the current first-slice scope.
 
 **What we deliberately did not do:** call any provider, start Docker, execute model-proposed shell commands, stage task data in a container, retrieve a model-generated figure, test end-to-end chart correctness, change the existing judge, score human labels, or update the official Modal runner.
 
-**Pending user Codespace verification:** Run `uv run python -m unittest discover -s tests -p 'test_controller_*_offline.py' -v`, the existing provider and validator suites, `uv run python scripts/provider_preflight.py`, and `git status --short --branch`. We do **not** claim these new tests have passed until the user supplies actual results. CI also needs PR verification before merge.
+**First user Codespace results (2026-11-07 America/Vancouver; terminal transcript):** `git pull --ff-only` fast-forwarded from `65b0a49` to `43a24ac`. The initial controller command `uv run python -m unittest discover -s tests -p 'test_controller_*_offline.py' -v` printed **`Ran 0 tests` / `NO TESTS RAN`**. That is **not a passing controller verification**, despite the successful command exit. Provider suite **37/37 passed**, validator suite **49/49 passed**, and `provider_preflight.py` reported four zero-network previews. Git tree remained clean and synchronized.
+
+**Cause of the zero-test discovery:** The new test file was named `tests/test_controller_offline.py`, but the discovery glob `test_controller_*_offline.py` requires an additional segment between `controller_` and `_offline.py`. This exposed an important CI safety gap: `unittest discover` can silently succeed when it finds no tests.
+
+**Repair (subsequent commits, pending user verification):** Renamed the suite to `tests/test_controller_state_offline.py`; added `scripts/check_controller_offline.py` to count discovered tests and **fail when count == 0**; changed `.github/workflows/offline-ci.yml` to run that guarded entry point. Updated README and Session 010 design notes. **No new model calls, Docker processes or command executions** occurred as part of the repair. The 11 controller test cases must still be actually executed to claim success.
+
+**Next:** User pulls the repair, runs `uv run python scripts/check_controller_offline.py`, and reports the output; expected discovery: 11. Correct any actual failures before continuing to the bounded Docker gateway design. Existing provider/validator regression tests already passed at `43a24ac`, and these repair commits only changed test discovery/runner/docs.
 
 **Next:** Review the first-slice tests and fix any issues. Then design and mock-test a restricted Assignment 1 `Sandbox` adapter with explicit `network="none"`, no credentials/host mounts, bounded time/resources, and safe task input/PNG extraction. Any real Docker execution or potentially billed model call will be separately discussed and authorized.
 
