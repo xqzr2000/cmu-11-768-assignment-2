@@ -1,6 +1,8 @@
 # Session 014 — Offline chart-worker image staging
 
-**Scope:** Source-only, offline-first integration. No Docker pull, build, launch, model API calls, registry access, wheel downloads or package installations in a chart image are authorized.
+**Status: Completed / merged.** [Session 014 PR #14](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/14) merged into `main` at **`39fbbf9`** (2026-11-08 UTC). [PR-head GitHub Actions 42518103408](https://github.com/xqzr2000/cmu-11-768-assignment-2/actions/runs/42518103408) passed **20/20** steps; [post-merge main GitHub Actions 42518586284](https://github.com/xqzr2000/cmu-11-768-assignment-2/actions/runs/42518586284) also passed.
+
+**Scope:** Source-only, offline-first integration. No Docker pull, build, launch, model API calls, registry access, wheel downloads or package installations in a chart image were performed or authorized. The historical steps below describe the original implementation and verification, not pending merge work.
 
 **Baseline:** Session 013 [PR #13](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/13) merged at `e0242d6`; the user confirmed a clean synchronized `main`, deleted the old local and remote feature branches, and observed post-merge GitHub Actions success. The verified historical baseline is **193/193** host-only/fake/mock offline tests, the **14/14** dependency *metadata* audit, and zero-network provider preview.
 
@@ -55,7 +57,7 @@ git status --short --branch
 
 The expected CLI `usage:` and worker-failure lines occurred in negative test cases which all finished `ok`. The Dockerfile is still inert text, with no Docker/image/network/model operations from these commands.
 
-**Next:** Create and review a **draft PR**, inspect GitHub Actions on the latest PR head, and decide merge separately. No PR should be merged automatically.
+**Completed:** Draft PR #14 was reviewed and merged by the user. GitHub Actions passed on both the latest PR head `cb16674` and merged `main` `39fbbf9`. No new local tests were run after the documentation-only commits; the 197/197 Codespaces evidence is on `118ea8a`.
 
 ## Still needed before an explicitly authorized real Docker smoke test
 
@@ -65,4 +67,4 @@ The expected CLI `usage:` and worker-failure lines occurred in negative test cas
 4. Design a trusted **size-bounded** PNG artifact channel and validate the returned image against the existing strict PNG checker. The gateway's shortened stdout is not adequate for base64 PNGs.
 5. Review precise build/pull/run/extraction/cleanup commands and risks with the user for **fresh specific authorization**. Prior offline checks and historical API probes are not authorization.
 
-**Resume checkpoint:** Session 014 branched from clean `e0242d6`; the user verified 51/51 focused and 197/197 full offline checks at clean tracking feature head `118ea8a`. Documentation-only evidence updates may require a fast-forward pull. Draft PR and latest-head CI review are next. No Docker or model operations have been performed by this work.
+**Final handoff:** Session 014 branched from clean `e0242d6`; the user verified 51/51 focused and 197/197 full offline checks at feature head `118ea8a`, then merged PR #14 into main at `39fbbf9`. Post-merge main CI passed. **Still to verify in Codespaces:** sync `main`, check ancestry, remove merged Session 014 local and remote branches if present, and confirm clean status. The next proposed Session 015 is an *offline-only* fake-tested Docker build/runtime lifecycle and bounded PNG extraction design; the exact Stage B pull/build/run/download operations require separate user consent. No Docker or model operations have been performed by this work.
