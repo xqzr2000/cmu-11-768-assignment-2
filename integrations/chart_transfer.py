@@ -1,6 +1,6 @@
 """Offline-only transfer planning for vetted task CSVs and figure extraction.
 
-The staging context writes *only validated CSV snapshots* into a private,
+The staging context writes *only validated CSV snapshots (including none)* into a private,
 short-lived host directory for a future reviewed Docker image build. It neither
 imports Docker nor builds an image, launches a sandbox, runs commands, contacts
 a model, or copies host credentials. Temporary files are deleted on exit.
@@ -83,8 +83,8 @@ def _validate_snapshot(snapshot: TaskInputSnapshot) -> tuple[CSVAsset, ...]:
         r"[A-Za-z0-9][A-Za-z0-9._-]{0,63}", snapshot.task_id
     ):
         raise ArtifactError("Unsafe task identifier.")
-    if not isinstance(snapshot.assets, tuple) or not 1 <= len(snapshot.assets) <= MAX_INPUT_FILES:
-        raise ArtifactError("Invalid task input count.")
+    if not isinstance(snapshot.assets, tuple) or len(snapshot.assets) > MAX_INPUT_FILES:
+        raise ArtifactError("Invalid task input count (expected 0 to 8 CSV files).")
     total = 0
     names: set[str] = set()
     for asset in snapshot.assets:
