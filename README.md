@@ -147,22 +147,24 @@ The independent `--compare` path reads human labels locally, reports a single fa
 
 ## Session 010 — Bounded chart controller and offline-first chart environment
 
-PR #9 merged Session 009 into `main` at `65b0a49`. Session 010 lives on `feature/session-010-chart-agent-controller`, with no model API or actual Docker execution in this session.
+Session 009 merged via PR #9 (`65b0a49`); Session 010 continues independently on `feature/session-010-chart-agent-controller`. The project has **not** executed any model APIs, real Docker builds/launches, or untrusted shell commands during Session 010.
 
-**Verified Codespace results:** **53/53** new Session 010 offline tests passed: 11 controller, 14 fake-sandbox gateway, 16 task CSV/PNG checks, and 12 private CSV transfer/fixed-extractor checks. Earlier provider **37/37** and validator **49/49** tests also passed. Zero-test discovery is treated as an error by guarded suite runners.
+**Verified Codespace baseline: 64/64 offline tests passed**, comprising 11 controller, 14 fake-Docker gateway, 16 task CSV/PNG artifact, 12 private CSV/extraction helper and 11 digest-guarded image recipe tests. Earlier provider **37/37** and validator **49/49** regression suites also passed. All dedicated offline test runners fail on empty discovery.
 
-The architecture currently contains four offline building blocks:
+Implementation boundaries:
 
-- `ChartController`: manually stepped tool-call and conversation history tracking; no model requests or automatic shell execution.
-- `SandboxGateway`: explicit launch and per-command approvals, `network="none"`, no ports/host mounts or host credentials, resource caps and cleanup. All tests use fake containers.
-- `task_artifacts`: bounded task-local UTF-8 CSV snapshots and strict `figure.png` validation.
-- `chart_transfer` + fixed `figure_extract_worker.py`: private temporary host-file staging and a bounded JSON/base64 output protocol. No Docker image builds or artifact extraction have occurred.
+- `integrations/chart_controller.py`: manually stepped three-provider conversation state; no transport or automatic execution.
+- `integrations/sandbox_gateway.py`: explicitly approved, `network="none"` sandbox launch and per-command approval, with limits and cleanup. **No real container launched**.
+- `integrations/task_artifacts.py`: small, bounded CSV snapshots and strict PNG decoding.
+- `integrations/chart_transfer.py` plus `scripts/figure_extract_worker.py`: private temporary CSV staging and a fixed bounded PNG envelope. **No container transfer run**.
+- `integrations/chart_image_recipe.py`: inert chart-capable Dockerfile text requiring a digest-shaped `python:3.12-slim` base reference, headless Matplotlib/Pandas, unprivileged runtime user, and only vetted input/helper COPY paths. **No real image digest, wheel-hash lock or image build verified**.
 
-**Fifth offline slice (committed; tests pending):** `integrations/chart_image_recipe.py` renders an inert Dockerfile **only** for the syntax `python:3.12-slim@sha256:<64 lowercase hex>`. It requests the exact Matplotlib/Pandas/NumPy/Pillow versions pinned by our project, plans a non-root chart workspace and read-only CSV/extractor files, and prohibits broad context copying. The actual base digest, image trust, platform, and transitive package wheel hashes are **not verified**. This is **not** a reproducible production image or authorization to build one. New offline recipe tests use a **fictitious test digest**.
+**Sixth offline slice (new; tests pending):** `integrations/chart_build_context.py` produces a private temporary host-side build context with exactly an inert `Dockerfile`, vetted `inputs/*.csv`, and the reviewed `trusted/extract_figure.py`. It verifies byte hashes, private modes, zero symlinks and no extra checkout/secret files, and cleans up on exit. It does **not** call Docker or a model. The **13 new synthetic tests** await Codespace verification.
 
-Run all five guarded suites, with no model network calls or Docker operations:
+Run all six guarded offline test suites:
 
 ```bash
+uv run python scripts/check_chart_build_context_offline.py
 uv run python scripts/check_chart_image_recipe_offline.py
 uv run python scripts/check_chart_transfer_offline.py
 uv run python scripts/check_task_artifacts_offline.py
@@ -170,11 +172,11 @@ uv run python scripts/check_controller_offline.py
 uv run python scripts/check_sandbox_gateway_offline.py
 ```
 
-Expected total once the fifth suite is actually verified: **64 Session 010 tests**. **Do not claim the new 11 tests passed until the Codespace output confirms it.**
+Expected total **if the 13 new context tests pass: 77/77 Session 010 tests**. The previous 64 passed; do not claim a new total until verified.
 
-**Not implemented or authorized:** actual chart-capable Docker image build, safe private build-context wiring, live sandbox launch, large-output image retrieval through the gateway, model-driven plotting run, Terra judge accuracy tests, or any further potentially billed model request. The original course Modal runner and official-model requirements remain unchanged.
+**Still missing:** selection/verification of a real immutable base digest and complete dependency lock, a separately authorized Docker build with the minimal context, a fixed large-output extraction gateway, and a human-approved per-turn live chart agent. The original Modal runner and official judge setup have not changed.
 
-See [Session 010 design and safety plan](docs/Session-010-Controller-Design.md) and [chronological learning journal](docs/Learning-Progress.md).
+See [Session 010 safety/design report](docs/Session-010-Controller-Design.md) and [learning journal](docs/Learning-Progress.md).
 
 ## Session 009 — Completed four-model live API compatibility checks
 
