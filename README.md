@@ -145,32 +145,36 @@ uv run python scripts/openai_seed_pilot.py --run-id 004 --family wrong_data --co
 
 The independent `--compare` path reads human labels locally, reports a single family decision's TP/FP/FN/TN, and makes no model requests. A single selected example is not evidence of MCC or model generalization. The existing Z.ai pilot and official Qwen3-VL configuration remain intact.
 
-## Session 010 — Bounded chart controller, offline-first sandbox and artifact transport
+## Session 010 — Bounded chart controller and offline-first chart environment
 
-Session 009 merged into `main` via PR #9 (`65b0a49`); its feature branch has been deleted. Session 010 is developed separately on `feature/session-010-chart-agent-controller`.
+PR #9 merged Session 009 into `main` at `65b0a49`. Session 010 lives on `feature/session-010-chart-agent-controller`, with no model API or actual Docker execution in this session.
 
-**Verified Codespace progress:** **41/41 Session 010 offline tests passed**: 11 pure controller state-machine tests, 14 fake-Docker sandbox gateway tests, and 16 restricted task-CSV / PNG-artifact validation tests. Previously, provider **37/37** and validator **49/49** regression tests also passed. Git status was clean. A previous test-discovery mistake was fixed by adding runners that refuse zero discovered tests.
+**Verified Codespace results:** **53/53** new Session 010 offline tests passed: 11 controller, 14 fake-sandbox gateway, 16 task CSV/PNG checks, and 12 private CSV transfer/fixed-extractor checks. Earlier provider **37/37** and validator **49/49** tests also passed. Zero-test discovery is treated as an error by guarded suite runners.
 
-The building blocks remain **independent and not connected to any live agent loop**:
+The architecture currently contains four offline building blocks:
 
-- `integrations/chart_controller.py`: manually stepped provider conversation replay, tool-call validation, and request/tool budgets. No model requests are sent.
-- `integrations/sandbox_gateway.py`: an opt-in wrapper for the pinned Assignment 1 Docker runtime; requires explicit launch and per-command approvals, uses `network="none"`, no mounts or ports, bounded resources and cleanup. Its tests use only fake containers; it has not launched Docker.
-- `integrations/task_artifacts.py`: snapshots at most eight small UTF-8 task-local CSVs, rejects unsafe paths, and strictly validates `figure.png` byte streams and extraction envelopes.
+- `ChartController`: manually stepped tool-call and conversation history tracking; no model requests or automatic shell execution.
+- `SandboxGateway`: explicit launch and per-command approvals, `network="none"`, no ports/host mounts or host credentials, resource caps and cleanup. All tests use fake containers.
+- `task_artifacts`: bounded task-local UTF-8 CSV snapshots and strict `figure.png` validation.
+- `chart_transfer` + fixed `figure_extract_worker.py`: private temporary host-file staging and a bounded JSON/base64 output protocol. No Docker image builds or artifact extraction have occurred.
 
-**Fourth offline slice (new; Codespace tests pending):** `integrations/chart_transfer.py` validates in-memory CSV snapshots again and writes them to private, temporary **host** files (0600) for a future separately reviewed image build. `scripts/figure_extract_worker.py` is a fixed, bounded Python helper intended for a future image; it would output a canonical JSON/base64 `figure.png` envelope. Neither component builds an image, launches Docker, sends a model request, or executes a model-proposed shell command. The **12 new tests** use synthetic temporary files only. Run:
+**Fifth offline slice (committed; tests pending):** `integrations/chart_image_recipe.py` renders an inert Dockerfile **only** for the syntax `python:3.12-slim@sha256:<64 lowercase hex>`. It requests the exact Matplotlib/Pandas/NumPy/Pillow versions pinned by our project, plans a non-root chart workspace and read-only CSV/extractor files, and prohibits broad context copying. The actual base digest, image trust, platform, and transitive package wheel hashes are **not verified**. This is **not** a reproducible production image or authorization to build one. New offline recipe tests use a **fictitious test digest**.
+
+Run all five guarded suites, with no model network calls or Docker operations:
 
 ```bash
+uv run python scripts/check_chart_image_recipe_offline.py
 uv run python scripts/check_chart_transfer_offline.py
 uv run python scripts/check_task_artifacts_offline.py
 uv run python scripts/check_controller_offline.py
 uv run python scripts/check_sandbox_gateway_offline.py
 ```
 
-All four runners fail if no tests are discovered. The expected Session 010 total after verified fourth-slice results is **53 tests**. No pass is claimed yet for the 12 new transfer tests.
+Expected total once the fifth suite is actually verified: **64 Session 010 tests**. **Do not claim the new 11 tests passed until the Codespace output confirms it.**
 
-**Still missing:** a vetted digest-pinned, chart-capable Docker image; an approved image build and task-file injection; a size-aware fixed PNG extraction gateway path (the current command output is truncated to 2,048 characters); a real Docker smoke run; and a human-approved per-turn live model controller. Each billed model request requires fresh separate consent. The original Modal runner and official model requirements are unchanged.
+**Not implemented or authorized:** actual chart-capable Docker image build, safe private build-context wiring, live sandbox launch, large-output image retrieval through the gateway, model-driven plotting run, Terra judge accuracy tests, or any further potentially billed model request. The original course Modal runner and official-model requirements remain unchanged.
 
-See [Session 010 controller and transfer design](docs/Session-010-Controller-Design.md) and [learning journal](docs/Learning-Progress.md).
+See [Session 010 design and safety plan](docs/Session-010-Controller-Design.md) and [chronological learning journal](docs/Learning-Progress.md).
 
 ## Session 009 — Completed four-model live API compatibility checks
 
