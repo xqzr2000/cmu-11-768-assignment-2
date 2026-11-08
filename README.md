@@ -147,7 +147,7 @@ The independent `--compare` path reads human labels locally, reports a single fa
 
 ## Session 010 — Offline-first chart controller and chart environment
 
-PR #9 merged Session 009 into `main` at `65b0a49`. Session 010 continues on `feature/session-010-chart-agent-controller`.
+PR #9 merged Session 009 into `main` at `65b0a49`; PR #10 merged the completed Session 010 offline infrastructure at `19e0a27`. Session 011 now develops on `feature/session-011-chart-runtime`.
 
 **Verified in Codespaces: 82/82 Session 010 offline tests passed** after hash-lock wiring, with a clean working tree. The suites cover the controller (11), fake-Docker gateway (14), bounded task CSV/PNG validation (16), file staging and extraction helper (12), inert Dockerfile recipe (12), and private build context (17). Provider **37/37**, validator **49/49**, and structural **5/5** regressions also passed, totaling **173/173** offline tests.
 
@@ -172,7 +172,13 @@ uv run python scripts/check_chart_wheel_lock_offline.py
 
 See [Session 010 supply-chain provenance](docs/Session-010-Supply-Chain.md) for full observed digests, platform evidence, package closure and remaining build-trust gaps.
 
-**Session paused:** Continue later on `feature/session-010-chart-agent-controller` without merging/deleting it. See the [pause / resume checkpoint](docs/Learning-Progress.md#pause--resume-checkpoint--2026-11-07-americavancouver) for the full Session 001–010 summary and latest verification state. Next, **review the Session 010 draft PR and CI** before considering a separately approved real build.
+**Session 010 finished:** PR #10 [merged](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/10), CI passed, and the user cleaned the old local/remote branch. See [Learning Progress](docs/Learning-Progress.md) for the completed milestone and the active Session 011 handoff.
+
+## Session 011 — Empty-input chart runtime support (offline implementation, tests pending)
+
+The official authored-task schema already accepts `inputs=[]` or an omitted input list, but our Session 010 snapshotter, transfer staging and private context previously required one CSV, and the inert Dockerfile's glob-based chmod would fail if the directory were empty. On `feature/session-011-chart-runtime` we now allow **0–8** CSV files while retaining file safety checks, a strictly allowlisted build context, the pinned plotting requirements file, and a fixed empty-file-safe `find ... -exec chmod` step. No tasks automatically enter Docker or a model API.
+
+New offline regression cases cover zero-input descriptors, private staging and cleanup, exact three-file build contexts with empty `inputs/`, rejection of unexpected input files and Dockerfile handling. **The new Session 011 code has not yet been verified by the user in Codespaces.** The historical **173/173 passed** count belongs to Session 010, before these changes. Review the [Session 011 journal entry](docs/Learning-Progress.md) and run the guarded offline tests before any PR or separately authorized real image build.
 
 No additional model API requests, real Docker builds, sandbox launches, live chart-generation runs, or Terra accuracy evaluations are authorized by Session 010's offline verification. The official Modal runner and assignment requirements are unchanged.
 
