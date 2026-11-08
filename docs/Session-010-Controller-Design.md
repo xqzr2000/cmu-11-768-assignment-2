@@ -60,7 +60,7 @@ A future runner must not blindly reuse `workflow/generate.py`: that original ass
 
 ## Test coverage and verification
 
-New `tests/test_controller_offline.py` covers:
+New `tests/test_controller_state_offline.py` covers:
 - Zero-network, provider-native request preparation for all three generator roles.
 - Two-turn function-call and tool-result replay in Responses and Chat Completions.
 - Pending tool-call resolution, completion and refusal of extra turns.
@@ -76,7 +76,7 @@ New `tests/test_controller_offline.py` covers:
 cd /workspaces/cmu-11-768-assignment-2
 git pull --ff-only
 git status --short --branch
-uv run python -m unittest discover -s tests -p 'test_controller_*_offline.py' -v
+uv run python scripts/check_controller_offline.py
 uv run python -m unittest discover -s tests -p 'test_provider_*_offline.py' -v
 uv run python -m unittest discover -s tests -p 'test_validator_*_offline.py' -v
 uv run python scripts/provider_preflight.py
@@ -84,6 +84,26 @@ git status --short --branch
 ```
 
 Please report the actual outcomes. Do not mark tests as passed until they run in Codespaces/CI.
+
+## First Codespace verification and test discovery correction
+
+The user pulled the initial Session 010 branch at commit `43a24ac` and ran the planned offline commands in Codespaces on 2026-11-07 (America/Vancouver):
+
+- The initial controller invocation returned `Ran 0 tests` / `NO TESTS RAN`. **This is not a passed controller test suite.** Python `unittest discover` can exit successfully on zero discovered tests, so we must guard against this failure mode in CI.
+- Provider adapter tests **37/37 passed**.
+- Validator regression tests **49/49 passed** (the argparse errors shown in one test are expected/handled).
+- Registry preflight reported **zero network requests** across the four model roles.
+- Git working tree remained clean and tracking the Session 010 remote branch.
+
+**Root cause:** Original file name `tests/test_controller_offline.py` did not match the committed glob `test_controller_*_offline.py`. The pattern expects an extra name segment after `controller_`.
+
+**Remediation committed:**
+
+1. Rename the file to `tests/test_controller_state_offline.py`, which matches the existing discovery pattern.
+2. Add `scripts/check_controller_offline.py`, a deterministic test runner that checks `suite.countTestCases()` and **exits nonzero when discovery returns zero tests**, then executes the suite.
+3. Update GitHub Actions to run the new guarded script rather than unguarded `unittest discover`; update README and this design report accordingly.
+
+**Pending:** User must pull these remediation commits and run `uv run python scripts/check_controller_offline.py`. Expected discovery is **11 tests**, but no pass result is claimed until the actual user output or CI run confirms it. Do not begin a live model request, actual Docker operation, or controller-to-sandbox coupling until this baseline is verified.
 
 ## Next decisions before any live chart generation
 
