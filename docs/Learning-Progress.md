@@ -927,7 +927,15 @@ git status --short --branch
 
 **Still not verified or performed:** any live API request, four-model account access, real tool/function-call responses, actual Terra structured JSON on a live synthetic image, chart-generation agent loop, or MCC. Mock test success does not confirm model/API compatibility or semantic correctness.
 
-**Next:** Sync this journal-only commit. Before running a live DeepSeek compatibility request, present its exact role/model, synthetic request, one-request budget and cost basis, and ask the user explicitly to authorize exactly that one call. Do not run or provide execution of other models until separately authorized; no automatic retries.
+**First approved live compatibility request (DeepSeek, Agent A, 2026-11-07, user-supplied Codespace output):**
+
+- User explicitly approved **exactly one** potentially billed `deepseek-flash` request with no retry and no tool execution. After pulling `ea0b182`, verified clean/synchronized Git, and confirmed `DEEPSEEK_API_KEY` was configured (without exposing it), user executed `uv run python scripts/provider_compat_probe.py --role agent_a --live --confirm-one-request --approve-model deepseek-flash` exactly once.
+- The request **completed**. Provider: DeepSeek; requested model: `deepseek-flash`; reported model: `deepseek-flash`; interface: Responses. It returned **one** inert `run_shell` function call; `expected_tool_called=true`, `tool_call_compatibility=true`. No model-proposed commands were executed; retries=0.
+- Usage reported by provider: **346 input tokens, 59 output tokens, 405 total tokens**. Actual monetary charge was not independently verified. No fallback or additional API request occurred.
+- Saved local ignored result: `output/provider_compat_agent_a.json` (contents supplied by user match CLI output). Final `git status --short --branch` remained clean and synchronized; the committed files were unchanged before this documentation update.
+- **Interpretation:** DeepSeek's live endpoint supports this exact one-turn function-call request and our parser accepts its response. This is not an end-to-end plotting agent, Docker/shell execution test, data-visualization quality evaluation, Terra judge inference or MCC benchmark.
+
+**Next:** Sync the documentation commit, then request a separate explicit authorization for **one OpenAI `gpt-5.6-luna` compatibility call** before providing any Luna live command. Z.ai and Terra must each also receive their own approval. Do not automatically retry any provider test.
 
 ### Template for future sessions
 
