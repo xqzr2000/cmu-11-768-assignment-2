@@ -84,6 +84,8 @@ class SandboxGateway:
 
     def preview_launch(self) -> dict[str, Any]:
         """Report safe metadata without importing Docker or launching."""
+        if self._launch_attempted or self._closed:
+            raise GatewayError("Launch preview is available only before a sandbox attempt.")
         return {
             "mode": "offline",
             "image": IMAGE,
