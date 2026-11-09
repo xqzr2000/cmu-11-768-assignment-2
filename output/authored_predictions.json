@@ -1,0 +1,74 @@
+{
+  "predictions": [
+    {
+      "run_id": "dense-department-budgets__deepseek",
+      "errors": []
+    },
+    {
+      "run_id": "dense-department-budgets__glm",
+      "errors": [
+        {
+          "family": "hard_to_read",
+          "evidence": "clipped_text at X-axis department labels along the bottom edge: Many rotated department names extend beyond the bottom of the image and are cut off."
+        }
+      ]
+    },
+    {
+      "run_id": "dense-department-budgets__luna",
+      "errors": [
+        {
+          "family": "hard_to_read",
+          "evidence": "overlapping_text at X-axis department labels: Many adjacent rotated, multiline department labels overlap heavily, making them difficult to read."
+        }
+      ]
+    },
+    {
+      "run_id": "quarterly-revenue-by-region__deepseek",
+      "errors": []
+    },
+    {
+      "run_id": "quarterly-revenue-by-region__glm",
+      "errors": []
+    },
+    {
+      "run_id": "quarterly-revenue-by-region__luna",
+      "errors": []
+    },
+    {
+      "run_id": "sensor-daily-median__deepseek",
+      "errors": []
+    },
+    {
+      "run_id": "sensor-daily-median__glm",
+      "errors": []
+    },
+    {
+      "run_id": "sensor-daily-median__luna",
+      "errors": []
+    },
+    {
+      "run_id": "styled-decay-curves__deepseek",
+      "errors": []
+    },
+    {
+      "run_id": "styled-decay-curves__glm",
+      "errors": []
+    },
+    {
+      "run_id": "styled-decay-curves__luna",
+      "errors": []
+    },
+    {
+      "run_id": "top-products-unit-share__deepseek",
+      "errors": []
+    },
+    {
+      "run_id": "top-products-unit-share__glm",
+      "errors": []
+    },
+    {
+      "run_id": "top-products-unit-share__luna",
+      "errors": []
+    }
+  ]
+}

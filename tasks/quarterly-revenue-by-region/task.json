@@ -1,0 +1,11 @@
+{
+  "task_id": "quarterly-revenue-by-region",
+  "task_class": "large-input-aggregation",
+  "instructions": "Using matplotlib, read transactions.csv. It has one row per order with columns order_id, date (YYYY-MM-DD, all in 2025), region, product, units and unit_price (US dollars). The revenue of an order is units multiplied by unit_price. Draw a GROUPED (side-by-side) vertical bar chart of the total revenue in each calendar quarter of 2025 for each region, where Q1 is January-March, Q2 April-June, Q3 July-September and Q4 October-December. Requirements: 1. The x axis shows the four quarters in the order Q1, Q2, Q3, Q4, with tick labels exactly 'Q1', 'Q2', 'Q3', 'Q4'. 2. Within each quarter there is one bar per region, side by side, in alphabetical order: East, North, South, West. 3. Bar heights are revenue in thousands of US dollars (total revenue divided by 1000). The y axis starts at 0 and its label is exactly 'Revenue (thousand USD)'. 4. The x axis label is exactly 'Quarter of 2025'. 5. The title is exactly 'Quarterly revenue by region, 2025'. 6. Include a legend naming the four regions. 7. The figure is 10 x 6 inches and is saved at 100 dpi as figure.png.",
+  "inputs": [
+    {
+      "name": "transactions.csv",
+      "path": "inputs/transactions.csv"
+    }
+  ]
+}

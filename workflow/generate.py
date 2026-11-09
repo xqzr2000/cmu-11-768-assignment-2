@@ -28,19 +28,16 @@ class Agent:
     url_variable: str
 
 
+# Independent adaptation: our three hosted agents (integrations/models.py roles
+# agent_a/b/c) replace the course's Modal-served Qwen/Ministral/GLM-4.7. Runs are
+# produced by workflow.sandbox_generate; `url_variable` names the API key.
 AGENTS: tuple[Agent, ...] = (
-    Agent(
-        "qwen",
-        "Qwen/Qwen2.5-Coder-3B-Instruct",
-        "GENERATION_QWEN_BASE_URL",
-    ),
-    Agent(
-        "ministral",
-        "mistralai/Ministral-3-14B-Instruct-2512",
-        "GENERATION_MINISTRAL_BASE_URL",
-    ),
-    Agent("glm", "zai-org/GLM-4.7-Flash", "GENERATION_GLM_BASE_URL"),
+    Agent("deepseek", "deepseek-flash", "DEEPSEEK_API_KEY"),
+    Agent("luna", "gpt-5.6-luna", "OPENAI_API_KEY"),
+    Agent("glm", "glm-5.3-flash", "ZAI_API_KEY"),
 )
+#: Agent key -> role in integrations.models.
+AGENT_ROLES = {"deepseek": "agent_a", "luna": "agent_b", "glm": "agent_c"}
 AGENT_BY_KEY = {agent.key: agent for agent in AGENTS}
 
 

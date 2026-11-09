@@ -1,0 +1,78 @@
+{
+  "predictions": [
+    {
+      "run_id": "dense-department-budgets__deepseek",
+      "errors": []
+    },
+    {
+      "run_id": "dense-department-budgets__glm",
+      "errors": [
+        {
+          "family": "hard_to_read",
+          "evidence": "clipped_text at Bottom edge of the chart: Many rotated department tick labels extend beyond the image and are cut off."
+        }
+      ]
+    },
+    {
+      "run_id": "dense-department-budgets__luna",
+      "errors": [
+        {
+          "family": "wrong_chart",
+          "evidence": "Ensure no x-axis tick labels overlap one another: Multiple adjacent labels visibly overlap, including in the first group and around the middle and right-hand groups."
+        },
+        {
+          "family": "hard_to_read",
+          "evidence": "overlapping_text at X-axis department labels: Many adjacent rotated department labels overlap heavily, making them difficult to read."
+        }
+      ]
+    },
+    {
+      "run_id": "quarterly-revenue-by-region__deepseek",
+      "errors": []
+    },
+    {
+      "run_id": "quarterly-revenue-by-region__glm",
+      "errors": []
+    },
+    {
+      "run_id": "quarterly-revenue-by-region__luna",
+      "errors": []
+    },
+    {
+      "run_id": "sensor-daily-median__deepseek",
+      "errors": []
+    },
+    {
+      "run_id": "sensor-daily-median__glm",
+      "errors": []
+    },
+    {
+      "run_id": "sensor-daily-median__luna",
+      "errors": []
+    },
+    {
+      "run_id": "styled-decay-curves__deepseek",
+      "errors": []
+    },
+    {
+      "run_id": "styled-decay-curves__glm",
+      "errors": []
+    },
+    {
+      "run_id": "styled-decay-curves__luna",
+      "errors": []
+    },
+    {
+      "run_id": "top-products-unit-share__deepseek",
+      "errors": []
+    },
+    {
+      "run_id": "top-products-unit-share__glm",
+      "errors": []
+    },
+    {
+      "run_id": "top-products-unit-share__luna",
+      "errors": []
+    }
+  ]
+}

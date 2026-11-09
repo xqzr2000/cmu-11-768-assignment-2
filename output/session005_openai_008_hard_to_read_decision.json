@@ -1,0 +1,17 @@
+{
+  "run_id": "008",
+  "family": "hard_to_read",
+  "provider": "OpenAI",
+  "model_requested": "gpt-5.4-mini",
+  "model_reported": "gpt-5.4-mini-2026-03-17",
+  "has_error": true,
+  "evidence": "The rendered figure is hard to read: many labels are very faint light gray on a white background, making source/target names difficult to see. The dense curved links also overlap heavily, adding visual clutter.",
+  "usage": {
+    "prompt_tokens": 13506,
+    "completion_tokens": 60,
+    "total_tokens": 13566
+  },
+  "completion_attempts": 1,
+  "human_labels_sent": false,
+  "official_qwen_equivalent": false
+}

@@ -1,0 +1,9 @@
+harbor rewards:
+  dense-department-budgets     oracle  1.0
+  quarterly-revenue-by-region  oracle  1.0
+  sensor-daily-median          oracle  1.0
+  styled-decay-curves          oracle  1.0
+  top-products-unit-share      oracle  1.0
+  dense-department-budgets     mutant  1.0  (unrotated_labels, accepted)
+  quarterly-revenue-by-region  mutant  0.0  (sum_units, rejected)
+submission valid

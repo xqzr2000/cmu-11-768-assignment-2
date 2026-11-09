@@ -1,0 +1,22 @@
+{
+  "status": "completed",
+  "role": "agent_c",
+  "provider": "zai",
+  "requested_model": "glm-5.3-flash",
+  "reported_model": "glm-5.3-flash",
+  "api_style": "chat_completions",
+  "tool_call_count": 1,
+  "tool_names": [
+    "run_shell"
+  ],
+  "expected_tool_called": true,
+  "usage": {
+    "input_tokens": 212,
+    "output_tokens": 15,
+    "total_tokens": 227
+  },
+  "retries": 0,
+  "model_proposed_commands_executed": 0,
+  "official_qwen_equivalent": false,
+  "tool_call_compatibility": true
+}

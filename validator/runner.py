@@ -17,6 +17,7 @@ import argparse
 import importlib
 import json
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -89,6 +90,8 @@ def main() -> None:
     parser.add_argument("--out", type=Path, default=RELEASE / "output" / "predictions.json")
     parser.add_argument("--resume", action="store_true",
                         help="keep predictions already in --out and judge only the missing runs")
+    parser.add_argument("--workers", type=int, default=1,
+                        help="judge this many runs concurrently (hosted APIs); default 1")
     arguments = parser.parse_args()
 
     validate = importlib.import_module(arguments.solution).validate
@@ -110,21 +113,27 @@ def main() -> None:
                   f"waiting {delay:.0f}s")
             time.sleep(delay)
         stage = f"retry {attempt}" if attempt else "validating"
-        progress = tqdm(pending, unit="run")
-        pending = []
-        for run in progress:
-            progress.set_description(f"{stage} {run.run_id}", refresh=True)
-            try:
-                errors = validate(run)
-            except Exception as error:
-                failures[run.run_id] = f"{type(error).__name__}: {error}"
-                print(f"ERROR {run.run_id}: {failures[run.run_id]}")
-                pending.append(run)
-                continue
-            predictions[run.run_id] = Prediction(run_id=run.run_id, errors=errors)
-            families = [error.family.value for error in errors]
-            print(f"  {run.run_id}: {families or 'acceptable'}")
-            write_predictions(arguments.out, predictions)
+        batch, pending = pending, []
+        progress = tqdm(total=len(batch), unit="run", desc=stage)
+        # Workers only call validate(); results are recorded and checkpointed
+        # here on the main thread, in completion order.
+        with ThreadPoolExecutor(max_workers=max(1, arguments.workers)) as pool:
+            futures = {pool.submit(validate, run): run for run in batch}
+            for future in as_completed(futures):
+                run = futures[future]
+                progress.update(1)
+                try:
+                    errors = future.result()
+                except Exception as error:
+                    failures[run.run_id] = f"{type(error).__name__}: {error}"
+                    print(f"ERROR {run.run_id}: {failures[run.run_id]}")
+                    pending.append(run)
+                    continue
+                predictions[run.run_id] = Prediction(run_id=run.run_id, errors=errors)
+                families = [error.family.value for error in errors]
+                print(f"  {run.run_id}: {families or 'acceptable'}")
+                write_predictions(arguments.out, predictions)
+        progress.close()
 
     # Also create an output file when the artifact directory contains no runs.
     if not predictions:

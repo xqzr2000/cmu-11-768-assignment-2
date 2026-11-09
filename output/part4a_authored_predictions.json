@@ -1,0 +1,89 @@
+{
+  "predictions": [
+    {
+      "run_id": "dense-department-budgets__deepseek",
+      "errors": []
+    },
+    {
+      "run_id": "dense-department-budgets__glm",
+      "errors": [
+        {
+          "family": "hard_to_read",
+          "evidence": "clipped_text at Bottom edge, x-axis tick labels: Many of the rotated department names extend beyond the bottom of the image and are cut off."
+        }
+      ]
+    },
+    {
+      "run_id": "dense-department-budgets__luna",
+      "errors": [
+        {
+          "family": "hard_to_read",
+          "evidence": "overlapping_text at X-axis department labels: Many adjacent rotated department labels overlap throughout the axis, making several names difficult to read."
+        }
+      ]
+    },
+    {
+      "run_id": "quarterly-revenue-by-region__deepseek",
+      "errors": []
+    },
+    {
+      "run_id": "quarterly-revenue-by-region__glm",
+      "errors": []
+    },
+    {
+      "run_id": "quarterly-revenue-by-region__luna",
+      "errors": []
+    },
+    {
+      "run_id": "sensor-daily-median__deepseek",
+      "errors": [
+        {
+          "family": "hard_to_read",
+          "evidence": "element_covers_content: Legend in the upper-left of the plot covers data: The legend covers a small portion of the S2 daily-range band and its upper boundary around June 2."
+        }
+      ]
+    },
+    {
+      "run_id": "sensor-daily-median__glm",
+      "errors": [
+        {
+          "family": "hard_to_read",
+          "evidence": "element_covers_content: Legend in upper-left of plot covers data: The legend covers a small portion of the S2 daily-range band and its upper boundary around June 2."
+        }
+      ]
+    },
+    {
+      "run_id": "sensor-daily-median__luna",
+      "errors": [
+        {
+          "family": "hard_to_read",
+          "evidence": "element_covers_content: Legend in upper-left corner covers data: The legend covers a small portion of the S2 daily-range band and its upper boundary around June 1–2."
+        }
+      ]
+    },
+    {
+      "run_id": "styled-decay-curves__deepseek",
+      "errors": []
+    },
+    {
+      "run_id": "styled-decay-curves__glm",
+      "errors": []
+    },
+    {
+      "run_id": "styled-decay-curves__luna",
+      "errors": []
+    },
+    {
+      "run_id": "top-products-unit-share__deepseek",
+      "errors": []
+    },
+    {
+      "run_id": "top-products-unit-share__glm",
+      "errors": []
+    },
+    {
+      "run_id": "top-products-unit-share__luna",
+      "errors": []
+    }
+  ]
+}

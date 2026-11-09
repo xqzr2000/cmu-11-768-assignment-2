@@ -1,0 +1,1125 @@
+{
+  "predictions": [
+    {
+      "run_id": "001",
+      "errors": [
+        {
+          "family": "execution_failure",
+          "evidence": "No final figure.png was produced."
+        }
+      ]
+    },
+    {
+      "run_id": "004",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "Use evenly spaced data from 0.02 through 25.0 in steps of 0.02 for the first three subplots: The script uses np.arange(0.02, 25.0, 0.02), which stops at 24.98 and omits the requested endpoint 25.0. Plot cubed data generated from 15 raised to a linearly spaced array in the fourth subplot: The script plots y = 15**x4 against x4, where x4 is linearly spaced; it does not cube the generated data."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "Use a base-3 logarithmic x-axis in the third subplot: The script calls set_xscale('log') without a base, giving Matplotlib's default base 10; the visible ticks are powers of 10. Use a logarithmic x-axis in the fourth subplot: The lower-right x-axis has evenly spaced linear ticks at 0, 5, 10, and so on; the script never sets its x-scale to log. Display the figure: The script saves figure.png and closes the figure without calling plt.show(); the transcript shows no display command."
+        }
+      ]
+    },
+    {
+      "run_id": "008",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "Use the source and target data from data.csv, including all rows and fruit labels: The executed script filters out every row with source orange. The saved diagram consequently has no orange source node or outgoing orange flows. Base each link's weight on the count of its unique source-target pair: The script groups and counts pairs after excluding orange-source rows. The remaining ribbons are proportional to their counts, but all orange-source pair counts are omitted."
+        },
+        {
+          "family": "hard_to_read",
+          "evidence": "low_contrast_or_invisible at Source and target node labels on both sides of the diagram: The fruit names and counts are rendered in very pale gray against a white background, making them difficult to read."
+        }
+      ]
+    },
+    {
+      "run_id": "009",
+      "errors": [
+        {
+          "family": "wrong_chart",
+          "evidence": "Rotate the x-axis tick labels by 30 degrees: The saved figure has horizontal x-axis tick labels; the final code explicitly sets rotation=0."
+        },
+        {
+          "family": "hard_to_read",
+          "evidence": "overlapping_text at X-axis date tick labels along the bottom: The densely packed date labels overlap heavily, making them unreadable."
+        }
+      ]
+    },
+    {
+      "run_id": "010",
+      "errors": [
+        {
+          "family": "execution_failure",
+          "evidence": "No final figure.png was produced."
+        }
+      ]
+    },
+    {
+      "run_id": "013",
+      "errors": [
+        {
+          "family": "wrong_chart",
+          "evidence": "Colour the polygons with the reversed plasma colormap, not jet, rainbow or hsv: The saved-figure script uses plt.colormaps['rainbow']; the figure shows a purple-to-red rainbow sequence rather than reversed plasma. Set the x-axis limits to 0..20: The saved figure's x-axis extends from -5 to 25, matching ax.set_xlim(-5, 25)."
+        }
+      ]
+    },
+    {
+      "run_id": "016",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "Encode browser shares in the inner ring as totals of the retained versions, and version shares in the outer ring, aligned with their browser groups: The rings use browser totals and version values from the unfiltered CSV, so both include shares that should have been dropped. The browser groups and their versions are otherwise aligned. Drop every version with a share below 0.5%, while retaining versions at or above 0.5%: The final script plots all rows without filtering. The figure includes, for example, Chrome 69.0 at 0.43%, UC Browser 7.0 at 0.36%, and Yandex Browser 19.4 at 0.29%; Firefox 52.0 at exactly 0.5% is retained."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "Write browser names directly on the inner-ring segments: Chrome, IE & Edge, Firefox, Safari and Other are named on the ring, but Opera is not. The final script suppresses inner labels for browser totals below 3%. Show a legend naming the browsers: No legend is visible, and the final plotting script does not create one."
+        }
+      ]
+    },
+    {
+      "run_id": "021",
+      "errors": [
+        {
+          "family": "wrong_chart",
+          "evidence": "Label the x axis: Service names appear as tick labels, but there is no separate x-axis label identifying the axis."
+        }
+      ]
+    },
+    {
+      "run_id": "022",
+      "errors": []
+    },
+    {
+      "run_id": "023",
+      "errors": [
+        {
+          "family": "wrong_chart",
+          "evidence": "Arrange the two method panels in a single figure as two rows in a 2×1 grid: The saved figure has two panels side by side; the final script uses plt.subplots(ncols=2). Mark the original data points on both plots with circular markers: Neither panel shows point markers, and the final script has no scatter or marker plotting call. Use axis limits that do not cut off the requested data: Both panels are limited to -2 to 2 on each axis, while the original points span the -3 to 3 range and the interpolation grid spans -3.1 to 3.1."
+        }
+      ]
+    },
+    {
+      "run_id": "025",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "Treat 'NA' in Regions as a string, not a missing value: read_csv uses pandas' default missing-value parsing, so the USA and CAN region values 'NA' become missing; the subsequent string replacement does not preserve them. Structure the data as Major Area → Regions → Country, with countries grouped under their respective regions and major areas: The chart plots country rows in CSV order without grouping by Major Area or Regions; neither parent level is represented. Use Overall score to determine segment values, including the corresponding parent-group totals: Country wedge angles use Overall score, but no region or major-area segments or aggregated parent values are plotted."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "Draw a sunburst chart with hierarchical levels: The saved figure has a single ring of country wedges, not nested major-area, region and country levels. Color the chart sections by major area: Europe dark green, Asia yellow, Americas blue, Oceania purple and Africa green: All country wedges are gray. The country-color function expects full country names, while the CSV contains three-letter codes. Provide a legend identifying the five major areas and their specified colors, corresponding to the chart sections: The figure shows only an empty legend box. The legend call passes color strings as handles and produces a warning; it does not display the five requested area entries. Save the chart as an image measuring 1000 × 1000 pixels: The saved figure.png measures 3000 × 3000 pixels, not 1000 × 1000."
+        },
+        {
+          "family": "hard_to_read",
+          "evidence": "overlapping_text at Percentage labels inside the donut: Adjacent percentage labels overlap extensively around the ring, making many unreadable. overlapping_text at Country labels around the top and bottom of the donut: Many neighboring country codes overlap, particularly near the top and bottom of the circle. indistinguishable_series at Donut segments: All segments are the same gray, so the regional groups cannot be distinguished by color."
+        }
+      ]
+    },
+    {
+      "run_id": "026",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "Use the data in data.csv to construct the chart: The script reads data.csv, but the saved figure uses only its unique Major Area names to draw fixed-radius circles; it does not plot the requested regional, country, or score data. Treat 'NA' in Regions as a string, preserving the Americas/NA entries for USA and CAN: pd.read_csv uses its default missing-value handling, so the two 'NA' values become missing; replacing the string 'NA' afterward does not restore them. No NA region or its countries are plotted. Structure the chart by Major Area, then Regions, then Country: The saved figure has overlapping circles and superimposed major-area names, with no region or country segments. The computed pivot is not used for drawing. Use Overall score as the value determining each segment's size: Circle radii are fixed at 0.3, 0.5, 0.7, 0.9 and 1.1; the drawing loop never uses Overall score."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "Draw a sunburst chart: The saved image shows overlapping filled circles rather than concentric rings divided into hierarchical sectors. Make the center of the circle hollow: The center is filled by overlapping colored circles and contains superimposed text. Apply the legend's major-area colors to the corresponding sunburst sections: There are no distinct sunburst sections; translucent filled circles overlap, producing blended colors that do not correspond to the legend swatches. Save the chart as an image measuring 1000 by 1000 pixels: The saved figure.png measures 794 by 860 pixels, despite the 10-by-10-inch figure setting."
+        },
+        {
+          "family": "hard_to_read",
+          "evidence": "overlapping_text at Center of the chart: Multiple segment labels are drawn on top of one another, making them unreadable. indistinguishable_series at Sunburst chart: The chart sections appear as nearly uniform muted circles, so the region groups cannot be distinguished."
+        }
+      ]
+    },
+    {
+      "run_id": "028",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "Connect the 2015 observations in chronological month order: The final script sets highlight = 2014, so the connected series is the 12 observations from 2014, not the eight January–August 2015 observations."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "Draw the 2015 connecting curve in blue: The only blue curve connects 2014 observations; the 2015 observations are unconnected scatter points. Mark every point of the 2015 curve with a circular marker: There is no 2015 curve; the circular markers on the blue curve mark 2014 observations instead. Emphasize the 2015 data relative to the other years: The prominent blue line highlights 2014, while 2015 is drawn as ordinary scatter points. Place a legend on the right side of the diagram: No legend is visible in the saved figure, and the final script never calls a legend function."
+        }
+      ]
+    },
+    {
+      "run_id": "029",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "Show all three distribution types in each subplot for direct comparison: Each of the six panels contains only one curve and one legend entry, rather than all three CDFs."
+        }
+      ]
+    },
+    {
+      "run_id": "030",
+      "errors": [
+        {
+          "family": "wrong_chart",
+          "evidence": "Set the figure suptitle to exactly 'Sharing x per column, y per row': The saved figure instead displays 'Shared axes'. Draw the top-right plot in yellow: The final script specifies 'gold', and the saved curve is gold rather than the requested yellow."
+        },
+        {
+          "family": "hard_to_read",
+          "evidence": "low_contrast_or_invisible at Bottom-right subplot: The white series is invisible against the white plot background."
+        }
+      ]
+    },
+    {
+      "run_id": "031",
+      "errors": []
+    },
+    {
+      "run_id": "034",
+      "errors": [
+        {
+          "family": "wrong_chart",
+          "evidence": "Give the chart a title: The saved figure has no title; the text below the axes is a color explanation, not a chart title. Remove the x and y ticks entirely: Both axes show tick marks and labels from 0 through 14; the final script explicitly sets these ticks."
+        }
+      ]
+    },
+    {
+      "run_id": "038",
+      "errors": [
+        {
+          "family": "wrong_chart",
+          "evidence": "Use grey for non-smokers: The final script sets the non-smoker half-violins and legend swatch to black, not grey. Rotate the x-axis tick labels by 30 degrees: The day labels are horizontal; the final script explicitly sets rotation=0."
+        },
+        {
+          "family": "hard_to_read",
+          "evidence": "low_contrast_or_invisible at Non-smoker halves of the violins and legend swatch: The non-smoker series is black against the black background, making the violin shapes and legend swatch invisible."
+        }
+      ]
+    },
+    {
+      "run_id": "039",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "Plot the relationship y=x: The script sets latitude equal to longitude but clips it to −80° to 80° before plotting. The saved line consequently has horizontal segments beyond ±80°, rather than representing y=x there. Use Mercator projection scaling for latitude: The Mercator formula is applied only after latitude is clipped to ±80°. The resulting flat segments are not Mercator-scaled values of the requested y=x latitudes beyond those bounds; Mercator latitude is singular at ±90° and undefined beyond the poles."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "Label the y-axis 'Latitude': The y-axis label reads 'Latitude (Mercator)', not the requested exact text. Title the plot 'Mercator projection': The saved title reads 'Mercator Projection', with an uppercase P rather than the requested lowercase p."
+        }
+      ]
+    },
+    {
+      "run_id": "046",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "Create eight chains on each side using branch: The script calls side() four times with n=8, but each call adds two links per iteration: 16 links per side, not eight. No branch() function is used."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "Implement a function named branch to create side chains: The script defines and calls side(), not a function named branch(). Implement a function named turn to generate corner links: The script defines and calls corner(), not a function named turn(). Give the chart the exact title 'This might seem unnecessary, but it's possible!': Although the code sets that title, no title appears in the saved image; it lies outside the image boundary. Save the figure at 120 dpi: The saved image is 1000 by 800 pixels with 100 dpi metadata, rather than 120 dpi."
+        },
+        {
+          "family": "hard_to_read",
+          "evidence": "clipped_text at Top edge of the diagram: Labels on the uppermost links are cut off by the image edge."
+        }
+      ]
+    },
+    {
+      "run_id": "047",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "Plot the supplied generation data for all five countries and all three sources: The saved figure has only one bar and one source series. The input file contains only the France line, which was parsed incorrectly into the three named columns. Convert each source's TWh to a percentage of its own country's total rather than plotting raw TWh, rounding to at most one decimal place if rounding is used: The lone plotted value is 100% for renewables, not France's renewables share of 118.2/501.7, approximately 23.6%. The malformed input was grouped under the value 47.9 rather than a country. Stack sources in the order Nuclear at the bottom, Fossil in the middle, and Renewables at the top: Only a renewables series is shown, occupying the entire bar; nuclear and fossil segments are absent. Place countries on the x axis in the order France, Germany, Brazil, India, Canada: There is only one x-axis category, labelled 47.9, rather than the five countries."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "Draw a 100% stacked bar chart with one bar per country and three segments per bar: The figure shows one solid bar, not five bars with three stacked segments each. Each bar's segments must be contiguous and together reach 100%: The single visible bar reaches 100%, but it has only one segment; the requested three-segment stacks are absent. Use the country names as the x-axis tick labels: The only x tick label is 47.9; none of the country names appears. Include a legend naming Nuclear, Fossil, and Renewables: The legend contains only '(Percentage, renewables)' and has no Nuclear or Fossil entries."
+        }
+      ]
+    },
+    {
+      "run_id": "050",
+      "errors": [
+        {
+          "family": "wrong_chart",
+          "evidence": "Draw a Sankey diagram with flow widths representing transition magnitudes: The saved figure is a stack of rectangular nodes joined by hairline arrows, not a Sankey diagram with visible proportional flow bands. Include a final phase labeled 'Success!' and highlight it in blue with bold font: The final box is blue and its label is bold, but it is labeled 'Hurray!', not 'Success!'."
+        },
+        {
+          "family": "hard_to_read",
+          "evidence": "low_contrast_or_invisible at Hurray! label in the bottom blue box: The black label has very low contrast against the dark blue background. low_contrast_or_invisible at Connectors between the phase boxes: The flow connectors are extremely faint against the white background and are difficult to see."
+        }
+      ]
+    },
+    {
+      "run_id": "051",
+      "errors": [
+        {
+          "family": "wrong_chart",
+          "evidence": "Title the first panel exactly 'Varying Density': The saved title reads 'Varying density', with a lowercase d. Use the 'summer' colormap for the second streamplot: The final code uses cmap='jet', and the saved panel shows blue, green, yellow and red rather than the summer palette. Do not use the jet, rainbow or hsv colormaps anywhere: The second streamplot explicitly uses the jet colormap, visible in the saved panel and colorbar."
+        }
+      ]
+    },
+    {
+      "run_id": "052",
+      "errors": [
+        {
+          "family": "wrong_chart",
+          "evidence": "Draw the vertical sharp-interface line in green: The final script draws the x = 0 line in white, not green; it is effectively invisible against the white background."
+        },
+        {
+          "family": "hard_to_read",
+          "evidence": "overlapping_text at Left side of plot, around y = 0.63: The phase field and composition formula annotations overlap almost completely, making both difficult to read. low_contrast_or_invisible at Sharp interface and its legend entry: The vertical sharp-interface line and its legend sample are invisible against the white background."
+        }
+      ]
+    },
+    {
+      "run_id": "053",
+      "errors": [
+        {
+          "family": "execution_failure",
+          "evidence": "No final figure.png was produced."
+        }
+      ]
+    },
+    {
+      "run_id": "055",
+      "errors": [
+        {
+          "family": "wrong_chart",
+          "evidence": "Have the annotation point at Thursday's value, identifying it as the busiest day: The text is centered over Wednesday, with no arrow or other pointer to the Thursday peak at 412. Place the annotation text within 0.6 x units and 35 y units of (3.0, 430.0), using Thursday as category index 3: The text is centered at Wednesday, one category to the left of Thursday, so its category-index x position is 2 rather than 3; its y position of 430 is within tolerance."
+        }
+      ]
+    },
+    {
+      "run_id": "059",
+      "errors": [
+        {
+          "family": "wrong_chart",
+          "evidence": "Rotate the x tick labels by 45 degrees: The x tick labels are horizontal in both panels; the final script does not set their rotation."
+        },
+        {
+          "family": "hard_to_read",
+          "evidence": "overlapping_text at X-axis tick labels in both panels: The tick labels overlap heavily, forming an unreadable band of text."
+        }
+      ]
+    },
+    {
+      "run_id": "060",
+      "errors": [
+        {
+          "family": "wrong_chart",
+          "evidence": "Save the figure at 120 dpi: The saved figure has 100 dpi metadata and is 1200 by 700 pixels, rather than the 1440 by 840 pixels expected for a 12 by 7 inch figure at 120 dpi."
+        },
+        {
+          "family": "hard_to_read",
+          "evidence": "overlapping_text at Cause labels along all six branches: The cause labels within each category overlap heavily, making them difficult or impossible to read."
+        }
+      ]
+    },
+    {
+      "run_id": "062",
+      "errors": []
+    },
+    {
+      "run_id": "065",
+      "errors": [
+        {
+          "family": "execution_failure",
+          "evidence": "No final figure.png was produced."
+        }
+      ]
+    },
+    {
+      "run_id": "068",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "Plot the line y=x: The saved script plots y=x·π/360, so the plotted y values run from approximately -1.57 to 1.57 rather than -180 to 180."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "Draw the line as a dotted line: The rendered line is solid; the saved script specifies linestyle='-'. Set the x-axis limits to -180 and 180: The axis extends from -200 to 200, matching the saved script's set_xlim(-200, 200)."
+        }
+      ]
+    },
+    {
+      "run_id": "069",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "Treat NA in Regions as a string, not a missing value, and include its rows: pd.read_csv uses default NA parsing and is followed by dropna(), so the Americas/NA rows for USA and CAN are omitted from the saved chart. Structure the chart as Major Area → Regions → Country, including the CSV's countries under their respective parents: The three rings encode areas, regions and countries, but the Americas/NA region and its USA and CAN country segments are missing. Use Overall score as the value determining each segment's size, with parent segments reflecting their children's scores: The code sizes wedges by score and sums scores for parents, but the dropped USA and CAN scores are absent from the Americas segment and the total used for all wedge widths."
+        },
+        {
+          "family": "hard_to_read",
+          "evidence": "low_contrast_or_invisible at Region labels in the middle ring, especially the yellow Asia and light green Africa segments: Small pale labels have very low contrast against their segment backgrounds and are difficult to read."
+        }
+      ]
+    },
+    {
+      "run_id": "070",
+      "errors": [
+        {
+          "family": "hard_to_read",
+          "evidence": "element_covers_content at Center of plot: The legend covers portions of all six lines near their intersection. indistinguishable_series at Red lines for cos(y) + y and cos(y) + y/3: The two series use the same red color and line style, making them difficult to distinguish."
+        }
+      ]
+    },
+    {
+      "run_id": "074",
+      "errors": [
+        {
+          "family": "hard_to_read",
+          "evidence": "clipped_text at Right y-axis label: The blue right-axis label is cut off by the right edge of the image."
+        }
+      ]
+    },
+    {
+      "run_id": "075",
+      "errors": [
+        {
+          "family": "wrong_chart",
+          "evidence": "Turn on a grid in the first subplot: The saved left panel has no visible grid lines, and the final script does not enable its grid."
+        },
+        {
+          "family": "hard_to_read",
+          "evidence": "indistinguishable_series at First subplot: g(s) and g(s + 0.1) curves and legend: Both curves use the same blue solid line, making them difficult to distinguish."
+        }
+      ]
+    },
+    {
+      "run_id": "077",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "Plot the supplied Oroville storage values in week order for weeks 1–26: Weeks 25 and 26 are swapped: the plotted values are 2483.5 and 2617.2 TAF, respectively, rather than 2617.2 and 2483.5 TAF. The blue line consequently rises at the end."
+        }
+      ]
+    },
+    {
+      "run_id": "079",
+      "errors": [
+        {
+          "family": "wrong_chart",
+          "evidence": "Use a filled 3D tricontour plot: The saved figure has filled contours on 3D axes, but the script uses ax.contourf on a structured grid, not a triangulated tricontourf plot."
+        }
+      ]
+    },
+    {
+      "run_id": "080",
+      "errors": [
+        {
+          "family": "wrong_chart",
+          "evidence": "Print each bar's checkout count above or on the bar as a plain integer without a thousands separator: No checkout-count annotations appear on or above any of the seven bars."
+        }
+      ]
+    },
+    {
+      "run_id": "081",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "Plot a cube centered at [0.5, 0.5, 0.5] with side length 0.5: The saved figure shows a full 20×20 color slice, not the masked cube. The cube mask is constructed but is not used in the executed imshow branch. Use the RGB midpoint values to color voxels inside the cube: The saved image uses midpoint RGB values for the entire colors[:, :, 10] slice, including positions outside the cube; no cube voxels are plotted."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "Draw the voxels in a 3D plot: The saved figure is a flat 2D imshow image. fig.add_subplot() creates a 2D axes, so the voxel branch is not executed. Make voxel edges a brighter variant of their face colors: The saved image has no voxel edges; the edgecolors argument is only used in the unexecuted voxel branch. Label the axes exactly r, g and b, corresponding to the RGB arrays: The image has r and g labels but no b axis. In the displayed slice, horizontal position varies the green channel and vertical position varies the red channel, opposite the labels. Give the chart a title: No title appears in the saved figure, and plot.py does not set one. Ensure the plot has equal aspect ratio: The displayed 2D image is square, but there is no 3D plot with equal aspect across all three axes; set_box_aspect is in the unexecuted branch."
+        }
+      ]
+    },
+    {
+      "run_id": "082",
+      "errors": []
+    },
+    {
+      "run_id": "083",
+      "errors": [
+        {
+          "family": "wrong_chart",
+          "evidence": "Use different line offsets in the second row compared with the first row: Both rows use consecutive group offsets starting at 1: np.arange(1, 9) above and np.arange(1, 81) below. The lower row extends to more groups but retains the same starting offset and spacing. Set all graph text to font size 8.0: Titles and axis labels are explicitly set to 8 points, but the global font-size update occurs after the axes and tick labels are created. The saved tick labels are visibly larger than the titles and axis labels."
+        }
+      ]
+    },
+    {
+      "run_id": "086",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "In the second chart, derive distinct edge alpha values from the normalized absolute y values: Although the script calculates edge_alpha = 1 - face_alpha, bar.set_alpha(face_alpha[i]) overrides the alpha supplied in set_edgecolor. The rendered edges become darker with larger absolute y, rather than using the complementary alpha."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "For each bar in the second chart, make the face alpha and edge alpha sum to 1: The patch-level alpha overrides the edge RGBA alpha, so both face and edge use face_alpha rather than complementary values. For example, the largest-magnitude bar at x=14 has an opaque face and a dark opaque edge, not a transparent edge."
+        }
+      ]
+    },
+    {
+      "run_id": "087",
+      "errors": [
+        {
+          "family": "wrong_chart",
+          "evidence": "Use a logit y-axis in the first two rows: All four upper panels have evenly spaced linear y ticks; the final script's logit branch contains only pass and never sets the scale. Use appropriate y-limits for the logit panels: The first two panels extend below 0 and above 1, which are invalid limits for a logit axis; none of the four panels actually uses logit scaling."
+        },
+        {
+          "family": "hard_to_read",
+          "evidence": "indistinguishable_series at All six panels and their legends: The Normal and Laplace curves use the same blue color and solid line style, making them difficult to distinguish."
+        }
+      ]
+    },
+    {
+      "run_id": "089",
+      "errors": [
+        {
+          "family": "execution_failure",
+          "evidence": "No final figure.png was produced."
+        }
+      ]
+    },
+    {
+      "run_id": "090",
+      "errors": [
+        {
+          "family": "wrong_chart",
+          "evidence": "Label the x-axis: The figure has mode tick labels but no x-axis label; the code does not call set_xlabel."
+        }
+      ]
+    },
+    {
+      "run_id": "091",
+      "errors": [
+        {
+          "family": "wrong_chart",
+          "evidence": "Arrange four subplots in a 2×2 mosaic: The zero subplot was repositioned over the center subplot, so the upper panels overlap rather than forming a distinct 2×2 grid. Hide the top and right spines in every subplot: Top and right border spines remain visible, including on the zero, axes, and data panels; the final script does not hide them."
+        },
+        {
+          "family": "hard_to_read",
+          "evidence": "squeezed_layout at Top row: center and zero subplots: The two axes overlap substantially, obscuring much of the center subplot and its curve. overlapping_text at Top row: center and zero subplots: The center title and several tick labels overlap the zero subplot and its labels."
+        }
+      ]
+    },
+    {
+      "run_id": "096",
+      "errors": [
+        {
+          "family": "execution_failure",
+          "evidence": "No final figure.png was produced."
+        }
+      ]
+    },
+    {
+      "run_id": "097",
+      "errors": []
+    },
+    {
+      "run_id": "098",
+      "errors": [
+        {
+          "family": "wrong_chart",
+          "evidence": "Use different left and right vertical scales for the two plots: The saved figure has only one left vertical scale and no right-hand scale; both series were plotted on the same Matplotlib axes."
+        },
+        {
+          "family": "hard_to_read",
+          "evidence": "squeezed_layout at Data 2 series along the bottom of the plot: The sine wave is compressed into an almost flat line by the much larger vertical scale, making its oscillations unreadable."
+        }
+      ]
+    },
+    {
+      "run_id": "099",
+      "errors": [
+        {
+          "family": "wrong_chart",
+          "evidence": "Remove the radial tick labels entirely: The saved figure displays radial labels 2, 4, 6, 8 and 10; the final script does not remove them. Keep the polar gridlines turned on: The saved plot has no interior polar gridlines, and the final script explicitly calls ax.grid(False)."
+        }
+      ]
+    },
+    {
+      "run_id": "103",
+      "errors": [
+        {
+          "family": "execution_failure",
+          "evidence": "No final figure.png was produced."
+        }
+      ]
+    },
+    {
+      "run_id": "104",
+      "errors": []
+    },
+    {
+      "run_id": "105",
+      "errors": []
+    },
+    {
+      "run_id": "106",
+      "errors": [
+        {
+          "family": "wrong_chart",
+          "evidence": "Use the CMRmap colormap: The saved plot uses cmap=\"jet\", not CMRmap. Do not use jet, rainbow or hsv colormaps: The saved plot explicitly uses the prohibited jet colormap. Add a colorbar: No colorbar appears in the saved figure, and the final script does not create one."
+        }
+      ]
+    },
+    {
+      "run_id": "108",
+      "errors": []
+    },
+    {
+      "run_id": "111",
+      "errors": [
+        {
+          "family": "wrong_chart",
+          "evidence": "Label the z-axis appropriately: Although the script sets 'Z Values (Random)', that label is entirely outside the saved image; only the z-axis tick labels are visible. Keep the requested bars within the displayed axis limits: The x limit ends at 29.5, but each final bar starts at x=29 and has width 0.8, extending to 29.8 beyond that limit."
+        },
+        {
+          "family": "hard_to_read",
+          "evidence": "overlapping_text at X-axis tick labels, especially 10–29: Adjacent two-digit tick labels overlap heavily, making them difficult to distinguish."
+        }
+      ]
+    },
+    {
+      "run_id": "112",
+      "errors": [
+        {
+          "family": "wrong_chart",
+          "evidence": "Start the lower panel's y-axis at 0: The lower panel starts at 1, as set by ax_bot.set_ylim(1, 12), rather than 0. Make the figure 7 by 6 inches: The saved image is 750 by 600 pixels at 150 dpi, corresponding to 5 by 4 inches; the final script also specifies figsize=(5, 4)."
+        }
+      ]
+    },
+    {
+      "run_id": "115",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "Plot each group's median at its corresponding x position: Bus 38, Bike 24, Car 32, and Train 35 minutes: The median bars are present at those values, but no separate median markers are plotted."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "Overlay exactly one circular median marker per group, with no connecting line: The figure has median bars but no circular markers; the code makes no marker-plotting call."
+        }
+      ]
+    },
+    {
+      "run_id": "117",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "Plot the attractor with u, v, and w as the three data dimensions: The saved figure plots only u against v. The final script creates a 2D axes and its fallback plots xyzs[:, 0] against xyzs[:, 1], omitting w."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "Draw the attractor in a 3D subplot: The saved figure has a flat 2D axes; the final script uses fig.add_subplot() without a 3D projection. Label the third axis 'w': The saved figure has no third axis or 'w' label; the final script sets that label only in the unused 3D branch. Turn on the axes grid: No grid lines appear in the saved figure, and the final script calls ax.grid(False)."
+        }
+      ]
+    },
+    {
+      "run_id": "124",
+      "errors": [
+        {
+          "family": "hard_to_read",
+          "evidence": "overlapping_text at Radial tick labels along the 180° axis: Adjacent radial tick labels overlap substantially, making the values difficult to read."
+        }
+      ]
+    },
+    {
+      "run_id": "125",
+      "errors": []
+    },
+    {
+      "run_id": "126",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "Plot the equation (z − 4)(z − 6)(z − 8) + 90: The saved figure was generated by plot.py, whose func(x) adds 60, not 90; the title states +90 but the plotted curve uses +60."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "Start the y-axis at 0: The final script does not set a y-limit. The shaded polygon's y=0 baseline is visibly above the bottom x-axis, so the displayed y-axis extends below zero. Fill the area between the curve and the x-axis over the shaded interval: The polygon fills down to y=0, but the displayed x-axis is lower because the y-axis extends below zero; a large unshaded gap separates the fill from the x-axis. Show x-ticks at 3 and 10 with corresponding labels: Ticks are placed at 3 and 10, but their visible labels are a and b rather than 3 and 10."
+        }
+      ]
+    },
+    {
+      "run_id": "128",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "Give each color a unique set of data on its own y=k layer: Four separate random arrays are generated, but k remains 0 throughout and the bars' y coordinates are random values rather than four distinct layer positions. The colors are scattered across y instead of occupying separate planes. Use an array of 30 random values for each set: Each iteration generates 30 random values, but the plotted bar heights are not those values: the code takes their absolute values, repeats coordinates, and uses a concatenated zero-and-height array for both bar bases and heights. This produces zero-height bars and floating bars rather than one bar per random value. Plot the bars on planes y=k: The script passes repeated random values as the bar3d y coordinates, so bars are scattered across y rather than placed on constant-y planes."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "Label only the discrete y values for which data is available: The y-axis labels every integer from -5 to 5, while the plotted y coordinates are continuous random values; these ticks do not identify the requested discrete data layers. Keep the requested data within the axis limits: The y limits are fixed at -10 to 10, but the seeded random coordinates include values outside that range; the saved figure shows a pink bar beyond the plotted y boundary."
+        },
+        {
+          "family": "hard_to_read",
+          "evidence": "clipped_text at Left edge, Z (Height) axis label: The vertical axis label is partly cut off by the image edge."
+        }
+      ]
+    },
+    {
+      "run_id": "129",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "Plot the CSV market shares for all four Windows versions for every year from 2015 through 2019: The four displayed bars use the CSV values for 2015–2018, but 2019 is explicitly excluded in plot.py and is absent from the figure. Represent each year's other-operating-system share as the remainder after the four Windows shares: The white segments for 2015–2018 use 100 minus the four CSV shares, but the 2019 remainder of 2.69% is not plotted. Use one ring per year, ordered from 2015 innermost to 2019 outermost: There are no rings, and the figure omits 2019; the four displayed years are arranged as bars."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "Draw the market shares as concentric doughnut rings rather than bars: The saved figure contains four horizontal stacked bars, not doughnut rings. Progressively darken each version's color for each subsequent year: The colors darken from 2015 through 2018, but no 2019 segments are drawn. Directly annotate every segment with its market-share percentage: The 2018 WinXP segment has no percentage label, all white other-OS segments lack percentage labels, and 2019 is absent. Place a white other-operating-systems section at the top of each ring: White sections appear at the right ends of four bars; there are no rings or 2019 section. Label each year inside its corresponding white section: The years appear as y-axis labels outside the bars, not inside the white sections; 2019 is missing. Align the white sections at the top of their respective rings for comparison: The white sections are at the right ends of bars, not aligned at the tops of rings. Maintain a uniform appearance across the rings: The figure has no rings; it uses uniformly sized horizontal bars instead. Place a legend for the four Windows versions in the central blank area of the doughnut: The legend lists all four versions but is positioned at the right of the bar chart; there is no central doughnut blank area."
+        },
+        {
+          "family": "hard_to_read",
+          "evidence": "low_contrast_or_invisible at 2018 WinXP segment: The percentage label is not visible against the dark blue segment."
+        }
+      ]
+    },
+    {
+      "run_id": "130",
+      "errors": [
+        {
+          "family": "wrong_chart",
+          "evidence": "Use a perceptually uniform colormap such as viridis for engine displacement: The saved figure uses jet, a non-perceptually-uniform blue-to-red colormap, rather than viridis or another perceptually uniform map. Save the figure at 120 dpi: The saved image is 648 by 576 pixels with 72 dpi metadata, and the final script saves at dpi=72; 9 by 8 inches at 120 dpi would be 1080 by 960 pixels."
+        }
+      ]
+    },
+    {
+      "run_id": "131",
+      "errors": [
+        {
+          "family": "wrong_chart",
+          "evidence": "Arrange four event plots in a 2×2 grid: The saved figure has four vertically stacked panels; plot.py uses plt.subplots(4, 1). Set all graph text to font size 8.0: The script sets the default font size to 8, but the suptitle and subplot titles use Matplotlib's larger default title sizes; they are visibly larger than the tick labels."
+        },
+        {
+          "family": "hard_to_read",
+          "evidence": "squeezed_layout at All four subplots: The axes overlap vertically, hiding portions of the upper three event plots and their axes. overlapping_text at Titles of the second, third, and fourth plots: The subplot titles overlap data marks from the plots above them. overlapping_text at Left-side tick labels near the boundaries between plots: Tick labels from adjacent overlapping axes collide, particularly around the third and fourth plots."
+        }
+      ]
+    },
+    {
+      "run_id": "135",
+      "errors": [
+        {
+          "family": "hard_to_read",
+          "evidence": "low_contrast_or_invisible at Market Conditions category label and branches: The pale yellow text and lines have very low contrast against the white background. element_covers_content at Pricing Strategy label at the central spine: The thick black spine runs through the category label, making it difficult to read."
+        }
+      ]
+    },
+    {
+      "run_id": "136",
+      "errors": [
+        {
+          "family": "wrong_chart",
+          "evidence": "Show the full extent of the requested bars without cutting them off at the axes: The x-axis ends at 150, clipping the first bar's second segment, which should extend from 128 to 175."
+        },
+        {
+          "family": "hard_to_read",
+          "evidence": "low_contrast_or_invisible at “race interrupted” annotation over the green bar: The red annotation text has low contrast against the green bar, making much of it difficult to read."
+        }
+      ]
+    },
+    {
+      "run_id": "141",
+      "errors": [
+        {
+          "family": "hard_to_read",
+          "evidence": "low_contrast_or_invisible at Value labels on the pale yellow Basketball segments: White numbers have very low contrast against the pale yellow bars and are difficult to read. low_contrast_or_invisible at Value labels on the orange Volleyball and light green Formula 1 segments: White numbers have low contrast against the light-colored bars."
+        }
+      ]
+    },
+    {
+      "run_id": "142",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "Represent each of the six countries as a category on the y-axis: USA, UK, Germany, Spain, China and Italy appear on the x-axis, not the y-axis. Plot all five sports for every country, with segment lengths equal to the supplied response counts: The first four counts are plotted for each country, but Tennis is omitted: 28, 10, 20, 35, 43 and 30 for USA through Italy. The script slices data to four columns. Use the supplied sport order within each stack: Football, Volleyball, Basketball, Formula 1, Tennis: The four displayed segments follow the requested order, but the final Tennis segment is absent from every stack."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "Draw a horizontal stacked bar chart: The figure has stacked bars, but they are vertical; the successful script sets horizontal = False and calls ax.bar. Color the sports using RdYlGn sampled at np.linspace(0.15, 0.85, data.shape[1]) for the five sports: The script samples RdYlGn at four positions because it drops Tennis; the displayed four colors therefore do not use the requested five-color sampling. Label each stacked segment with its respective data value: The four displayed segments per country have numeric labels, but the omitted Tennis segments and their values have no labels. Show a legend naming all five sports: The legend names Football, Volleyball, Basketball and Formula 1, but not Tennis. Use axis limits that show all requested data: The value axis ends at 92, the largest four-sport subtotal; the requested five-sport totals range from 97 to 104 and would extend beyond that limit."
+        }
+      ]
+    },
+    {
+      "run_id": "143",
+      "errors": [
+        {
+          "family": "wrong_chart",
+          "evidence": "Arrange four subplots in a 2×2 grid: The saved figure has four panels in one horizontal row; the final script uses plt.subplots(1, 4). Use a logarithmic y-axis in the first panel: The first panel has evenly spaced linear y ticks, and the final script never sets a log scale. Use a logarithmic x-axis in the second panel: The second panel has evenly spaced linear x ticks, and the final script never sets a log scale. Use a base-3 logarithmic x-axis in the third panel: Despite the title, the third panel has a linear x-axis; the final script does not set a logarithmic scale or base. Use a logarithmic y-axis in the third panel: The third panel has evenly spaced linear y ticks, and the final script never sets a log scale. Use a logarithmic x-axis in the fourth panel: The fourth panel has evenly spaced linear x ticks, and the final script never sets a log scale. Use a logarithmic y-axis in the fourth panel: The fourth panel has a linear y-axis with a 1e7 multiplier, and the final script never sets a log scale. Display the figure: The final script saves the figure but does not call plt.show() or otherwise display it."
+        }
+      ]
+    },
+    {
+      "run_id": "145",
+      "errors": [
+        {
+          "family": "execution_failure",
+          "evidence": "No final figure.png was produced."
+        }
+      ]
+    },
+    {
+      "run_id": "146",
+      "errors": [
+        {
+          "family": "wrong_chart",
+          "evidence": "Place the exact label “Problem” at the head of the diagram: The head is labeled “Decreased Sales Performance”; the requested standalone label “Problem” is absent. Connect each cause to its category branch so the diagram reflects the cause–category–problem relationship: Several cause strokes are detached from their category branches: for example, the Limited Range and Obsolete Features strokes float above the Product Issues branch. The customer-service cause strokes also coincide with the spine rather than forming distinct branches."
+        },
+        {
+          "family": "hard_to_read",
+          "evidence": "overlapping_text at Center-right, along the horizontal spine: The main problem label and several customer-service labels overlap heavily, making them difficult or impossible to read. overlapping_text at Upper-right and lower-right branch junctions: The Product Issues and Marketing and Sales Strategy labels overlap, as do the Pricing Strategy and Market Conditions labels."
+        }
+      ]
+    },
+    {
+      "run_id": "150",
+      "errors": [
+        {
+          "family": "wrong_chart",
+          "evidence": "Draw multiple polygons filling the area under the line graphs along the y-axis: The saved figure shows curves but no filled areas beneath them. Each plot_surface call duplicates both the y-coordinate and z-values, producing a zero-area surface rather than a polygon extending to the baseline. Color the polygons using a reversed plasma colormap: No filled polygons are visible to carry the reversed plasma colors; the visible curves use Matplotlib's default line colors. Set appropriate z-axis limits that accommodate the requested data: The z-axis is limited to 0–0.1, while the Gaussian peaks for y=2 through y=7 exceed 0.1; several curves extend beyond the plotted z-axis box and are cut off at the top of the axes."
+        }
+      ]
+    },
+    {
+      "run_id": "153",
+      "errors": []
+    },
+    {
+      "run_id": "155",
+      "errors": [
+        {
+          "family": "wrong_chart",
+          "evidence": "Use a dark-blue-to-light-yellow colormap for the first surface: The saved left surface uses jet, visibly progressing through blue, cyan, green, yellow and red rather than ending in light yellow. Use a dark-red-to-light-blue colormap for the second surface: The right surface uses RdBu, which runs from dark red through a light midpoint to dark blue, not to light blue. Do not use jet, rainbow or hsv colormaps: The final script explicitly uses cmap='jet' for the left surface, and its rainbow-like colors are visible in the saved figure."
+        }
+      ]
+    },
+    {
+      "run_id": "156",
+      "errors": []
+    },
+    {
+      "run_id": "161",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "Plot data2 = sin(2πt) against t on the secondary right y axis: The final script computes the requested sine values but sets ax2 = ax1, so the blue sine curve uses the left logarithmic axis rather than a right axis."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "Create a secondary y axis with twinx(), giving the two series different left and right scales: The final script assigns ax2 = ax1 instead of calling twinx(); the saved figure has no right-side y-axis ticks or scale. Show the full requested sine data without axis limits or scaling cutting it off: The sine curve is plotted on the logarithmic axis, so its negative half-cycles and zero crossings cannot be displayed; the blue curve repeatedly drops out at the bottom. Label both y axes: Only a left y-axis label, 'sin', is visible; there is no right y-axis label. The second set_ylabel call overwrites the first because ax2 is ax1. Draw the sine series as a dotted line: The blue sine curve is solid, and the final script specifies linestyle='-'."
+        }
+      ]
+    },
+    {
+      "run_id": "163",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "Find the grid point where the field is largest and place the marker at its (x, y) coordinates: The maximum is at approximately (1.6, 0.0), but the code passes the flattened argmax and argmin indices as scatter coordinates, placing the point outside the displayed grid."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "Show a single plotted marker for the maximum, with no connecting line: No marker is visible in the saved plot: the scatter point is outside the fixed axis limits. Put a text annotation next to the maximum marker: No annotation is visible in the saved figure; the annotation was positioned using the same out-of-range flattened indices."
+        }
+      ]
+    },
+    {
+      "run_id": "164",
+      "errors": [
+        {
+          "family": "wrong_chart",
+          "evidence": "The second bar's segments at 8, 99 and 132 are orange, green and red, respectively: The segment at 8 is orange, but the segment at 99 is red and the segment at 132 is green. The x-axis starts at 0: The final script sets xlim(5, 200), so the left axis boundary is 5 rather than 0."
+        }
+      ]
+    },
+    {
+      "run_id": "165",
+      "errors": []
+    },
+    {
+      "run_id": "166",
+      "errors": [
+        {
+          "family": "wrong_chart",
+          "evidence": "Use a polar projection for the bar plot: The saved figure is a Cartesian vertical bar chart. The final script calls plt.subplots(figsize=(9, 9)) without a polar projection. Rotate item names radially, with left-half names facing outward and right-half names facing inward: The saved chart is not polar, and all item labels are rotated vertically rather than following radial directions. The final script explicitly sets rotation to 90 degrees for non-polar axes. Remove all ticks and tick labels, including y ticks: The saved figure retains y-axis tick marks and labels at 0, 20, 40, 60, and 80. Start group A at the top of the polar plot, at 0 degrees: Group A is the leftmost block of a Cartesian chart, not a polar sector starting at the top. The theta offset is only set if the axes are polar. Leave a blank center so the polar bars stem from an invisible circle: The bars rise from a straight zero baseline; there is no circular blank center. The radial-origin setting is skipped on the Cartesian axes."
+        }
+      ]
+    },
+    {
+      "run_id": "167",
+      "errors": []
+    },
+    {
+      "run_id": "168",
+      "errors": [
+        {
+          "family": "execution_failure",
+          "evidence": "No final figure.png was produced."
+        }
+      ]
+    },
+    {
+      "run_id": "169",
+      "errors": [
+        {
+          "family": "wrong_chart",
+          "evidence": "Nicely align the main axes with the marginal distributions: Although the histograms share the corresponding data axes, negative subplot spacing makes them overlap the scatter: the top histogram covers its upper portion and the right histogram covers its right portion. Give the whole figure a suptitle: The saved figure has no visible title, and the final script does not call fig.suptitle."
+        },
+        {
+          "family": "hard_to_read",
+          "evidence": "overlapping_text at Left edge of the top histogram: Histogram count tick labels overlap the scatter plot's y-axis tick labels. overlapping_text at Bottom edge of the right histogram: Histogram count tick labels overlap the scatter plot's x-axis tick labels. element_covers_content at Top and right sides of the scatter plot: The marginal histogram axes cover portions of the scatter plot and its data."
+        }
+      ]
+    },
+    {
+      "run_id": "170",
+      "errors": []
+    },
+    {
+      "run_id": "171",
+      "errors": [
+        {
+          "family": "execution_failure",
+          "evidence": "No final figure.png was produced."
+        }
+      ]
+    },
+    {
+      "run_id": "173",
+      "errors": [
+        {
+          "family": "wrong_chart",
+          "evidence": "Fill only the area between the curve and the x-axis over the shaded interval: The shading extends from the x-axis to the top of the subplot, including the area above the curve; the script uses axvspan rather than filling to the curve. Show the integral formula for the plotted function from 3 to 10: The annotation displays literal LaTeX source, including '\\int_{3}^{10}', rather than a rendered integral with limits; the text was not enclosed in math delimiters."
+        },
+        {
+          "family": "hard_to_read",
+          "evidence": "element_covers_content at Integral annotation in the center of the plot: The annotation box covers a substantial portion of the blue curve, making that section difficult to follow."
+        }
+      ]
+    },
+    {
+      "run_id": "175",
+      "errors": [
+        {
+          "family": "wrong_chart",
+          "evidence": "Draw the bars in a 3D subplot: The saved figure is a flat 2D grouped bar chart. The final script uses fig.add_subplot() without a 3D projection. Plot each set of bars on its plane y=k: The saved chart places the four sets side by side in a 2D plot rather than on separate planes in 3D. Label the x axis appropriately: The saved chart has x-axis tick labels but no x-axis label; the final script never calls set_xlabel. Label the z axis appropriately: The saved chart has no z axis or z-axis label; set_zlabel is only called in the unexecuted 3D branch. Label only the discrete y-axis values for which data is available: The saved y axis has continuous ticks from 0.0 to 1.0, rather than the layer values 0, 1, 2 and 3. Those layer values appear only in the legend."
+        }
+      ]
+    },
+    {
+      "run_id": "177",
+      "errors": [
+        {
+          "family": "wrong_chart",
+          "evidence": "Draw the fruit shares as a pie chart: The left panel contains three vertical bars, not a pie chart; the final script calls ax1.bar. Separate the apples slice from the other pie slices: There is no pie or separated slice in the saved figure. The explode array is defined but never used. Connect the separated apples slice to both the top and bottom of the stacked bar: No connecting lines appear. In the final script, pie is None, so the ConnectionPatch code is skipped. Make the connecting lines black with linewidth 1: No connecting lines are drawn, so the requested black, linewidth-1 connectors are absent. Use an orientation for the pie chart that supports clarity: No pie chart is drawn, so it has no orientation."
+        },
+        {
+          "family": "hard_to_read",
+          "evidence": "element_covers_content at Right panel, center of stacked bar: The legend covers part of the stacked bar and obscures its 40% value label."
+        }
+      ]
+    },
+    {
+      "run_id": "180",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "Set the radii from a minimum value up to 1.2: Although r_min=0.2 and r_max=1.2 are declared, the sinusoidal formula and added noise do not constrain r to that interval. The plotted grid also extends to x=y=1.5, beyond radius 1.2. Ensure the plotted points span a full circle: The source angles span 0 to 2π, but the saved contour is evaluated and displayed only for nonnegative x and y, so it covers only the first quadrant rather than a full circle."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "Create a filled 3D tricontour plot: The saved figure has filled contours on 3D axes, but the script interpolates onto a rectangular grid and calls ax.contourf, not a triangular contouring method. Use axis limits that show the requested full-circle data: Both x and y limits are 0 to 1.5, excluding the negative-coordinate portions needed to display a full circle."
+        }
+      ]
+    },
+    {
+      "run_id": "181",
+      "errors": [
+        {
+          "family": "execution_failure",
+          "evidence": "No final figure.png was produced."
+        }
+      ]
+    },
+    {
+      "run_id": "183",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "Use the country names from data.csv to identify the country segments: The outer wedges have no country names or country legend, so individual countries cannot be identified in the saved figure. Include only countries in Asia and Europe: The saved chart includes an Africa inner segment and its country wedges; the final script filters for Africa, Asia and Europe. Center the color scale on the population-weighted average life expectancy of the included Asia and Europe countries: The final script computes the weighted mean after including Africa, so TwoSlopeNorm is centered on the three-continent mean rather than the Asia-and-Europe mean of about 70.57 years."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "Show a legend naming the continents of the inner ring: The continent names are printed directly on the inner wedges, but there is no separate continent legend."
+        }
+      ]
+    },
+    {
+      "run_id": "191",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "Structure the chart as Major Area → Regions → Country: The saved figure shows country rectangles colored by major area, but no separate region or major-area hierarchy levels; Regions is used for grouping but not displayed as a level."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "Create a sunburst chart: The saved figure is a rectangular treemap, not a circular sunburst. Make the center of the circle hollow: There is no circular chart or visible hollow center. The successful script's white circle is outside the treemap's plotted coordinate range. Save the image at 1000 × 1000 pixels: The saved figure measures 986 × 921 pixels, not 1000 × 1000."
+        },
+        {
+          "family": "hard_to_read",
+          "evidence": "indistinguishable_series at Europe and Africa regions and legend: Europe and Africa use the same green, making the two groups difficult to distinguish by color."
+        }
+      ]
+    },
+    {
+      "run_id": "195",
+      "errors": [
+        {
+          "family": "wrong_chart",
+          "evidence": "Show flat projections on the XY, ZX, and YZ planes below and to the sides of the 3D points: The projections are separate subplots rather than projections on the main plot's planes. The XY subplot overlaps and covers the lower part of the main 3D plot, and the ZX subplot is drawn as a 3D box rather than a flat plane view. Color the XY, ZX, and YZ projections blue, red, and green, respectively: All three projection scatters use the purple-to-yellow viridis displacement colors instead of the requested blue, red, and green. Label each main 3D axis to identify its quantity: The power label is visible, but the main acceleration and gas-mileage axis labels are covered by the overlapping XY subplot and do not appear in the saved figure. Give the plot a modern, clean design: The XY subplot is placed directly over the main 3D panel, obscuring a substantial portion of it and producing a visibly disordered layout."
+        },
+        {
+          "family": "hard_to_read",
+          "evidence": "element_covers_content at Main 3D Car Performance plot, lower portion: The XY Plane Projection panel covers the lower part of the 3D plot, hiding data and axis content."
+        }
+      ]
+    },
+    {
+      "run_id": "196",
+      "errors": []
+    },
+    {
+      "run_id": "199",
+      "errors": []
+    },
+    {
+      "run_id": "200",
+      "errors": [
+        {
+          "family": "wrong_chart",
+          "evidence": "Display the swarm points without overlap: Several blue Group 1 markers visibly merge, especially in the central columns; the bin-based offsets do not guarantee marker separation. Color the Group 2 swarm orange: The final script specifies white for the Group 2 scatter, not orange; its points are not visible against the white background. Start the y axis at 0: The final script sets the y limits to 20–230, and the saved axis begins above zero."
+        },
+        {
+          "family": "hard_to_read",
+          "evidence": "low_contrast_or_invisible at Group 2 beeswarm and legend marker: The Group 2 points and their legend marker are white against the white background, making the series effectively invisible."
+        }
+      ]
+    },
+    {
+      "run_id": "202",
+      "errors": [
+        {
+          "family": "wrong_chart",
+          "evidence": "Show horizontal gridlines in both panels: Neither panel has horizontal gridlines; the final script does not enable them. Label the y-axis 'Measured values' on both plots: Neither panel has a y-axis label; the final script does not set one."
+        }
+      ]
+    },
+    {
+      "run_id": "203",
+      "errors": [
+        {
+          "family": "wrong_chart",
+          "evidence": "Use a polar projection for the axes: The saved figure has rectangular Cartesian axes; the final script uses fig.add_subplot() without projection='polar'. Add a colourbar for the point colours: No colourbar appears in the saved figure, and the final script does not create one. Turn on the polar grid: The figure has a rectangular Cartesian grid, not a polar grid; ax.grid(True) was applied to Cartesian axes."
+        }
+      ]
+    },
+    {
+      "run_id": "204",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "Plot the specified mean yield for each condition: 42.1, 55.4, 61.8, 58.2 and 49.7 percent, respectively: Baseline, Cat-A and Cat-B have the requested means, but Cat-C is plotted at 49.7% and Cat-D at 58.2%, swapping their requested means."
+        }
+      ]
+    },
+    {
+      "run_id": "205",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "Represent the phases in sequence from Phase 1 through Phase 5 to Hurray!: The bars are positioned in that order from bottom to top, but every connecting arrow points in the opposite direction, from Hurray! back toward Phase 1."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "Create a Python script that generates the diagram: The saved figure was generated by an earlier successful script, but the final generate_sankey.py contains the invalid Python statement '!ls -la figure.png' and fails with a SyntaxError. Draw a Sankey diagram representing the gadget's operational phases: The saved figure uses separate horizontal bars joined by thin arrows, rather than connected flow bands whose widths represent magnitude. Orient and connect the flow paths to show transitions from each phase to the next: The arrows point from each later bar to the preceding bar; for example, the arrow between Hurray! and Phase 5 points toward Phase 5."
+        },
+        {
+          "family": "hard_to_read",
+          "evidence": "overlapping_text at Top-left Hurray!/Success! labels: The blue Success! annotation overlaps the black Hurray! label. low_contrast_or_invisible at Top blue bar: Most of the blue Success! annotation is invisible against the matching blue bar."
+        }
+      ]
+    },
+    {
+      "run_id": "206",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "Use the specified boolean conditions to define the error-bar limits: The code uses both conditions to filter which points receive error bars, rather than passing them as limit flags. The visible bars are symmetric, with no one-sided limit indicators."
+        }
+      ]
+    },
+    {
+      "run_id": "208",
+      "errors": [
+        {
+          "family": "execution_failure",
+          "evidence": "No final figure.png was produced."
+        }
+      ]
+    },
+    {
+      "run_id": "209",
+      "errors": []
+    },
+    {
+      "run_id": "210",
+      "errors": [
+        {
+          "family": "wrong_chart",
+          "evidence": "Label the axes 'u', 'v', and 'w': The saved image shows 'u' and 'v', but the 'w' label is entirely outside the image despite ax.set_zlabel('w') in the script."
+        }
+      ]
+    },
+    {
+      "run_id": "212",
+      "errors": [
+        {
+          "family": "wrong_chart",
+          "evidence": "Use a distinct color for each species: Setosa and versicolor are both blue; only virginica is green. Make the legend clearly identify each species by its corresponding color: Setosa and versicolor have the same blue legend color, so color cannot distinguish those two species."
+        },
+        {
+          "family": "hard_to_read",
+          "evidence": "indistinguishable_series at Blue ellipsoids and scatter points: Two species are drawn in the same blue, making them indistinguishable by color. overlapping_text at Legend in the center of the plot: The ellipsoids are drawn over the legend, obscuring most of its species labels."
+        }
+      ]
+    },
+    {
+      "run_id": "213",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "Load data.csv and plot the women's millions-of-dollars values in both panels: The final script selects df.iloc[:, 1], the men's column. The plotted range 498–1598 matches men's values, not the women's range 1565–5019. The labeled box-plot statistics must describe the women's data: The labels show Q1 = 642, median = 714, Q3 = 777, min = 498 and max = 1598, calculated from the men's column. The histogram frequencies must represent the women's values: The final script passes the men's column to the 25-bin histogram, so its bar counts describe men's values instead. Place the three quartile lines at the women's first quartile, median and third quartile: The lines are at approximately 642, 714 and 777, calculated from the men's column rather than the women's column."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "Draw the three quartile lines dashed: The visible red lines are solid; the final script specifies linestyle='-'."
+        }
+      ]
+    },
+    {
+      "run_id": "214",
+      "errors": [
+        {
+          "family": "wrong_chart",
+          "evidence": "Mark every point of every frequency line with a circular marker: The saved figure shows unmarked lines; the final ax.plot call has no marker argument. Remove y-axis ticks entirely: The saved figure visibly shows y-axis ticks and labels 0 through 4; the final script does not remove them."
+        }
+      ]
+    },
+    {
+      "run_id": "216",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "Plot AI Coding Tools values Agree 45%, Neutral 30%, Disagree 25%: The third group's Agree bar is 28%, not 45%; Neutral and Disagree are 30% and 25%. Plot Open Floor Plans values Agree 28%, Neutral 24%, Disagree 48%: The fourth group's Agree bar is 45%, not 28%; Neutral and Disagree are 24% and 48%. Each topic's three response percentages sum to 100%: The plotted AI Coding Tools values sum to 83%, and Open Floor Plans values sum to 117%."
+        }
+      ]
+    }
+  ]
+}

@@ -1,5 +1,25 @@
 # CMU 11-768 Assignment 2 — Independent Evaluation Engineering
 
+## Status (2026-11-08): assignment complete on `finish-assignment`
+
+**Read [`report.pdf`](report.pdf)** (source `report.tex`). `workflow check-submission` reports
+*submission valid*: every Harbor task scores 1.0 with its oracle, mutants score 0.0
+(`sum_units`) and 1.0 (`unrotated_labels`).
+
+| Seed runs (110), judge GPT-6.1 Terra | baseline | final `validator/solution.py` |
+| --- | ---: | ---: |
+| execution_failure | 0.5945 | 1.0000 |
+| wrong_data | 0.2363 | 0.7093 |
+| wrong_chart | 0.6286 | 0.9512 |
+| hard_to_read | 0.6345 | 0.8297 |
+| **macro-MCC** | **0.5235** | **0.8726** |
+
+Agents (DeepSeek Flash, GPT-5.6 Luna, GLM-5.3 Flash) run via
+`uv run python -m workflow.sandbox_generate` in the Docker sandbox from `sandbox/`.
+Judge settings: see the Terra block in `.env.example`. Not comparable to course scores
+(different judge and agents). Working notes: `docs/report-notes.md`. AI use: `AI_USAGE.md`.
+The session history below is the earlier offline-infrastructure phase.
+
 An independent, non-credit adaptation of [CMU 11-768 Assignment 2: Evaluating a Data-Visualization Agent](https://github.com/cmu-agents/assignment-2).
 
 **Status:** Offline evaluation infrastructure and a completed four-model API compatibility milestone, but no end-to-end chart-agent run or Terra judge accuracy benchmark. Official-model-equivalent scoring remains unverified. We retained the **entire pinned official starter**, including the released agent trajectories, figures, human labels, evaluator, and Harbor examples. We do **not** use Modal for execution or model hosting.

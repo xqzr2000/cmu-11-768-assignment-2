@@ -1,0 +1,1314 @@
+{
+  "predictions": [
+    {
+      "run_id": "001",
+      "errors": []
+    },
+    {
+      "run_id": "004",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "The third subplot uses a base-10 rather than base-3 logarithmic x-axis. The fourth plots \\(15^x\\) instead of cubing data generated as powers of 15, and its x-axis is linear rather than logarithmic. The first three data ranges also stop at 24.98 rather than 25.0."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "The third subplot uses a base-10 rather than base-3 logarithmic x-axis. The fourth subplot has a linear x-axis and plots \\(15^x\\) rather than cubing data generated as powers of 15."
+        }
+      ]
+    },
+    {
+      "run_id": "008",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "All rows with orange as the source were filtered out, so the orange source node and its flows are missing, and target totals are understated."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "All rows with orange as the source were filtered out, so the orange source node and its flows are missing and the target totals are incorrect. The node labels are also nearly invisible against the white background."
+        },
+        {
+          "family": "hard_to_read",
+          "evidence": "The node labels and counts are nearly white on a white background, making them very difficult to read."
+        }
+      ]
+    },
+    {
+      "run_id": "009",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "The version–date pairs match the supplied data, but the x-axis labels are horizontal rather than rotated 30 degrees, causing them to overlap heavily."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "The x-axis tick labels are horizontal rather than rotated 30 degrees, and they overlap heavily, making the dates unreadable."
+        },
+        {
+          "family": "hard_to_read",
+          "evidence": "The monthly date labels overlap heavily, making the x-axis nearly impossible to read."
+        }
+      ]
+    },
+    {
+      "run_id": "010",
+      "errors": [
+        {
+          "family": "execution_failure",
+          "evidence": "The agent repeatedly ran code that failed with an `AttributeError`, then exhausted its limits without producing `figure.png`."
+        }
+      ]
+    },
+    {
+      "run_id": "013",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "The polygons use the prohibited rainbow colormap instead of reversed plasma, and the x-axis limits are −5 to 25 rather than 0 to 20. The Gaussian data itself follows the requested parameters."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "The polygons use the prohibited rainbow colormap instead of reversed plasma, and the x-axis limits are −5 to 25 rather than 0 to 20."
+        }
+      ]
+    },
+    {
+      "run_id": "016",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "Versions below 0.5% were included rather than dropped, affecting both rings’ proportions. The chart also lacks the requested browser legend and omits some browser names from the inner ring."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "Versions below 0.5% are still shown, the browser legend is missing, and some browser names are omitted from the inner ring. The rings also touch rather than having a visible gap between them."
+        }
+      ]
+    },
+    {
+      "run_id": "021",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "The plotted data, medians, and outliers match the request, but the chart is missing an x-axis label."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "The x-axis has service tick labels but lacks an axis label, such as “Backend service,” as required."
+        }
+      ]
+    },
+    {
+      "run_id": "022",
+      "errors": []
+    },
+    {
+      "run_id": "023",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "Both plots are cropped to −2 to 2, hiding data outside that range, and the original points are not marked. The panels are also side by side rather than in the requested two rows."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "The panels are side by side rather than in two rows, and neither marks the original data points. Both plots also crop the requested −3 to 3 data range to −2 to 2."
+        }
+      ]
+    },
+    {
+      "run_id": "025",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "The chart shows only country-level slices, not the requested Major Area → Regions → Country hierarchy. “NA” is read as missing, the regional colors and legend are absent, and the image is 3000×3000 rather than 1000×1000 pixels."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "The figure is a single-ring donut, not a hierarchical sunburst. It lacks the requested regional colors and legend, and its labels overlap heavily. The subtitle is placed below the chart, and the image is 3000×3000 rather than 1000×1000 pixels. The code also reads “NA” as missing rather than preserving it as a string."
+        },
+        {
+          "family": "hard_to_read",
+          "evidence": "Many country labels and percentage annotations overlap heavily, making them difficult to read. The legend is also empty, and the uniformly gray segments do not distinguish regions."
+        }
+      ]
+    },
+    {
+      "run_id": "026",
+      "errors": [
+        {
+          "family": "execution_failure",
+          "evidence": "The agent exhausted its limits after producing an invalid figure: it is not a sunburst chart, has no hollow center, and is 794×860 rather than 1000×1000 pixels."
+        }
+      ]
+    },
+    {
+      "run_id": "028",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "The blue curve connects the 2014 data, not the requested 2015 data. The plot also has no legend."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "The blue curve connects the 2014 data, not the requested 2015 data, and the figure has no legend on the right."
+        },
+        {
+          "family": "hard_to_read",
+          "evidence": "The labels are legible, but the missing legend makes the colored points impossible to identify by year. The blue curve also highlights 2014 rather than the requested 2015."
+        }
+      ]
+    },
+    {
+      "run_id": "029",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "Each subplot shows only one distribution’s CDF, rather than all three as requested. Also, no subplot displays the full −20 to 20 range, although the CDFs were calculated over it."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "Each subplot shows only one distribution, rather than all three CDFs together as requested, so the figure does not provide the intended comparisons within each panel."
+        }
+      ]
+    },
+    {
+      "run_id": "030",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "The third plot is gold rather than yellow, and the figure title is “Shared axes” instead of the requested title. The white ninth plot is also invisible against the white background."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "The title is “Shared axes” instead of the required “Sharing x per column, y per row”. The third plot is also gold rather than yellow."
+        },
+        {
+          "family": "hard_to_read",
+          "evidence": "The white line in the bottom-right panel is invisible against the white background, and several curves are compressed by the shared axis scales."
+        }
+      ]
+    },
+    {
+      "run_id": "031",
+      "errors": []
+    },
+    {
+      "run_id": "034",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "The final chart has x- and y-axis ticks and labels, although they were supposed to be removed, and it has no title. The matrix values, seed, and rectangle encoding otherwise match the request."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "The chart has no title, and both axes show ticks and tick labels despite the request to remove them entirely."
+        }
+      ]
+    },
+    {
+      "run_id": "038",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "Non-smokers are plotted in black rather than grey, making their violin halves nearly invisible against the background. The x-axis labels are also horizontal rather than rotated 30 degrees."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "The non-smoker halves are black rather than grey, making them invisible against the dark background. The x-axis tick labels are also horizontal instead of rotated 30 degrees."
+        },
+        {
+          "family": "hard_to_read",
+          "evidence": "The non-smoker halves are black against the black background, making their distributions and legend swatch effectively invisible."
+        }
+      ]
+    },
+    {
+      "run_id": "039",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "Latitudes are clipped to ±80°, creating flat segments rather than preserving y=x across the requested longitude range. Mercator projection is undefined at the poles and beyond, so the full requested line cannot be projected as specified. The y-axis label and title also differ slightly from those requested."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "Clipping latitude at ±80° creates flat segments, so the plotted data no longer follow y=x across the requested longitude range. The y-axis label and title also differ from the requested text."
+        }
+      ]
+    },
+    {
+      "run_id": "046",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "The diagram has 16 links per side rather than 8, and its top—including the title—is clipped. The script also uses `side` and `corner` instead of the requested function names and saves at the default DPI rather than 120 dpi."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "The title and part of the diagram are clipped at the top. The figure was also saved at the default 100 dpi rather than 120 dpi, and the functions are named `side` and `corner` instead of `branch` and `turn`."
+        },
+        {
+          "family": "hard_to_read",
+          "evidence": "The top of the diagram is clipped, cutting off several links and the title. Some labels near the corners also overlap."
+        }
+      ]
+    },
+    {
+      "run_id": "047",
+      "errors": [
+        {
+          "family": "execution_failure",
+          "evidence": "The agent hit its execution limit after repeatedly running the same commands. The resulting figure has only one incorrectly labeled bar, not the required five stacked country bars."
+        }
+      ]
+    },
+    {
+      "run_id": "050",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "The example’s final 10% value is omitted; the transition to “Hurray!” is labeled 20%. The figure also uses nearly invisible arrows rather than Sankey flow bands, and does not include the requested “Success!” label."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "The figure is a box-and-arrow flowchart rather than a Sankey diagram: the connecting flows are nearly invisible and do not clearly show magnitude through their widths. It also omits the requested “Success!” label and the example final 10% value."
+        },
+        {
+          "family": "hard_to_read",
+          "evidence": "The connecting arrows are nearly invisible, making the flow difficult to follow, and the black “Hurray!” text has poor contrast against the blue background."
+        }
+      ]
+    },
+    {
+      "run_id": "051",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "The second panel uses the prohibited **jet** colormap instead of **summer**, and colors by U rather than speed. The first title is “Varying density,” not the exact requested “Varying Density.” Also, the displayed mask is vertically flipped relative to the masked data."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "The second panel uses the prohibited **jet** colormap instead of **summer**. The first panel’s title is “Varying density,” not the exact required “Varying Density.”"
+        }
+      ]
+    },
+    {
+      "run_id": "052",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "The sharp interface’s vertical line is white rather than green, making it invisible against the background. The two curve annotations also overlap."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "The vertical sharp-interface line is white rather than green, making it invisible against the background. The two formula annotations also overlap, making them difficult to read."
+        },
+        {
+          "family": "hard_to_read",
+          "evidence": "The two formula annotations overlap completely, making them difficult to read. The sharp interface’s vertical line and legend marker are also invisible against the white background."
+        }
+      ]
+    },
+    {
+      "run_id": "053",
+      "errors": [
+        {
+          "family": "execution_failure",
+          "evidence": "The agent exited after repeated tool-call format errors, without creating or submitting a figure."
+        }
+      ]
+    },
+    {
+      "run_id": "055",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "The visit counts are correct, but the peak annotation is positioned above Wednesday rather than Thursday and does not point to Thursday’s value."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "The peak annotation is centered over Wednesday, not Thursday, and has no pointer to Thursday’s peak. The plotted days use x-values 1–7, so the text at x = 3 is one day too far left."
+        }
+      ]
+    },
+    {
+      "run_id": "059",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "The x-axis tick labels are not rotated 45 degrees and overlap heavily, making the x values difficult to read. The bar data and transparency mapping otherwise follow the request."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "The x-axis tick labels are not rotated 45 degrees, and they overlap heavily, making them unreadable."
+        },
+        {
+          "family": "hard_to_read",
+          "evidence": "The x-axis tick labels overlap heavily in both panels, making them unreadable."
+        }
+      ]
+    },
+    {
+      "run_id": "060",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "The requested causes are present in the code, but their labels overlap heavily, making them unreadable and obscuring their connections to the branches. The image was also saved at the default 100 dpi rather than 120 dpi."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "The cause labels overlap heavily, making them difficult to read and associate with their branches. The figure was also saved at the default 100 dpi rather than the requested 120 dpi."
+        },
+        {
+          "family": "hard_to_read",
+          "evidence": "The cause labels overlap heavily within each category, making many of them difficult or impossible to read."
+        }
+      ]
+    },
+    {
+      "run_id": "062",
+      "errors": []
+    },
+    {
+      "run_id": "065",
+      "errors": [
+        {
+          "family": "execution_failure",
+          "evidence": "The agent exhausted its turns after repeatedly running a script that failed because `pd` was not imported. No figure was produced."
+        }
+      ]
+    },
+    {
+      "run_id": "068",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "The plotted values are y = xπ/360, not y = x. The line is solid rather than dotted, and the x-axis limits are −200 to 200 rather than −180 to 180."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "The line is solid rather than dotted, the x-axis limits are −200 to 200 rather than −180 to 180, and the plotted values are not y=x."
+        }
+      ]
+    },
+    {
+      "run_id": "069",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "The code treats “NA” as missing and drops those rows, so the USA and Canada are omitted. This also makes the Americas segment and the chart’s proportions incorrect."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "The code treats `NA` as missing and drops those rows, so the North America region and its USA and Canada segments are absent. The country segments are also unlabeled."
+        },
+        {
+          "family": "hard_to_read",
+          "evidence": "The region labels are small and low-contrast, and the country segments have no labels, making the outer ring impossible to interpret by country."
+        }
+      ]
+    },
+    {
+      "run_id": "070",
+      "errors": [
+        {
+          "family": "wrong_chart",
+          "evidence": "The first two lines use the same color and line style, making them difficult to distinguish. The centered legend also obscures parts of the lines."
+        },
+        {
+          "family": "hard_to_read",
+          "evidence": "The legend obscures the central intersection of the lines, and two lines share the same color, making them difficult to distinguish."
+        }
+      ]
+    },
+    {
+      "run_id": "074",
+      "errors": []
+    },
+    {
+      "run_id": "075",
+      "errors": [
+        {
+          "family": "wrong_chart",
+          "evidence": "The first subplot is missing the required grid. Also, two curves use the same color, making them harder to distinguish."
+        },
+        {
+          "family": "hard_to_read",
+          "evidence": "The first two curves use the same blue color and line style, making them difficult to distinguish from each other and match to the legend. The rest of the figure is readable."
+        }
+      ]
+    },
+    {
+      "run_id": "077",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "The Oroville values for weeks 25 and 26 are swapped: the plot shows 2483.5 then 2617.2 TAF, instead of 2617.2 then 2483.5 TAF."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "The Oroville values for weeks 25 and 26 are swapped: the chart shows 2483.5 then 2617.2 TAF, instead of 2617.2 then 2483.5 TAF."
+        }
+      ]
+    },
+    {
+      "run_id": "079",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "The plot uses a regular filled contour (`contourf`), not a triangulated filled contour (`tricontourf`). The radius range, full-circle coverage, colormap, and viewing angle otherwise meet the request."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "The script uses `contourf` on a structured grid rather than `tricontourf` on triangulated points, so it is not the requested tricontour plot. The radius range, full-circle coverage, colormap, and viewing angle are otherwise addressed."
+        }
+      ]
+    },
+    {
+      "run_id": "080",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "The bars show the requested data in the correct order, but their checkout counts are not printed on or above them."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "The bars do not have their checkout counts printed above or on them."
+        }
+      ]
+    },
+    {
+      "run_id": "081",
+      "errors": [
+        {
+          "family": "execution_failure",
+          "evidence": "The agent submitted a PNG, but it is a 2D image rather than the requested 3D voxel plot, and it lacks a title and the `b` axis."
+        }
+      ]
+    },
+    {
+      "run_id": "082",
+      "errors": []
+    },
+    {
+      "run_id": "083",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "The horizontal and vertical plots use separate random arrays rather than the same array for each row. Also, the font setting is applied after the plots are created, so tick labels are not all 8-point."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "The font size is set after the subplots are created, so tick labels retain the default size rather than 8 pt. Also, the second-row event groups use the same spacing as the first row, rather than a different line offset."
+        }
+      ]
+    },
+    {
+      "run_id": "086",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "In the second chart, setting each bar’s overall alpha overrides the intended edge alpha. The face and edge transparencies therefore do not generally sum to 1."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "In the second chart, the bar-level alpha overrides the specified edge alpha, so the face and edge transparencies are the same rather than complementary. Their sum is therefore not generally 1."
+        }
+      ]
+    },
+    {
+      "run_id": "087",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "The first two rows use a linear y-axis, despite being labeled “logit.” Also, the normal and Laplace curves use the same color, making them difficult to distinguish."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "The first two rows use linear y-axes despite being titled “logit y scale.” Also, the normal and Laplace curves share the same color, making them difficult to distinguish."
+        },
+        {
+          "family": "hard_to_read",
+          "evidence": "The Normal and Laplace curves use the same color and line style, making them difficult to distinguish. The first four panels are also labeled “logit” but actually use linear scaling."
+        }
+      ]
+    },
+    {
+      "run_id": "089",
+      "errors": [
+        {
+          "family": "execution_failure",
+          "evidence": "The agent submitted without creating the required `figure.png`. Its `plot.png` also lacked the exploded apple slice, stacked bar, and connecting lines."
+        }
+      ]
+    },
+    {
+      "run_id": "090",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "The plotted data and median markers match the request, but the x-axis is missing its axis label."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "The x-axis has mode tick labels but is missing an axis label, such as “Mode of transport.”"
+        }
+      ]
+    },
+    {
+      "run_id": "091",
+      "errors": [
+        {
+          "family": "wrong_chart",
+          "evidence": "The “zero” subplot overlaps the “center” subplot instead of fitting in a clean 2×2 grid, and the top and right spines remain visible."
+        },
+        {
+          "family": "hard_to_read",
+          "evidence": "The top two subplots overlap substantially, obscuring the “center” plot and making its title and tick labels difficult to read."
+        }
+      ]
+    },
+    {
+      "run_id": "096",
+      "errors": [
+        {
+          "family": "execution_failure",
+          "evidence": "The agent submitted without producing the required `figure.png`: it saved the plot as `create figure.png` instead. It did not crash or exhaust its turns."
+        }
+      ]
+    },
+    {
+      "run_id": "097",
+      "errors": []
+    },
+    {
+      "run_id": "098",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "The arrays are correct, but both curves use the same y-axis scale instead of separate left and right scales, making the sine wave appear flat."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "Both curves use the same left y-axis; the requested separate right-hand scale is missing, making the sine wave appear flat."
+        },
+        {
+          "family": "hard_to_read",
+          "evidence": "Both curves use the same vertical scale, so the sine wave is compressed into an almost flat line and its oscillations are unreadable. The requested right-hand scale is missing."
+        }
+      ]
+    },
+    {
+      "run_id": "099",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "The radial tick labels are visible, and the polar gridlines are turned off, contrary to the request."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "The radial tick labels are visible, and the polar gridlines are turned off, contrary to the requirements."
+        },
+        {
+          "family": "hard_to_read",
+          "evidence": "The bars overlap heavily, making individual values difficult to distinguish. The missing gridlines also make radial comparisons harder."
+        }
+      ]
+    },
+    {
+      "run_id": "103",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "The values are correct, but adjacent topic groups overlap because the bars are too wide. The topic ticks are also off-center, and the x-axis has no label."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "The chart is missing an x-axis label. The topic tick labels are also offset from the centers of their bar groups."
+        },
+        {
+          "family": "hard_to_read",
+          "evidence": "The annotation overlaps the legend, and adjacent bar groups overlap slightly, making the chart harder to interpret."
+        }
+      ]
+    },
+    {
+      "run_id": "104",
+      "errors": []
+    },
+    {
+      "run_id": "105",
+      "errors": []
+    },
+    {
+      "run_id": "106",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "The plot uses the prohibited **jet** colormap instead of CMRmap, and it has no colorbar."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "The figure uses the prohibited **jet** colormap instead of CMRmap, and it has no colorbar."
+        },
+        {
+          "family": "hard_to_read",
+          "evidence": "The overlapping 3D contour bands are hard to interpret, and the missing colorbar makes the colors difficult to relate to values."
+        }
+      ]
+    },
+    {
+      "run_id": "108",
+      "errors": []
+    },
+    {
+      "run_id": "111",
+      "errors": [
+        {
+          "family": "wrong_chart",
+          "evidence": "The z-axis label is clipped off the figure, so not all three axes are visibly labeled as requested."
+        },
+        {
+          "family": "hard_to_read",
+          "evidence": "The x-axis tick labels overlap, and the dense 3D bars obscure many values behind them. The z-axis label is also missing from the visible figure."
+        }
+      ]
+    },
+    {
+      "run_id": "112",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "The lower panel starts at 1 rather than 0, clipping a low data point. The figure is also 5 × 4 inches rather than the requested 7 × 6 inches."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "The lower panel’s y-axis starts at 1 rather than 0, and the figure is 5 × 4 inches rather than the requested 7 × 6 inches."
+        }
+      ]
+    },
+    {
+      "run_id": "115",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "The sample data and violin median bars are correct, but the required circular median markers are missing for all four groups."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "The violins show median bars, but the required circular median markers are missing for all four groups."
+        }
+      ]
+    },
+    {
+      "run_id": "117",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "The plot is 2D, showing only u and v; the requested w axis is missing. The grid is also turned off."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "The plot is 2D rather than 3D, so the `w` axis is missing. The grid is also turned off."
+        }
+      ]
+    },
+    {
+      "run_id": "124",
+      "errors": [
+        {
+          "family": "hard_to_read",
+          "evidence": "The radial tick labels overlap heavily, and many bars overlap, making individual values difficult to distinguish."
+        }
+      ]
+    },
+    {
+      "run_id": "125",
+      "errors": []
+    },
+    {
+      "run_id": "126",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "The curve uses **+60** instead of the requested **+90**, despite the title. The y-axis also extends below zero, and the ticks at 3 and 10 are labeled “a” and “b” rather than their numeric values."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "The plotted equation uses **+60**, not +90 as requested and stated in the title. The y-axis also extends below zero, so the shaded region does not reach the x-axis. The ticks at 3 and 10 are labeled “a” and “b” rather than with their numeric values."
+        }
+      ]
+    },
+    {
+      "run_id": "128",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "The bars are scattered at random y positions rather than arranged in four distinct y=k layers. The bar coordinates also make half the bars zero-height and the others float above the baseline, and the y-axis ticks do not correspond to discrete data layers."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "The bars are scattered across random y positions rather than arranged in four distinct y=k layers, and the y-axis ticks do not correspond to those layers. Many bars also float above the baseline because their starting heights are incorrect."
+        },
+        {
+          "family": "hard_to_read",
+          "evidence": "The bars overlap heavily, making individual values and color groups difficult to distinguish. The z-axis label is also clipped."
+        }
+      ]
+    },
+    {
+      "run_id": "129",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "The chart omits all 2019 data and uses stacked bars instead of concentric doughnut rings. The 2018 WinXP segment is also missing its percentage label."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "The figure uses stacked bars instead of concentric doughnut rings and omits 2019. The legend is not in a central doughnut hole, the white sections lack year labels, and some segments lack percentage annotations."
+        }
+      ]
+    },
+    {
+      "run_id": "130",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "The plot uses the non-uniform **jet** colormap instead of viridis, so larger engines appear red rather than yellow. It was also saved at 72 dpi instead of the requested 120 dpi."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "The plot uses the non-perceptually-uniform **jet** colormap rather than viridis or a similar colormap, and it was saved at **72 dpi** instead of the requested 120 dpi."
+        }
+      ]
+    },
+    {
+      "run_id": "131",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "The event plots use the requested data distributions and sizes, but they are arranged in a 4×1 column rather than a 2×2 grid. Negative spacing also causes the plots and labels to overlap."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "The four event plots are stacked in a single column rather than arranged in the required 2×2 grid. They also overlap, obscuring parts of the plots and labels."
+        },
+        {
+          "family": "hard_to_read",
+          "evidence": "The subplots overlap, obscuring parts of the plots and causing titles and axis labels to collide."
+        }
+      ]
+    },
+    {
+      "run_id": "135",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "All requested categories and causes are present, but the branches converge at one point rather than being distributed along the spine. Pricing Strategy overlaps the spine, and several labels and lines overlap, making the layout less clear than requested."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "The categories all branch from the same point rather than being distributed along the spine, and Pricing Strategy overlaps the spine. Several labels and lines overlap, while the pale Market Conditions label has poor contrast, making the layout less clear and organized."
+        },
+        {
+          "family": "hard_to_read",
+          "evidence": "Several labels overlap branch lines, the pale yellow category has poor contrast, and the crowded layout makes some cause-to-category relationships difficult to follow."
+        }
+      ]
+    },
+    {
+      "run_id": "136",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "The second blue segment should extend from 128 to 175, but the x-axis stops at 150, clipping its final 25 units."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "The x-axis stops at 150, clipping the second blue segment, which should extend to 175. The Bill and Jim tick labels are also positioned near the bottoms of their bars rather than at their centers."
+        }
+      ]
+    },
+    {
+      "run_id": "141",
+      "errors": [
+        {
+          "family": "wrong_chart",
+          "evidence": "The white value labels have very low contrast on the pale yellow and light green segments, making some labels difficult to read."
+        },
+        {
+          "family": "hard_to_read",
+          "evidence": "The white value labels have very low contrast against the pale yellow and light green segments, making several numbers difficult to read."
+        }
+      ]
+    },
+    {
+      "run_id": "142",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "Tennis is omitted for every country, so the bars show only four of the five requested sports. The bars are also vertical rather than horizontal."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "The bars are vertical rather than horizontal, and Tennis is missing from both the chart and the legend. The remaining sports also use colors sampled for four categories rather than the requested five."
+        }
+      ]
+    },
+    {
+      "run_id": "143",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "The final figure uses a 1×4 layout rather than a 2×2 grid, and all axes are linear despite the requested logarithmic scales, including the base-3 x-axis in the third panel."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "The panels are arranged in a single row rather than a 2×2 grid, and none of the requested logarithmic axes are actually set to log scale, including the base-3 x-axis in the third panel."
+        },
+        {
+          "family": "hard_to_read",
+          "evidence": "The narrow panels make the cosine oscillations merge into a dense band, and the fourth panel’s linear scale compresses most data near zero."
+        }
+      ]
+    },
+    {
+      "run_id": "145",
+      "errors": []
+    },
+    {
+      "run_id": "146",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "The head says “Decreased Sales Performance” rather than the requested “Problem.” The branches also converge at one point, and overlapping labels—especially for Customer Service—make the requested cause relationships unclear."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "The head is not labeled “Problem,” and the branches and labels overlap heavily, making several causes unreadable. The categories cluster at one point rather than forming a clear, organized fishbone along the spine."
+        },
+        {
+          "family": "hard_to_read",
+          "evidence": "Labels overlap heavily near the head, and many are rotated or upside down, making the diagram difficult to read."
+        }
+      ]
+    },
+    {
+      "run_id": "150",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "The polygons are not filled under the curves: the surfaces have zero width. Also, the z-axis limit of 0.1 is too low for several Gaussian peaks, and the visible lines use default colors rather than reversed plasma."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "The curves are not filled with polygons, so the reversed plasma colors are not visible. The z-axis limit of 0.1 is also too low for several Gaussian peaks, which extend beyond the plot."
+        },
+        {
+          "family": "hard_to_read",
+          "evidence": "Several Gaussian peaks are cut off by the z-axis limit, making those curves difficult to interpret. The requested filled polygons are also not visible."
+        }
+      ]
+    },
+    {
+      "run_id": "153",
+      "errors": []
+    },
+    {
+      "run_id": "155",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "The first plot uses the explicitly prohibited **jet** colormap, rather than a dark-blue-to-light-yellow colormap. The request refers to a formula but does not provide it, so the plotted function cannot be checked against it."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "The first plot uses the explicitly prohibited **jet** colormap, rather than a dark-blue-to-light-yellow colormap. The second plot’s colormap also ends in dark blue rather than light blue."
+        }
+      ]
+    },
+    {
+      "run_id": "156",
+      "errors": []
+    },
+    {
+      "run_id": "161",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "The sine series is plotted on the same logarithmic axis as the exponential series, so its negative values are not visible. It is also solid rather than dotted, and there is no secondary right y-axis."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "The sine series is plotted on the same logarithmic axis as the exponential series, rather than on a secondary right y-axis. It is also solid rather than dotted, and the exponential y-axis label is overwritten."
+        },
+        {
+          "family": "hard_to_read",
+          "evidence": "The sine series is plotted on the logarithmic axis, so its negative values disappear and its positive values are distorted. There is also no right-hand scale, making the chart misleading."
+        }
+      ]
+    },
+    {
+      "run_id": "163",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "The contour field is correct, but the maximum marker and annotation are missing from the visible plot. The code uses flattened array indices as coordinates instead of the maximum’s grid coordinates, approximately (1.6, 0)."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "The maximum is not marked or annotated on the plot. The code uses flattened array indices as coordinates, placing the marker and annotation outside the displayed region; the maximum is at approximately (1.6, 0)."
+        }
+      ]
+    },
+    {
+      "run_id": "164",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "The green and red segments are swapped: the segment at 99 should be green, and the one at 132 should be red. The x-axis also starts at 5 rather than 0."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "The x-axis starts at 5 rather than 0, and the green and red segments are swapped: the segment at 99 should be green, and the one at 132 should be red."
+        }
+      ]
+    },
+    {
+      "run_id": "165",
+      "errors": []
+    },
+    {
+      "run_id": "166",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "The 50 values and group assignments meet the data requirements, but the final chart is Cartesian rather than polar. It also retains y-axis ticks and labels, has no blank center, and does not position the item names radially."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "The figure is a Cartesian bar chart, not a polar plot. It also retains y-axis ticks and labels, and lacks the requested blank center and radial label orientation."
+        }
+      ]
+    },
+    {
+      "run_id": "167",
+      "errors": []
+    },
+    {
+      "run_id": "168",
+      "errors": [
+        {
+          "family": "execution_failure",
+          "evidence": "The agent gave up after repeated image-export errors and submitted without producing `figure.png`."
+        }
+      ]
+    },
+    {
+      "run_id": "169",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "The random data are appropriate, but the marginal histograms overlap the scatter plot, obscuring some points and axis ticks. The required suptitle is also missing."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "The figure has no suptitle. The marginal histograms also overlap the scatter plot because of the negative spacing, obscuring data and causing tick labels to collide."
+        },
+        {
+          "family": "hard_to_read",
+          "evidence": "The marginal histograms overlap the scatter plot, obscuring data and causing tick labels to collide."
+        }
+      ]
+    },
+    {
+      "run_id": "170",
+      "errors": []
+    },
+    {
+      "run_id": "171",
+      "errors": []
+    },
+    {
+      "run_id": "173",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "The shading fills the entire vertical strip from 3 to 10, rather than only the area between the curve and the x-axis. The integral is also displayed as raw LaTeX text rather than a formatted formula."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "The shading extends above the curve instead of filling only the area between the curve and the x-axis. The integral also appears as raw LaTeX text rather than a formatted formula, and it sits on the curve rather than at the center of the area beneath it."
+        }
+      ]
+    },
+    {
+      "run_id": "175",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "The final plot is 2D rather than 3D, so the bars are not on separate y=k planes. It also lacks an x-axis label and a z-axis, and the y-axis shows bar heights rather than the discrete layer values."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "The figure is a 2D grouped bar chart, not a 3D plot with bars on y=k planes. It also lacks an x-axis label and a z-axis, and the y-axis does not show the discrete layer values."
+        }
+      ]
+    },
+    {
+      "run_id": "177",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "The fruit shares are shown as bars rather than a pie chart, so the apple slice is not separated and no connecting lines are drawn. The legend also obscures the 40% label in the stacked bar."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "The fruit shares are shown as bars rather than a pie chart, so there is no separated apple slice or connecting lines. The legend also obscures part of the stacked bar."
+        },
+        {
+          "family": "hard_to_read",
+          "evidence": "The legend overlaps the stacked bar and obscures the 40% label, making that part difficult to read."
+        }
+      ]
+    },
+    {
+      "run_id": "180",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "The plot shows only the positive x–y quadrant, not a full circle, and the generated radii can exceed 1.2. It also uses a gridded contour plot rather than a tricontour plot, filling missing grid values with the mean."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "The plot shows only the positive x–y quadrant, not a full circle, and uses gridded `contourf` rather than a filled tricontour. The generated radii also are not constrained to the stated 0.2–1.2 range."
+        },
+        {
+          "family": "hard_to_read",
+          "evidence": "The contour bands overlap and obscure one another, making the data difficult to interpret, although the labels and colorbar are legible."
+        }
+      ]
+    },
+    {
+      "run_id": "181",
+      "errors": [
+        {
+          "family": "execution_failure",
+          "evidence": "The agent repeatedly hit a shell quoting error and exhausted its limits without creating `figure.png`."
+        }
+      ]
+    },
+    {
+      "run_id": "183",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "The plot includes African countries, although only Asia and Europe were requested. This also changes the population-weighted color-scale midpoint. Country segments are unlabeled, and there is no separate continent legend."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "The chart includes Africa, although only Asia and Europe were requested. This also makes the color-scale midpoint use the wrong population-weighted average. It has no separate continent legend, and the country segments are not labeled."
+        },
+        {
+          "family": "hard_to_read",
+          "evidence": "The country segments have no labels, so it is impossible to identify individual countries. Many segments are also very thin and difficult to distinguish."
+        }
+      ]
+    },
+    {
+      "run_id": "191",
+      "errors": [
+        {
+          "family": "execution_failure",
+          "evidence": "The agent exited after repeated formatting errors. Its last script failed, and the earlier saved image was a treemap, not the requested sunburst chart."
+        }
+      ]
+    },
+    {
+      "run_id": "195",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "The projections are separate plots rather than planes on the main 3D plot, and they use the displacement color scale instead of blue, red, and green. The ZX plot also labels its constant zero axis as engine displacement. The XY subplot obscures much of the main plot."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "The projections are separate plots rather than blue, red, and green projections on the 3D plot’s planes. The XY plot also obscures much of the main plot, and oversized points create substantial clutter."
+        },
+        {
+          "family": "hard_to_read",
+          "evidence": "The oversized, overlapping points obscure much of the data, and the XY subplot covers a large portion of the main 3D plot, including its axes."
+        }
+      ]
+    },
+    {
+      "run_id": "196",
+      "errors": []
+    },
+    {
+      "run_id": "199",
+      "errors": []
+    },
+    {
+      "run_id": "200",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "Group 2’s points are white rather than orange, making them nearly invisible. The y-axis starts at 20 instead of 0, and the bin-based swarm does not guarantee that points won’t overlap."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "Group 2’s points are white rather than orange, making them nearly invisible. The y-axis starts at 20 instead of 0, and some Group 1 points overlap rather than forming a non-overlapping beeswarm."
+        },
+        {
+          "family": "hard_to_read",
+          "evidence": "Group 2’s beeswarm points are white on a white background, making its distribution and legend marker effectively invisible."
+        }
+      ]
+    },
+    {
+      "run_id": "202",
+      "errors": [
+        {
+          "family": "wrong_chart",
+          "evidence": "Both panels are missing horizontal gridlines and the y-axis label “Measured values.”"
+        }
+      ]
+    },
+    {
+      "run_id": "203",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "The points are plotted on Cartesian axes rather than a polar projection, and the requested colorbar is missing. The grid is therefore Cartesian, not polar."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "The plot uses Cartesian axes rather than a polar projection, so the grid is also Cartesian. It is missing the required colorbar."
+        }
+      ]
+    },
+    {
+      "run_id": "204",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "The mean yields for Cat-C and Cat-D are swapped: Cat-C is plotted at 49.7% instead of 58.2%, and Cat-D at 58.2% instead of 49.7%. Their SEM values remain assigned to the correct labels."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "The mean yields for Cat-C and Cat-D are swapped: Cat-C is plotted at 49.7% instead of 58.2%, and Cat-D at 58.2% instead of 49.7%."
+        }
+      ]
+    },
+    {
+      "run_id": "205",
+      "errors": [
+        {
+          "family": "execution_failure",
+          "evidence": "The agent exited after repeated format errors. Although it left a PNG, it is a bar-and-arrow chart rather than a valid Sankey diagram, and the final script has a syntax error."
+        }
+      ]
+    },
+    {
+      "run_id": "206",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "The conditions were used to select which points receive error bars, rather than to set the requested one-sided error-bar limits. The plotted bars are symmetric, and some every-20th points are omitted."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "The boolean conditions were used to select which points receive error bars, rather than to define upper and lower limits. As a result, the plot shows symmetric error bars and omits every third error-bar position."
+        }
+      ]
+    },
+    {
+      "run_id": "208",
+      "errors": [
+        {
+          "family": "execution_failure",
+          "evidence": "Both script runs failed, and the agent exited after repeated format errors without producing `figure.png`."
+        }
+      ]
+    },
+    {
+      "run_id": "209",
+      "errors": [
+        {
+          "family": "wrong_chart",
+          "evidence": "The opaque boxplots obscure many beeswarm points, so the full distribution of 100 points per group is not clearly visible."
+        }
+      ]
+    },
+    {
+      "run_id": "210",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "The “w” axis label is clipped from the rendered plot. Also, the relatively large Euler integration step can distort the Rössler trajectory."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "The vertical axis label “w” is missing from the rendered figure, although it was set in the code. The other requested elements are present."
+        }
+      ]
+    },
+    {
+      "run_id": "212",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "Setosa and versicolor are both blue, rather than having distinct species colors. The opaque ellipsoids also obscure most scatter points and much of the legend."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "Setosa and versicolor use the same blue, so the species are not distinguishable by color. The ellipsoids also obscure most scatter points and much of the centrally placed legend."
+        },
+        {
+          "family": "hard_to_read",
+          "evidence": "The opaque ellipsoids obscure most scatter points and much of the legend. Two species also share the same color, making them difficult to distinguish."
+        }
+      ]
+    },
+    {
+      "run_id": "213",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "The plot uses the men’s column instead of the requested women’s column. Also, the quartile lines are solid rather than dashed."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "The figure plots the men’s column instead of the women’s column. The quartile lines are solid red rather than dashed, and the quartile labels overlap."
+        }
+      ]
+    },
+    {
+      "run_id": "214",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "The lines lack the required circular markers, and the y-axis ticks are still visible. The legend also assigns frequencies of 100–500 Hz, although those values are not specified in the CSV."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "The lines lack the required circular markers, and the y-axis ticks are still visible. The legend also assigns specific frequencies (100–500 Hz) that are not provided in the data."
+        }
+      ]
+    },
+    {
+      "run_id": "216",
+      "errors": [
+        {
+          "family": "wrong_data",
+          "evidence": "The Agree values for AI Coding Tools and Open Floor Plans are swapped: the chart shows 28% and 45%, respectively, instead of 45% and 28%."
+        },
+        {
+          "family": "wrong_chart",
+          "evidence": "The Agree values for AI Coding Tools and Open Floor Plans are swapped: the chart shows 28% and 45%, respectively, instead of 45% and 28%."
+        }
+      ]
+    }
+  ]
+}

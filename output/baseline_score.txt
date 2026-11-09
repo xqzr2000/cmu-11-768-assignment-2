@@ -1,0 +1,5 @@
+execution_failure    MCC=0.5945  TP=8 TN=93 FP=5 FN=4  support(+/-)=12/98
+wrong_data           MCC=0.2363  TP=22 TN=27 FP=46 FN=3  support(+/-)=25/73
+wrong_chart          MCC=0.6286  TP=66 TN=18 FP=9 FN=5  support(+/-)=71/27
+hard_to_read         MCC=0.6345  TP=29 TN=52 FP=7 FN=10  support(+/-)=39/59
+macro_mcc            0.5235

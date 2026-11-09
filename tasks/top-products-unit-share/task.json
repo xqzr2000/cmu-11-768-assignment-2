@@ -1,0 +1,11 @@
+{
+  "task_id": "top-products-unit-share",
+  "task_class": "large-input-aggregation",
+  "instructions": "Using matplotlib, read transactions.csv. It has one row per order with columns order_id, date, region, product, units and unit_price. For every product, compute the total number of units sold across all orders, and that product's share of ALL units sold by all products, as a percentage. Draw a HORIZONTAL bar chart of only the 8 products with the most units sold. Requirements: 1. One bar per product, sorted so the product with the largest share is at the TOP and the smallest of the eight at the bottom. 2. Each bar's length is the product's percentage share of all units sold; the denominator includes all products, so the eight bars do not add up to 100. 3. Write each bar's percentage just past the end of the bar, with one decimal place and a percent sign, for example '14.2%'. 4. The y tick labels are the product names. The x axis label is exactly 'Share of all units sold (%)' and the x axis starts at 0. There is no y axis label. 5. The title is exactly 'Top 8 products by unit share'. 6. All bars use the single colour '#4C72B0'. Save the figure as figure.png.",
+  "inputs": [
+    {
+      "name": "transactions.csv",
+      "path": "inputs/transactions.csv"
+    }
+  ]
+}

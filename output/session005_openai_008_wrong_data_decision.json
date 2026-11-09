@@ -1,0 +1,17 @@
+{
+  "run_id": "008",
+  "family": "wrong_data",
+  "provider": "OpenAI",
+  "model_requested": "gpt-5.4-mini",
+  "model_reported": "gpt-5.4-mini-2026-03-17",
+  "has_error": true,
+  "evidence": "The plotted data was altered: the figure omits all rows with source=orange (the script filters them out), so the Sankey counts and flows do not match data.csv. The rendered diagram also shows only 4 source nodes instead of the 5 requested labels.",
+  "usage": {
+    "prompt_tokens": 13508,
+    "completion_tokens": 73,
+    "total_tokens": 13581
+  },
+  "completion_attempts": 1,
+  "human_labels_sent": false,
+  "official_qwen_equivalent": false
+}

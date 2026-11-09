@@ -1,0 +1,22 @@
+{
+  "status": "completed",
+  "role": "experimental_judge",
+  "provider": "openai",
+  "requested_model": "gpt-6.1-terra",
+  "reported_model": "gpt-6.1-terra",
+  "api_style": "responses",
+  "tool_call_count": 0,
+  "tool_names": [],
+  "expected_tool_called": false,
+  "usage": {
+    "input_tokens": 215,
+    "output_tokens": 73,
+    "total_tokens": 288
+  },
+  "retries": 0,
+  "model_proposed_commands_executed": 0,
+  "official_qwen_equivalent": false,
+  "schema_valid": true,
+  "judgment_families": [],
+  "accuracy_evaluated": false
+}

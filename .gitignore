@@ -14,8 +14,6 @@ __pycache__/
 # OS metadata
 .DS_Store
 
-# Independent evaluation results; keep original upstream seed fixtures tracked.
-/output/*.json
-/runs/*
-!/runs/.gitkeep
-/labels.json
+# Predictions (output/*.json) and generated runs (runs/) are submission
+# artifacts, so they are tracked. Only local spend logs stay out.
+/output/*.jsonl
