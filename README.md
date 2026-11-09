@@ -1,303 +1,245 @@
-# CMU 11-768 Assignment 2 — Independent Evaluation Engineering
+# CMU 11-768 Assignment 2 — Evaluating a Data-Visualization Agent
 
-## Status (2026-11-08): assignment complete on `finish-assignment`
+**Independent, non-credit reproduction and adaptation | November 2026 | Completed experiment**
 
-**Read [`report.pdf`](report.pdf)** (source `report.tex`). `workflow check-submission` reports
-*submission valid*: every Harbor task scores 1.0 with its oracle, mutants score 0.0
-(`sum_units`) and 1.0 (`unrotated_labels`).
+This project follows the four-part evaluation workflow in [CMU's original Assignment 2](ASSIGNMENT.md) ([upstream repository](https://github.com/cmu-agents/assignment-2)). We retained its seed artifacts, human labels, error taxonomy, prediction schema, MCC scorer and Harbor task format. **We deliberately replaced the mandated models and Modal infrastructure** with hosted model APIs and our own Docker sandbox, making this an educational adaptation—not a course-compliant model configuration or a claim about official/private grades.
 
-| Seed runs (110), judge GPT-6.1 Terra | baseline | final `validator/solution.py` |
-| --- | ---: | ---: |
-| execution_failure | 0.5945 | 1.0000 |
-| wrong_data | 0.2363 | 0.7093 |
-| wrong_chart | 0.6286 | 0.9512 |
-| hard_to_read | 0.6345 | 0.8297 |
-| **macro-MCC** | **0.5235** | **0.8726** |
+**Start here:** [Final report (PDF)](report.pdf) · [LaTeX source](report.tex) · [Original requirements](ASSIGNMENT.md) · [AI-use disclosure](AI_USAGE.md) · [Recorded submission check](output/check_submission.txt)
 
-Agents (DeepSeek Flash, GPT-5.6 Luna, GLM-5.3 Flash) run via
-`uv run python -m workflow.sandbox_generate` in the Docker sandbox from `sandbox/`.
-Judge settings: see the Terra block in `.env.example`. Not comparable to course scores
-(different judge and agents). Working notes: `docs/report-notes.md`. AI use: `AI_USAGE.md`.
-The session history below is the earlier offline-infrastructure phase.
+| Final checkpoint | Observed result |
+| --- | --- |
+| Public seed evaluation | **110 runs**; baseline macro-MCC **0.5235** → final **0.8726** |
+| New agent evaluations | **5 tasks × 3 agents = 15 runs**, all with saved figures and human-reviewed labels |
+| Harbor reference solutions | **5/5 scored 1.0** with the actual Docker/Harbor runner |
+| Harbor mutant tests | Bad aggregation **rejected (0.0)**; unreadable labels **incorrectly accepted (1.0)**, demonstrating a verifier limitation |
+| Submission checker | `submission valid`, using this repository's adapted workflow |
+| Official course equivalence | **Not established:** the judge, agent models and execution infrastructure differ |
 
-An independent, non-credit adaptation of [CMU 11-768 Assignment 2: Evaluating a Data-Visualization Agent](https://github.com/cmu-agents/assignment-2).
+## 1. Original assignment requirements and our adaptation
 
-**Status:** Offline evaluation infrastructure and a completed four-model API compatibility milestone, but no end-to-end chart-agent run or Terra judge accuracy benchmark. Official-model-equivalent scoring remains unverified. We retained the **entire pinned official starter**, including the released agent trajectories, figures, human labels, evaluator, and Harbor examples. We do **not** use Modal for execution or model hosting.
+The original assignment asks students to inspect existing visualization-agent trajectories, improve a validator that reports errors, develop new adversarial visualization tasks, run three prescribed agents, build Harbor verifiers and iterate based on measured failures. The evaluator receives **one task, its inputs, the agent trajectory and a final figure**, without ground-truth labels or reference images at inference time.
 
-## Our learning goals
-
-- Evaluate data-visualization agent trajectories and figures against human judgments.
-- Measure per-family confusion matrices, Matthews correlation coefficient (MCC), and macro-MCC.
-- Diagnose false positives, false negatives, label imbalance, and judge failures.
-- Build adversarial tasks and compare model-based evaluation with deterministic Harbor verifiers.
-- Reuse the Docker sandbox developed in [our Assignment 1](https://github.com/xqzr2000/cmu-11-768-assignment-1), with a pinned Git dependency rather than copied code.
-
-## Proven vs. not yet proven
-
-- **Provided:** 110 public seed trajectories and their human labels, the official scoring workflow, and Harbor example tasks.
-- **Verified outside this repository:** Z.ai `glm-4.7-flash` chat completion and structured function calling using `ZAI_API_KEY` in Codespaces. Intermittent HTTP 429 / error 1305 has been observed.
-- **Not yet verified here:** a complete local mini-SWE-agent run, generated visualizations from GLM, a vision judge, full Harbor run, or reproducibility of the course's private grading score.
-
-## Quick start — offline, no API or Modal
-
-In GitHub Codespaces, open this repository and let the devcontainer install dependencies. Or use Python 3.12 with [uv](https://docs.astral.sh/uv/):
-
-```bash
-uv sync --locked
-uv run python scripts/offline_preflight.py
-uv run python -m unittest discover -s tests -p 'test_offline_*.py'
-uv run python -m unittest discover -s tests -p 'test_validator_*_offline.py' -v
-```
-
-`offline_preflight.py` checks the public run/label inventory, label schema, and PNG file headers without calling a model. It **does not** manufacture validator predictions or use human labels as model inputs.
-
-The deterministic execution checks in `validator/solution.py` reject missing or undecodable `figure.png` files without any model calls. On decodable images the solution now delegates `wrong_data`, `wrong_chart`, and `hard_to_read` judgments to the supplied `validator.baseline` VLM methods. The **offline semantic tests use mocked model responses**; they demonstrate call ordering and schema, not chart-judging accuracy. Full `validator.runner` execution with normal PNGs will require a compatible, verified image-capable `VALIDATOR_BASE_URL` / `VALIDATOR_API_KEY` / `VALIDATOR_MODEL` setup. Without that endpoint, the model error intentionally propagates instead of silently accepting charts. The assignment's fixed evaluator model is Qwen/Qwen3-VL-30B-A3B-Instruct-FP8; do not substitute another judge and claim official equivalence.
-
-The original course scorer is also available:
-
-```bash
-uv run python -m workflow --help
-uv run python -m workflow score --help
-```
-
-To score a validator, first generate predictions independently, then use `python -m workflow score --labels seed_labels.json --predictions <path>`. The released labels are for measurement and analysis, not for hard-coded prediction lookup.
-
-## Session 004: Z.ai visual-understanding smoke test (offline first)
-
-This optional **independent experiment** uses `glm-4.6v-flash` as a vision judge; it is **not** the assignment-required `Qwen/Qwen3-VL-30B-A3B-Instruct-FP8` and does not alter `validator/model.py` or the official evaluator. Z.ai's [model guide](https://docs.z.ai/guides/vlm/glm-4.6v) documents image input, [API quick start](https://docs.z.ai/guides/overview/quick-start) supports the OpenAI client, and the [pricing page](https://docs.z.ai/guides/overview/pricing) currently lists `GLM-4.6V-Flash` as free. Check your account terms and rate limits before invoking it; free listing does not guarantee unlimited access.
-
-Offline dry run (default; **zero API calls**, no key required):
-
-```bash
-uv run python scripts/zai_vision_probe.py
-uv run python -m unittest discover -s tests -p 'test_validator_*_offline.py' -v
-```
-
-The probe creates a **256×256 synthetic chart** in memory with a tall blue bar and short orange bar, then assembles the official OpenAI-compatible `image_url` data-URL payload. It prints payload metadata, **not** base64 image data or secrets.
-
-For an optional **single** live image request, set `ZAI_API_KEY` through Codespaces Secrets (or in a local, untracked `.env` file), then **explicitly opt in twice**:
-
-```bash
-uv run python scripts/zai_vision_probe.py --live --confirm-one-request
-```
-
-The live probe sends **at most one chat completion attempt** to `https://api.z.ai/api/paas/v4/` using model `glm-4.6v-flash`, `max_tokens=64`, `max_retries=0`, a 45-second client timeout, and disabled thinking. It reports the answer and any returned token usage, not credentials or raw error bodies. HTTP 429/auth/unsupported-image responses fail visibly and are **not retried automatically**. A failed/ambiguous answer is not reported as a passed vision test. No seed artifact, human label, or full validator sweep is sent in this probe.
-
-**Do not use Z.ai results as official Qwen-equivalent scores.** Running the full seed validator with a different provider would require separate provider configuration and compatibility tests (the baseline's context-overflow fallback uses vLLM-only tokenizer routes). Keep model provenance on any experimental predictions.
-
-## Session 005 — First real seed-figure evaluation (two-case pilot)
-
-The independent Z.ai pilot sends **one selected seed run** to `glm-4.6v-flash`, not the official Qwen3-VL checkpoint. Its default command is an offline preview; it will never read human labels or make network calls. Pilot selection is limited to released runs `004` and `008` to bound the experiment, not to hardcode any prediction.
-
-**1. Offline first (zero network requests):**
-
-```bash
-uv run python scripts/zai_seed_pilot.py
-uv run python -m unittest discover -s tests -p 'test_validator_*_offline.py' -v
-uv run python scripts/offline_preflight.py
-```
-
-The preview loads the authentic `Run` objects and exercises `validator.solution.validate` with fake completions. Its metadata shows **three potential multimodal requests per run**, instructions/trajectory lengths, filenames and byte counts of embedded CSV/PNG data. It does **not** send request content anywhere. To inspect these existing public fixtures yourself, use `artifacts/004/result.json`, `artifacts/008/result.json`, `inputs/008/data.csv`, and their associated `figure.png` files.
-
-**2. Optional live mode, after inspecting the preview and consenting to send the public run's instructions, full agent trajectory, input file contents and figure to Z.ai:**
-
-```bash
-# At most 3 completions for run 004. Requires ZAI_API_KEY.
-uv run python scripts/zai_seed_pilot.py --run-id 004 --live --confirm-three-requests
-
-# Run 008 only as a separate, deliberate later invocation:
-uv run python scripts/zai_seed_pilot.py --run-id 008 --live --confirm-three-requests
-```
-
-The Z.ai host and model are fixed in the script. OpenAI client automatic retries are off, timeout is 60s, output is capped at 250 tokens per request, and the code blocks a fourth attempt, including baseline overflow retries that expect the upstream vLLM tokenizer. The code also refuses to overwrite existing per-run output files to prevent accidental paid reruns. HTTP failures or ambiguous non-YES/NO answers abort without pretending that the run was acceptable. The provider's GLM-4.6V-Flash pricing currently lists a free tier, but access and rate limits can change.
-
-Successful live predictions are stored locally in ignored files `output/session005_zai_<run_id>_predictions.json` and `output/session005_zai_<run_id>_metadata.json`, using the exact official `PredictionFile` schema. **Human labels are not loaded during inference.**
-
-**3. Compare offline, only after the predictions exist:**
-
-```bash
-uv run python scripts/zai_seed_pilot.py --run-id 004 --compare
-uv run python scripts/zai_seed_pilot.py --run-id 008 --compare
-```
-
-The compare command has no model client or network access; it reads `seed_labels.json` post-hoc and reports predicted families, human families, missed errors and false alarms. **Two preselected runs are not representative and should not be presented as a meaningful MCC.** Neither these independent GLM results nor the API-reported model ID establishes official Qwen3-VL equivalence. The general `validator/model.py` remains unchanged.
-
-## Session 005: optional OpenAI API integration (separate provider)
-
-We diagnosed the first real Z.ai GLM-4.6V-Flash seed-004 reply: the API returned one response, but the model used all 250 output tokens and did not begin with the expected YES/NO prefix. Instead of replacing the course validator or Z.ai provider, we added an **independent OpenAI pilot** using `gpt-5.4-mini`, a model with vision and [Structured Outputs](https://developers.openai.com/api/docs/guides/structured-outputs). This is **not** the assignment-required `Qwen/Qwen3-VL-30B-A3B-Instruct-FP8`.
-
-**OpenAI API credentials for Codespaces:**
-
-1. Create an API key in the [OpenAI API dashboard](https://platform.openai.com/api-keys), and set a suitable usage budget in the API platform. **ChatGPT subscriptions do not automatically fund API calls**.
-2. In [GitHub Codespaces secrets](https://github.com/settings/codespaces), create `OPENAI_API_KEY` and grant repository access to `xqzr2000/cmu-11-768-assignment-2`. **Do not** paste the key into source code or the chat.
-3. **Stop and restart your existing Codespace** to inject the new secret. A full Rebuild Container is **not needed** for just a new Codespaces secret. Alternatively, put the key in a local, untracked `.env` file; `.gitignore` already excludes it.
-4. Check secret status without exposing the key:
-
-```bash
-uv run python scripts/openai_seed_pilot.py
-```
-
-The default command sends **zero requests** and previews the exact selected public run/family (by default seed `004`, `wrong_data`). No new packages are necessary: `openai==2.54.0` was already pinned by the official starter. This change does not modify `.devcontainer/devcontainer.json`, `validator/model.py`, `ZAI_API_KEY`, the Qwen model setting, or the seed fixtures.
-
-**Offline verification, before any API call:**
-
-```bash
-uv run python -m unittest discover -s tests -p 'test_validator_*_offline.py' -v
-uv run python scripts/openai_seed_pilot.py --run-id 004 --family wrong_data
-```
-
-**One opt-in live OpenAI question**, only after reviewing the preview and API usage/billing:
-
-```bash
-uv run python scripts/openai_seed_pilot.py --run-id 004 --family wrong_data \
-  --live --confirm-one-request
-```
-
-The API client uses **only** `https://api.openai.com/v1/`, the fixed `gpt-5.4-mini` model, an image+text Chat Completions request, a strict `{has_error: boolean, evidence: string}` JSON schema, `reasoning_effort="none"`, at most 400 completion tokens, a 60-second timeout and **no automatic retries**. At most **one** model request can be attempted per invocation. It rejects non-JSON replies, refusals, truncated outputs and type/schema violations. Never send raw provider error bodies or keys to the console.
-
-Successful output is an **individual family decision**, stored only in ignored `output/session005_openai_004_wrong_data_decision.json`, not a complete official `PredictionFile`. The program refuses to overwrite that file and reports the model/usage for provenance. The prompt contains task instructions, original trajectory, optional input-file contents and a PNG. It **never loads human labels in live or dry-run mode**.
-
-**Compare offline after a successful saved decision only:**
-
-```bash
-uv run python scripts/openai_seed_pilot.py --run-id 004 --family wrong_data --compare
-```
-
-The independent `--compare` path reads human labels locally, reports a single family decision's TP/FP/FN/TN, and makes no model requests. A single selected example is not evidence of MCC or model generalization. The existing Z.ai pilot and official Qwen3-VL configuration remain intact.
-
-## Session 010 — Offline-first chart controller and chart environment
-
-PR #9 merged Session 009 into `main` at `65b0a49`; PR #10 merged the completed Session 010 offline infrastructure at `19e0a27`. Session 011 now develops on `feature/session-011-chart-runtime`.
-
-**Verified in Codespaces: 82/82 Session 010 offline tests passed** after hash-lock wiring, with a clean working tree. The suites cover the controller (11), fake-Docker gateway (14), bounded task CSV/PNG validation (16), file staging and extraction helper (12), inert Dockerfile recipe (12), and private build context (17). Provider **37/37**, validator **49/49**, and structural **5/5** regressions also passed, totaling **173/173** offline tests.
-
-The following components remain separately gated and **do not yet form a live agent**:
-
-- `integrations/chart_controller.py`: provider conversation replay and strict turn/tool budgets, with no model transport.
-- `integrations/sandbox_gateway.py`: explicit sandbox launch and per-command approval; `network="none"`, no host mounts or ports; tested with fake Docker only.
-- `integrations/task_artifacts.py`: bounded task-local CSV snapshots and strict PNG/JSON-envelope validation.
-- `integrations/chart_transfer.py` and `scripts/figure_extract_worker.py`: private temporary host-file staging and a fixed bounded PNG extraction protocol, not connected to Docker.
-- `integrations/chart_image_recipe.py`: inert digest-shaped Python 3.12 Dockerfile, direct plotting library pins and unprivileged runtime.
-- `integrations/chart_build_context.py`: temporary, verified context containing only the Dockerfile, approved CSVs, and trusted extraction helper. No Docker build has been attempted.
-
-**Supply-chain checkpoint:** User Codespace registry inspection verified an `x86_64` (`linux/amd64`) host, the official Python image's **multi-platform index** `sha256:4840d514c583a4d3d8cad3940e68dee6f0f6f3635c12fcd0a3d74c21a5b93a54`, and its distinct **AMD64 image manifest** `sha256:05a994d2344eb364cc186910f4fc8786a38215f39f00d0acc25bff33a08f4177` (version `3.12.16-slim-trixie`). No image was pulled, built or launched.
-
-**Chart-only wheel hash file (audit verified in Codespaces):** `requirements/chart-cp312-linux-amd64.txt` records the exact versions and selected wheel hashes for **14 plotting packages** derived from the existing committed `uv.lock`: four direct and ten transitive. The offline checker `scripts/check_chart_wheel_lock_offline.py` re-derives that dependency closure and rejects missing, extra, modified or ambiguously marked dependencies. CI runs the audit. In Codespaces, run:
-
-```bash
-uv run python scripts/check_chart_wheel_lock_offline.py
-```
-
-**Verified in Codespaces:** The audit checked all **14 package hashes** (4 direct, 10 transitive) against the committed `uv.lock` and reported **PASS**. This was an additional metadata audit after the existing **77/77 offline tests**, not a seventh set of counted unit tests. It performed no PyPI download, pip installation, Docker command, or model request. The hash-locked Dockerfile and vetted private-context integration passed **29/29 focused Codespace offline tests** (12 image recipe, 17 context), and the 14-wheel metadata audit passed again. The subsequent full offline regression passed **173/173** tests; these checks still do not establish wheel download integrity, successful installation or an actual Docker image.
-
-See [Session 010 supply-chain provenance](docs/Session-010-Supply-Chain.md) for full observed digests, platform evidence, package closure and remaining build-trust gaps.
-
-**Session 010 finished:** PR #10 [merged](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/10), CI passed, and the user cleaned the old local/remote branch. See [Learning Progress](docs/Learning-Progress.md) for the completed milestone and the active Session 011 handoff.
-
-## Session 012 — Offline chart image and plotting smoke-test preflight (merged PR #12)
-
-On `feature/session-012-docker-smoke-preflight`, the user verified the existing image recipe **13/13**, private context **19/19** offline tests and the separate **14/14** wheel metadata audit in Codespaces; Git stayed clean. The latest change adds `scripts/preview_chart_smoke_offline.py`, a **zero-Docker/no-model** JSON review of the fixed Dockerfile and short-lived private contexts for synthetic zero-CSV and one-CSV tasks. It has **seven new offline tests** in `tests/test_chart_smoke_preview_offline.py`, a guarded test script and CI wiring. **Verified in Codespaces:** the seven new preview tests passed **7/7**; recipe **13/13**, build-context **19/19**, and 14-wheel metadata audit passed in an earlier focused run. The preview emitted exact three-file/four-file zero/one-CSV manifests, consistent Dockerfile hashes, cleanup confirmation and zero Docker/model/network operations. The user then ran the **complete 185/185 offline regression**, and all tests passed at `c677bca`: 94 chart/controller infrastructure, 37 provider, 49 validator and 5 structural tests.
-
-See [Session 012 smoke-test preflight and approval gates](docs/Session-012-Docker-Smoke-Preflight.md). The previously observed Python AMD64 manifest is only a review candidate. No real image pull/build/launch, wheel installation, PNG from Docker or model API call is authorized. The preview prints metadata and inert Dockerfile text, *not* an execution-ready Docker build context. Dataset preflight (110 runs, 98 figures, 110 labels), 14-package wheel metadata audit, and four-role zero-network provider preview also passed; Git was clean. **PR #12 merged into main at `1118bcd` on 2026-11-08 UTC; main-branch CI passed.** Historical source/preflight evidence remains offline-only. Real Docker operations still require a separate exact-command review and explicit authorization.
-
-## Session 014 — Stage the trusted smoke worker in a planned chart image (offline only)
-
-Starting from clean merged main at `e0242d6`, we created `feature/session-014-chart-worker-image-staging` and merged [PR #14](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/14) at **`39fbbf9`**. Its latest PR-head [CI run 42518103408](https://github.com/xqzr2000/cmu-11-768-assignment-2/actions/runs/42518103408) and post-merge main [CI run 42518586284](https://github.com/xqzr2000/cmu-11-768-assignment-2/actions/runs/42518586284) both passed. This first slice **changes the fixed Dockerfile text and private staging plan only**: the trusted, version-controlled `scripts/chart_smoke_worker.py` is copied as `trusted/smoke_chart.py` into the short-lived context and declared as a read-only `/opt/assignment/smoke_chart.py` in the *future* chart image. The context verifies script bytes against source even if an attacker rewrites the staged file's declared SHA-256.
-
-The zero-/one-CSV context counts become **4/5** files (previously 3/4). **Verified in Codespaces at clean tracking feature head `118ea8a`: 51/51 focused chart tests and 197/197 full offline tests passed** (106 chart/controller infrastructure, 37 mocked providers, 49 validator, 5 structural). The separate 14/14 wheel-lock metadata audit and dataset (110 runs, 98 figures, 110 labels, 16 acceptable) and four-role zero-network preflights also passed. No Docker build, image pull, container launch, wheel download or model request has been performed. See the [Session 014 staging report](docs/Session-014-Chart-Worker-Image-Staging.md) and [current learning journal checkpoint](docs/Learning-Progress.md) for exact files, merge evidence, remaining Codespaces cleanup, and the proposed offline Session 015 build-lifecycle, runtime isolation, artifact-channel and Stage B approval requirements.
-
-**Session 013 completed:** [PR #13 merged](https://github.com/xqzr2000/cmu-11-768-assignment-2/pull/13) at `e0242d6` with post-merge CI success; the feature branch was cleaned up locally and remotely.
-
-## Session 013 — Trusted synthetic plotting smoke worker (offline only)
-
-From clean synchronized main at `1118bcd`, we created `feature/session-013-docker-smoke-readiness` for the next *offline* readiness slice. The new fixed `scripts/chart_smoke_worker.py` draws a small 640×480 PNG from hard-coded values using the Matplotlib Agg backend; it never reads task data, executes Docker, calls a model, or accepts CLI parameters. It creates `figure.png` exclusively, refuses overwrite, and enforces a 2 MiB cap.
-
-The eight new host-only tests check the PNG validator contract, the trusted extractor/envelope round trip, existing-file/symlink handling, oversized-output cleanup, fixed CLI behavior, and prohibited imports. CI runs the zero-test-guarded `scripts/check_chart_smoke_worker_offline.py`. **Verified in Codespaces on feature head `200d195`: focused smoke-worker tests 8/8 passed and the complete offline regression passed 193/193** (102 chart/controller infrastructure, 37 provider, 49 validator, 5 structural). A separate 14/14 chart wheel lock metadata audit, dataset preflight (110 runs, 98 figures, 110 labels, 16 acceptable) and four-role zero-network provider preview passed. Git remained clean and synchronized. This remains host/mock/fake evidence only, not a real Docker smoke run or official accuracy benchmark. [Initial draft PR #13 CI run 42516818263](https://github.com/xqzr2000/cmu-11-768-assignment-2/actions/runs/42516818263) succeeded (20/20 steps) at head `fc571b6`; documentation-only commits after this evidence require a separate latest-head CI check. Do not merge automatically.
-
-See [Session 013 readiness plan](docs/Session-013-Docker-Smoke-Readiness.md) for outstanding base-image and wheel-byte provenance, BuildKit resource/time controls, future fixed-worker staging, container isolation, output extraction and exact-command approval gates. **Historical Session 013 limitation:** the worker was not included in the *then-proposed* image context; Session 014 subsequently added it to the inert trusted context allowlist. **No image has actually been built.** No real Docker build/run or new model API requests are authorized.
-
-## Session 011 — Empty-input chart runtime support (full offline regression passed)
-
-The official authored-task schema already accepts `inputs=[]` or an omitted input list, but our Session 010 snapshotter, transfer staging and private context previously required one CSV, and the inert Dockerfile's glob-based chmod would fail if the directory were empty. On `feature/session-011-chart-runtime` we now allow **0–8** CSV files while retaining file safety checks, a strictly allowlisted build context, the pinned plotting requirements file, and a fixed empty-file-safe `find ... -exec chmod` step. No tasks automatically enter Docker or a model API.
-
-New offline regression cases cover zero-input descriptors, private staging and cleanup, exact three-file build contexts with empty `inputs/`, rejection of unexpected input files and Dockerfile handling. **Verified in Codespaces at `c1f5602`: all 62/62 focused offline tests passed** (17 task artifacts, 13 transfer, 13 recipe, 19 context). The separate 14-package wheel metadata audit also passed. Git was clean and synchronized. **Full Codespaces regression has now passed 178/178 offline tests** (87 chart/controller infrastructure, 37 provider, 49 validator, 5 structural), along with dataset preflight and the four-role zero-network provider preview. **Next: review a draft Session 011 PR and GitHub Actions**. The earlier **173/173** Session 010 result remains historical. These tests do not demonstrate an actual image build or authorize Docker/model operations.
-
-No additional model API requests, real Docker builds, sandbox launches, live chart-generation runs, or Terra accuracy evaluations are authorized by Session 010's offline verification. The official Modal runner and assignment requirements are unchanged.
-
-See [Session 010 engineering design](docs/Session-010-Controller-Design.md) and [Learning-Progress.md](docs/Learning-Progress.md).
-
-## Session 009 — Completed four-model live API compatibility checks
-
-Session 008's offline provider-adapter foundation was merged via PR #8 (`5833b2b`). Session 007's unmerged wrong-chart experiment is preserved at `archive/session-007-20261107`.
-
-**Session 009 objective met:** All four *current* model roles passed one separately user-authorized live compatibility request each. The three chart-generator providers returned function-call descriptions that the adapters parsed; the experimental Terra judge accepted a synthetic PNG and returned strict JSON. No tool request was executed, no model-generated chart was produced and no judge accuracy or MCC was measured.
-
-| Role | Requested / reported model | Live compatibility |
+| Aspect | Original course requirement | Our implementation |
 | --- | --- | --- |
-| Agent A | `deepseek-flash` | Responses API tool call parsed (405 tokens) |
-| Agent B | `gpt-5.6-luna` | Responses API tool call parsed (127 tokens) |
-| Agent C | `glm-5.3-flash` | Z.ai Chat Completions tool call parsed (227 tokens) |
-| Experimental judge | `gpt-6.1-terra` | Synthetic PNG + strict JSON schema parsed (288 tokens) |
+| Validator model | **`Qwen/Qwen3-VL-30B-A3B-Instruct-FP8`**, deployed on Modal; no substitution allowed for graded work | **`gpt-6.1-terra`** via the OpenAI API. This is a declared deviation, not Qwen-equivalent evidence |
+| Chart agents | **`Qwen/Qwen2.5-Coder-3B-Instruct`**, **`mistralai/Ministral-3-14B-Instruct-2512`**, **`zai-org/GLM-4.7-Flash`** | **`deepseek-flash`**, **`gpt-5.6-luna`**, **`glm-5.3-flash`** via three providers |
+| Agent infrastructure | Course mini-SWE-agent workflow on student-hosted Modal infrastructure | `workflow/sandbox_generate.py`: mini-SWE-agent-compatible prompting, bash-tool protocol and limits; command execution in the Assignment 1 Docker sandbox |
+| Part 1 | Score the baseline on seed runs; identify two recurring validator error types and cite run IDs | Baseline scored on 110 released runs; analyzed execution-artifact disagreements and confused error families |
+| Part 2 | Implement two improvements in `validator/solution.py` and compare four MCCs plus macro-MCC | Deterministic figure check, structured data/design checklist, independent readability evaluation; scored all 110 runs |
+| Part 3 | At least five tasks in two weakness classes (at least two per class); one run per prescribed agent; human labels; Harbor tasks and two mutants | Five tasks in a **3+2** split; **15 runs** with alternative agents; reviewed `labels.json`; five Harbor packages, two tested mutants |
+| Part 4 | Make an additional validator change, evaluate seed and authored runs, analyze FP/FN, retain final deliverables | Added a distinct legibility requirement kind; experimented with enlarged-image overlay checks, measured a regression and deliberately disabled that option in the final validator |
+| Deliverables/check | Validator, tasks, runs, labels, predictions, Harbor packages, report, end-to-end `check-submission` | Committed all of these, plus `AI_USAGE.md` and recorded results. Local checker passed; **this does not waive the original fixed-model requirement** |
 
-A separate historical free-model attempt to `glm-4.7-flash` failed with `RateLimitError` and **zero retries**; it was preserved instead of overwritten. The paid replacement `glm-5.3-flash` is the current Agent C model, using `reasoning_effort=low` for this bounded transport test. The previous failure's exact root cause remains unknown.
+The four error families and scoring definitions are unchanged:
 
-The feature branch's Codespace verification passed **37/37 mocked provider tests and 49/49 validator regression tests** (86/86), plus four zero-network model previews. Run the zero-network checks at any time:
+- **`execution_failure`** — missing or invalid final figure.
+- **`wrong_data`** — incorrect values, selections, aggregations or ordering.
+- **`wrong_chart`** — chart design does not match the request.
+- **`hard_to_read`** — clipped, overlapping, obscured or otherwise unreadable content.
 
-```bash
-uv run python -m unittest discover -s tests -p 'test_provider_*_offline.py' -v
-uv run python -m unittest discover -s tests -p 'test_validator_*_offline.py' -v
-uv run python scripts/provider_preflight.py
-uv run python scripts/provider_compat_probe.py --role agent_c
+A prediction can contain multiple families, except a ground-truth execution failure excludes the other three from their MCC denominators. The [official scoring implementation](workflow/evaluate.py) computes MCC separately for each family; **macro-MCC is the unweighted mean of the four**.
+
+## 2. Architecture: hosted model intelligence, isolated local execution
+
+```text
+  task.json + task-local CSVs
+              |
+  Host/controller: workflow/sandbox_generate.py
+  |           |                          |
+  |     Hosted agent model API      Keys stay on host
+  |     (DeepSeek / OpenAI / Z.ai)
+  |           |
+  |     Agent proposes bash commands
+  |           v
+  |     Fresh Docker sandbox per run
+  |     network disabled; no API keys
+  |     executes commands, creates figure.png
+  |           |
+  +---- result.json + figure.png --> runs/<task>__<agent>/
+                                          |
+  seed artifacts/ ------------------------+ 
+                                          v
+                  validator/solution.py + hosted Terra judge
+                                          |
+                    output/*_predictions.json
+                                          |
+                         ground-truth labels (scoring ONLY)
+                                          |
+                             per-family MCC / macro-MCC
+
+  Independently: tasks/ --> harbor/tasks/ --> oracle/mutant verifier rewards
 ```
 
-The offline-default probe script refuses live requests unless the role, consent flags, **exact model ID** and provider secret match. It saves per-model results to ignored `output/provider_compat_<role>_<model>.json` files, recognizes older role-only results, refuses repeated same-model attempts, has **zero automatic retries**, and never executes a model-suggested command. The earlier five one-request user approvals are all consumed; **any new model API request requires separate fresh approval**.
+### Why reuse the Assignment 1 sandbox?
 
-Read the [Session 009 compatibility experiment report](docs/Session-009-Compatibility-Probes.md) and [learning journal](docs/Learning-Progress.md). Next: review this branch in a PR, then design a separately tested bounded chart-generation controller that uses the pinned Assignment 1 Docker sandbox without exposing credentials to it.
+Instead of copying an execution framework or deploying the course's Modal agent runner, we reuse the [Assignment 1 sandbox](https://github.com/xqzr2000/cmu-11-768-assignment-1) as a **pinned Git dependency** (`agent-sandbox-runtime` in [`pyproject.toml`](pyproject.toml)). This separates two responsibilities: the **host** holds API keys, calls models and manages the conversation; the **sandbox** only executes model-proposed commands against the task data.
 
-## Session 008 — offline-only multi-provider adapters (completed, merged via PR #8)
+The implementation in [`workflow/sandbox_generate.py`](workflow/sandbox_generate.py) and [`sandbox/`](sandbox/) provides:
 
-This is an **independent research adaptation**. The course requires its Qwen3-VL validator and fixed generation models; we have **not replaced or re-scored** the official validator. Session 007's wrong-chart v1/v2 findings remain separate on their feature branch.
+- **A new container for every run**, running as an unprivileged user, with networking off, capabilities dropped, no-new-privileges and resource/process limits (configured by the reused sandbox runtime). No host source-tree mount, Docker socket or provider credentials are passed to agent code.
+- **A small plotting image:** [`sandbox/Dockerfile`](sandbox/Dockerfile) pins the Python base-image digest and installs a hash-locked plotting stack from [`sandbox/requirements.txt`](sandbox/requirements.txt).
+- **Task-local staging:** `task.json` and only its referenced input files are copied into the container. The agent can use a single `bash` tool; its commands and observations become the recorded trajectory.
+- **Course-style limits:** at most **20 model steps**, **120 seconds per shell command**, **15 minutes per agent run**; the submission marker is `echo COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT`.
+- **Artifact extraction:** the host retrieves `figure.png`, checks it as a PNG, and writes `runs/<task>__<agent>/result.json` plus the figure. That format remains readable by the existing validator and scoring workflow.
 
-Four experimental roles are configured under `integrations/models.py`:
+**Security boundary:** This is a useful development sandbox, **not a guarantee of security against a hostile multi-tenant adversary**. The optional `--local` runner executes generated commands on the host and is **not isolated**; do not use it for untrusted model output. The Docker sandbox isolates *agent shell execution*; the hosted providers still receive task instructions and conversation content, while the vision judge additionally receives images and the selected input/trajectory evidence.
 
-| Role | Provider | Requested API model | Request style |
-| --- | --- | --- | --- |
-| Agent A | DeepSeek | `deepseek-flash` | Stateless Responses |
-| Agent B | OpenAI | `gpt-5.6-luna` | Responses |
-| Agent C | Z.ai | `glm-5.3-flash` | Chat Completions (low reasoning effort) |
-| Experimental judge | OpenAI | `gpt-6.1-terra` | Responses + image + JSON schema |
+### Why these model choices?
 
-This phase adds provider request builders and normalizers, an opt-in one-request transport helper, an inert function-call representation, and strict local judge-response checking. It **does not yet run agents, execute model tool calls, host models, or make live API requests**. Existing `workflow/generate.py` remains a Modal runner; a future task will integrate the pinned Assignment 1 Docker sandbox.
+We wanted to study **evaluation design and agent behavior** without deploying or paying to host several large checkpoints on Modal. Using hosted APIs also let us compare agents from different providers through a shared bash-tool interface.
 
-**Verify offline (no provider credentials required, no network requests from test code):**
+| Role | Model used in this project | Purpose |
+| --- | --- | --- |
+| Agent A | **DeepSeek Flash** (`deepseek-flash`) | Generates charts using the DeepSeek API |
+| Agent B | **GPT-5.6 Luna** (`gpt-5.6-luna`) | Generates charts using the OpenAI API |
+| Agent C | **GLM-5.3 Flash** (`glm-5.3-flash`) | Generates charts using the Z.ai API |
+| Independent judge | **GPT-6.1 Terra** (`gpt-6.1-terra`) | Image-capable structured evaluation through OpenAI Chat Completions |
+
+The agents' API configuration lives in [`integrations/models.py`](integrations/models.py). The judge is configured through `VALIDATOR_*` environment variables in [`validator/model.py`](validator/model.py) (the recorded experiment used `reasoning_effort=none`, temperature 0, and `service_tier=flex`). Model names—especially moving provider aliases—are experiment provenance, not proof of equivalence to the fixed course checkpoints. The [report](report.pdf) records the setup and limitations. Earlier optional Z.ai/OpenAI pilot scripts in `scripts/` are historical experiments, **not additional models secretly used in the final validator**.
+
+## 3. What we implemented in each assignment part
+
+### Part 1 — Evaluate the starter baseline and diagnose errors
+
+We ran the supplied [`validator/baseline.py`](validator/baseline.py) against **110 public seed trajectories**, compared predictions with `seed_labels.json`, and identified two repeated failure patterns:
+
+1. **Confusing the trajectory's story with the existence of a valid figure.** Seed runs `026`, `047`, `081`, `191` and `205` had saved PNGs but were called execution failures; `001`, `145` and `171` were accepted despite no PNG. This motivated checking the *artifact itself* before asking a model.
+2. **Mixing data, design and legibility.** The baseline marked wrong chart designs as `wrong_data` (for example `021` and `090` were missing an x-axis label, not incorrect values), and sometimes missed readable-versus-unreadable distinctions. This motivated an explicit requirement taxonomy rather than independent open-ended yes/no prompts.
+
+The initial seed **macro-MCC was 0.5235**. See [`output/baseline_score.txt`](output/baseline_score.txt) and [the report](report.pdf) for confusion matrices and more run-level evidence.
+
+### Part 2 — Improve the validator without looking up labels
+
+[`validator/solution.py`](validator/solution.py) implements the two proposed changes:
+
+- **Deterministic execution gate:** Pillow verifies and decodes `figure.png`. Missing, wrong-format or undecodable images yield terminal `execution_failure` without spending a model call. A failed agent trajectory does **not** automatically mean the final image is missing.
+- **Family-aware structured evaluation:** one strict-JSON requirement checklist classifies requested elements as data or design and records whether each was met; a separate image-first pass assesses `hard_to_read` severity. Measured pixel size, DPI and blank-image facts are supplied to avoid asking the judge to guess them.
+
+The validator sees the task, relevant input files, a compact trajectory and the figure; human labels are used **only after predictions exist**, for scoring and analysis. Part 2 raised seed macro-MCC to **0.8747**. See [`output/pre_iteration_seed_score.txt`](output/pre_iteration_seed_score.txt).
+
+### Part 3 — Design adversarial tasks, generate runs and package Harbor environments
+
+We chose two potential generalization weaknesses: **large-input aggregation** (where a compact transcript and clipped data may conceal numerical mistakes) and **fine visual detail** (where correct-looking charts can fail on styling, text and overlap).
+
+| Task | Class | What it probes |
+| --- | --- | --- |
+| [`quarterly-revenue-by-region`](tasks/quarterly-revenue-by-region/task.json) | Large-input aggregation | Grouping 3,000 orders and calculating revenue rather than unit totals |
+| [`top-products-unit-share`](tasks/top-products-unit-share/task.json) | Large-input aggregation | Correct denominator, top-eight selection, percentages and sorting |
+| [`sensor-daily-median`](tasks/sensor-daily-median/task.json) | Large-input aggregation | Missing readings, daily medians, sensor filtering and a min–max band |
+| [`styled-decay-curves`](tasks/styled-decay-curves/task.json) | Fine visual detail | Exact line colours, styles, markers, log scale, grid and legend |
+| [`dense-department-budgets`](tasks/dense-department-budgets/task.json) | Fine visual detail | Thirty long category names, rotation, layout and readable labels |
+
+Each task was run once with each of the three **adapted** agents, producing **15 recorded runs** in [`runs/`](runs/). Every run produced a figure. The 15 labels in [`labels.json`](labels.json) were drafted with AI assistance, checked against independently computed keys and replays of agent-generated plotting commands, visually inspected and human-reviewed; the use of AI is disclosed in [`AI_USAGE.md`](AI_USAGE.md).
+
+**Observed agent failures:** all 15 depicted the requested data and chart design, but **five** were labelled `hard_to_read`: the GLM budget chart clipped long names; the Luna budget chart overlapped wrapped labels; and each of the three sensor plots placed its legend over part of the S2 band. Thus the authored set contains **no positive `execution_failure`, `wrong_data` or `wrong_chart` labels**—an important limit on what its MCC scores demonstrate.
+
+#### Harbor: deterministic checks and their blind spot
+
+Each task was also packaged in [`harbor/tasks/`](harbor/tasks/) with a reference `solution/solve.sh`, an independently checked `plotted_values.json` sidecar, and a deterministic verifier. The verifier checks artifact validity, input integrity, re-rendering consistency and plotted values/styles against task-specific expectations.
+
+**Actual Harbor results**, recorded in [`output/check_submission.txt`](output/check_submission.txt):
+
+| Test | Harbor reward | Interpretation |
+| --- | ---: | --- |
+| Each of the **five oracle/reference solutions** | **1.0** | All five passed their packaged verifiers |
+| `quarterly-revenue-by-region/mutants/sum_units` | **0.0** | Incorrect aggregation caught by numeric checks |
+| `dense-department-budgets/mutants/unrotated_labels` | **1.0** | Incorrect but accepted: labels overlap, exposing a deterministic verifier blind spot |
+
+The mutant that scores 1.0 is **intentionally a test failure of the verifier**, not evidence that the chart is good. The real `workflow check-submission` invocation reported **`submission valid`** for the adapted deliverables. That check confirms local structural and Harbor requirements; it is **not a grade under the course's prescribed model infrastructure**.
+
+### Part 4 — Iterate, evaluate and keep the better-supported configuration
+
+The additional change in the **final** validator gives legibility-related instructions their own `legibility` requirement kind, so an instruction about overlapping labels no longer creates a `wrong_chart` false positive.
+
+We also tested an enlarged-quadrant image and mandatory overlay inventory to catch the sensor legend occlusions. It worked on all three authored sensor failures, but **increased false positives on the more varied seed set**. We calibrated the rule and measured it again; the larger experiment still performed worse. Therefore the final code keeps that feature **disabled** (`OVERLAY_INVENTORY = False`) and retains the legibility taxonomy fix. This is a measured choice rather than claiming that every attempted change improved accuracy.
+
+## 4. Final measured results
+
+### Released seed runs (110; GPT-6.1 Terra judge)
+
+Numbers below are from committed score files—not estimates.
+
+| Error family | Baseline MCC | Part 2 MCC | **Final MCC** |
+| --- | ---: | ---: | ---: |
+| `execution_failure` | 0.5945 | 1.0000 | **1.0000** |
+| `wrong_data` | 0.2363 | 0.7406 | **0.7093** |
+| `wrong_chart` | 0.6286 | 0.9284 | **0.9512** |
+| `hard_to_read` | 0.6345 | 0.8297 | **0.8297** |
+| **Macro-MCC** | **0.5235** | **0.8747** | **0.8726** |
+
+Final seed confusion counts: `execution_failure` **TP 12 / FP 0 / FN 0**; `wrong_data` **TP 22 / FP 9 / FN 3**; `wrong_chart` **TP 69 / FP 0 / FN 2**; `hard_to_read` **TP 33 / FP 2 / FN 6**. The final score substantially beats the baseline but is slightly below the particular Part 2 pass, which is consistent with observed model-output variation. Do **not** claim the Part 4 iteration improved seed macro-MCC.
+
+Sources: [baseline](output/baseline_score.txt) · [Part 2](output/pre_iteration_seed_score.txt) · [final seeds](output/final_seed_score.txt) · [prediction JSON](output/final_seed_predictions.json).
+
+### Self-authored runs (15; human-reviewed)
+
+| Error family | Final MCC | Positive human labels | Caveat |
+| --- | ---: | ---: | --- |
+| `execution_failure` | 0.0000 | 0/15 | No positive examples |
+| `wrong_data` | 0.0000 | 0/15 | No positive examples |
+| `wrong_chart` | 0.0000 | 0/15 | No positive examples (and **0** final false positives) |
+| `hard_to_read` | **0.5547** | 5/15 | TP 2, TN 10, FP 0, FN 3 |
+| **Macro-MCC** | **0.1387** | — | Three categories have insufficient support |
+
+A zero MCC for the first three families is the scorer's **insufficient-support convention**, not evidence that the validator failed all those categories. The final change removed the authored `wrong_chart` false positive, but still missed the three sensor-overlay readability errors. The more aggressive overlay candidate caught all five readability positives (MCC 1.0 on that small family) yet regressed on the broader seed set, so it was **not** shipped.
+
+Sources: [final authored scores](output/authored_score.txt) · [authored predictions](output/authored_predictions.json) · [iteration notes and alternatives](docs/report-notes.md).
+
+**Scope of the result:** These are descriptive scores on released seeds and our own small task set, using **different models** from those mandated by the course. No held-out private score, official Qwen3-VL evaluation, or same-model head-to-head comparison is claimed. The report records a cumulative **$4.84 in judge API spending** across all measured passes; this is historical cost, not a guaranteed price for rerunning.
+
+## 5. Reproduce and inspect
+
+Requirements: Python 3.12+, [uv](https://docs.astral.sh/uv/), and Docker **only** for agent generation and real Harbor runs. Work from the repository root; a Codespace can supply the environment. Offline inspection and scoring require **no model API calls**.
 
 ```bash
 uv sync --locked
-uv run python -m unittest discover -s tests -p 'test_provider_*_offline.py' -v
-uv run python scripts/provider_preflight.py
-uv run python -m unittest discover -s tests -p 'test_validator_*_offline.py' -v
-uv run python -m unittest discover -s tests -p 'test_offline_*.py' -v
+
+# Offline integrity and unit tests (no model usage).
 uv run python scripts/offline_preflight.py
+uv run python -m unittest discover -s tests -p 'test_validator_*_offline.py' -v
+uv run python -m workflow validate-tasks
+uv run python -m workflow validate-labels
+
+# Re-score committed predictions, with no model calls.
+uv run python -m workflow score --labels seed_labels.json --predictions output/final_seed_predictions.json
+uv run python -m workflow score --predictions output/authored_predictions.json
+
+# View the recorded Docker/Harbor check (does not rerun Docker).
+cat output/check_submission.txt
 ```
 
-All live transport calls require `live=True`, `confirm_one_request=True`, an appropriate provider API key, and a separate deliberate caller. The adapters never run tools automatically. **No live CLI command is provided or authorized in this phase.**
+For an **opt-in live reproduction**, configure `DEEPSEEK_API_KEY`, `OPENAI_API_KEY` and `ZAI_API_KEY` securely (Codespaces secrets or ignored local `.env`). To use Terra as judge, replace the default Modal example values in `.env` with `VALIDATOR_BASE_URL=https://api.openai.com/v1` and `VALIDATOR_MODEL=gpt-6.1-terra`; remove the placeholder `VALIDATOR_API_KEY` so the client can use `OPENAI_API_KEY`. Set `VALIDATOR_REASONING_EFFORT=none` and `VALIDATOR_SERVICE_TIER=flex` to match the reported experiment (subject to current provider availability). **Never commit keys.** The example file is [`.env.example`](.env.example).
 
-See [docs/Provider-Migration-Plan.md](docs/Provider-Migration-Plan.md) for API details, output formats, security constraints, and the first PR acceptance checklist. Offline test results remain **unverified until executed in Codespaces or CI**.
+```bash
+# Live: builds a Docker image, calls three hosted agent APIs and may incur charges.
+docker build -t hw2-chart:1 sandbox/
+uv run python -m workflow.sandbox_generate
 
-## Development phases
+# Live: calls a hosted vision judge; use a NEW output file.
+uv run python -m validator.runner --artifacts artifacts --out output/my_seed_predictions.json --workers 1
+uv run python -m workflow score --labels seed_labels.json --predictions output/my_seed_predictions.json
 
-1. **Phase 0 (this PR):** preserve upstream, pin sandbox dependency, validate offline dataset, establish Docker-ready Codespace and CI.
-2. **Phase 1:** inspect seed cases; run and score an independent baseline (requires a validated multimodal inference endpoint).
-3. **Phase 2:** improve evaluator, compare held-out performance and error evidence.
-4. **Phase 3:** port the official mini-SWE-agent workflow to our Docker runtime and connect Z.ai GLM-4.7-Flash with bounded retries and resume.
-5. **Phase 4:** design new tasks, human-label runs, package Harbor tasks, test oracle and mutant verifiers, and report limitations.
+# Docker required: rerun real Harbor oracles and mutants.
+uv run python -m workflow check-submission
+```
 
-### Model policy
+The original Modal deployment scripts and `workflow generate` remain as upstream reference code; use **`workflow.sandbox_generate`** for this independent non-Modal workflow. API requests may cost money or fail because of provider access, rate limits or changing model aliases. Re-running a model does not guarantee byte-identical predictions.
 
-The official assignment fixes **Qwen/Qwen3-VL-30B-A3B-Instruct-FP8** as validator and three generation models: **Qwen/Qwen2.5-Coder-3B-Instruct**, **mistralai/Ministral-3-14B-Instruct-2512**, and **zai-org/GLM-4.7-Flash**. Hosted Z.ai `glm-4.7-flash` is an experimentally verified accessible generation endpoint, but is **not a verified exact-match reproduction** of the official deployment. We will disclose endpoint and model substitutions and never compare numbers as if setups were identical.
+## 6. Files, provenance and limitations
 
-See [docs/PHASE-0.md](docs/PHASE-0.md), [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [docs/UPSTREAM.md](docs/UPSTREAM.md). The unchanged [official assignment instructions](ASSIGNMENT.md) remain the reference for course-specific requirements and the original Modal commands; those commands are **not** our planned execution path.
+| Path | Contents |
+| --- | --- |
+| [`ASSIGNMENT.md`](ASSIGNMENT.md) | Unmodified assignment requirements and grading specification |
+| [`validator/solution.py`](validator/solution.py) | Final task-agnostic validator; no seed IDs or ground-truth lookup |
+| [`artifacts/`](artifacts/) / [`seed_labels.json`](seed_labels.json) | Original public seed trajectories, figures and labels |
+| [`tasks/`](tasks/) / [`runs/`](runs/) / [`labels.json`](labels.json) | Authored tasks, 15 real agent runs and human-reviewed labels |
+| [`sandbox/`](sandbox/) / [`workflow/sandbox_generate.py`](workflow/sandbox_generate.py) | Container image, task staging and host-side model/tool loop |
+| [`harbor/tasks/`](harbor/tasks/) | Five self-contained Harbor environments, oracle solutions and two mutants |
+| [`output/`](output/) | Committed scored predictions, per-family scores and submission-check evidence |
+| [`report.pdf`](report.pdf) / [`report.tex`](report.tex) | Full experiment, failure analyses, trade-offs and results |
+| [`AI_USAGE.md`](AI_USAGE.md) / [`docs/UPSTREAM.md`](docs/UPSTREAM.md) | AI-assisted work disclosure and pinned upstream/sandbox revisions |
+| [`docs/README-Development-History.md`](docs/README-Development-History.md) / [`docs/Learning-Progress.md`](docs/Learning-Progress.md) | Archived phase-by-phase experiments and engineering history |
 
-**Secrets:** set `ZAI_API_KEY` through Codespaces Secrets for later phases. No API key is needed for Phase 0. Never commit `.env` or pass credentials into an agent task container.
+The key lesson is that **valid execution, correct data, faithful chart design and perceptual readability require different checks**. Deterministic artifact checks eliminated avoidable execution mistakes, while schema-guided judging reduced family confusion. Task-specific Harbor verifiers were excellent at exact numerical errors but missed a genuinely unreadable chart; conversely, a stronger vision rule improved one small task family while creating false alarms elsewhere.
 
-**Review workflow:** develop each learning milestone on its own `feature/session-...` branch, review the pull request and offline CI, then merge manually when ready.
+**This repository is an educational research reproduction, not an official CMU grading result.** For the original fixed models, Modal deployment, course agent semantics and private evaluation, follow the [course specification](ASSIGNMENT.md) rather than treating our adapted setup as interchangeable.
