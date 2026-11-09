@@ -17,11 +17,11 @@
 \newcommand{\run}[1]{\texttt{#1}}
 % Final (Part 2 + change 4) results, filled from output/final_seed_score.txt
 % and output/authored_score.txt.
-\newcommand{\FSexec}{--}\newcommand{\FSdata}{--}\newcommand{\FSchart}{--}
-\newcommand{\FShard}{--}\newcommand{\FSmacro}{--}
-\newcommand{\FAhard}{--}\newcommand{\FAfp}{--}\newcommand{\FAmacro}{--}
-\newcommand{\FINALVERDICT}{}
-\newcommand{\HARBORRESULTS}{[pending: filled from check-submission]}
+\newcommand{\FSexec}{1.0000}\newcommand{\FSdata}{0.7093}\newcommand{\FSchart}{0.9512}
+\newcommand{\FShard}{0.8297}\newcommand{\FSmacro}{0.8726}
+\newcommand{\FAhard}{0.5547}\newcommand{\FAfp}{0}\newcommand{\FAmacro}{0.1387}
+\newcommand{\FINALVERDICT}{Measured, the final validator scores macro 0.8726 on the seeds (\texttt{wrong\_data} 0.7093, TP 22 / FP 9 / FN 3; \texttt{wrong\_chart} 0.9512, TP 69 / FP 0 / FN 2; \texttt{hard\_to\_read} 0.8297, FP 2 / FN 6), equal to Part 2 within the $\pm$0.01 run-to-run noise, with \texttt{wrong\_chart} slightly better (FN 3$\to$2). On the authored runs it keeps Part 2's \texttt{hard\_to\_read} (0.5547: the three sensor occlusions are still missed) and removes the \run{dense\ldots\_\_luna} \texttt{wrong\_chart} false positive. Because that family has no positive authored labels, the fix does not move the reported MCC (0.1387). So change 4 is a free precision fix and change 5 is a measured trade-off that we chose not to take. Cumulative judge spend for all passes: \$4.84.}
+\newcommand{\HARBORRESULTS}{\begin{center}\small\begin{tabular}{lll}\toprule Task & Solution & Reward \\ \midrule dense-department-budgets & oracle & 1.0 \\ quarterly-revenue-by-region & oracle & 1.0 \\ sensor-daily-median & oracle & 1.0 \\ styled-decay-curves & oracle & 1.0 \\ top-products-unit-share & oracle & 1.0 \\ \midrule quarterly-revenue-by-region & mutant \texttt{sum\_units} & \textbf{0.0} (rejected) \\ dense-department-budgets & mutant \texttt{unrotated\_labels} & \textbf{1.0} (accepted) \\ \bottomrule\end{tabular}\end{center} \texttt{check-submission} printed ``submission valid'' (\texttt{output/check\_submission.txt}). Before the Docker runs we also ran each verifier locally through its own \texttt{test.sh} against the oracle, a do-nothing workspace (\texttt{nop}) and both mutants: every \texttt{nop} scored 0 (no figure, no script, so S1 fails and every re-execution check errors).}
 
 \begin{document}
 \sloppy
@@ -41,7 +41,7 @@ fresh Docker container from our Assignment~1 sandbox (no network, all
 capabilities dropped, CPU/memory/PID limits). The image is pinned by digest and
 hash-locked; API keys never enter the container. All MCCs below are therefore
 for a much stronger judge than the graded one and are not comparable to course
-scores. Total judge spend for every number in this report was about \$5
+scores. Total judge spend for every number in this report was \$4.84
 (\texttt{scripts/judge\_cost.py}).
 
 Reproduction: \texttt{validator.runner} (we added a \texttt{--workers} flag) and
@@ -414,7 +414,7 @@ macro 0.8327, with \texttt{wrong\_data} at 0.6727 within run-to-run noise).
 arrows that touch their target are declared intended placements.
 \begin{center}
 \small
-\begin{tabular}{llrrrrr}
+\begin{tabular}{llrrrr}
 \toprule
 Set & Family & Part 2 & 4a & 4b & \textbf{Final} \\
 \midrule

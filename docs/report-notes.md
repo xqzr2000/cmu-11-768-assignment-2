@@ -125,3 +125,9 @@ macro 0.8360. Authored: hard_to_read 1.0, macro 0.25. Cumulative judge spend $4.
 
 Decision: ship Part 2 + change 4 only (OVERLAY_INVENTORY = False); the seed
 set is larger and more representative than the 15 authored runs.
+
+### Final (Part 2 + change 4, OVERLAY_INVENTORY = False)
+
+Seeds: exec 1.0, wrong_data 0.7093, wrong_chart 0.9512, hard_to_read 0.8297, macro 0.8726.
+Authored: hard_to_read 0.5547, wrong_chart FP 0, macro 0.1387. Total judge spend $4.84.
+check-submission: submission valid; oracles 1.0 x5; sum_units 0.0; unrotated_labels 1.0.
