@@ -1,0 +1,2 @@
+usage: __main__.py [-h] [--root ROOT] [--skip-harbor-runs]
+__main__.py: error: missing required submission paths: report.pdf, report.tex, AI_USAGE.md
