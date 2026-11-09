@@ -140,11 +140,14 @@ class SolutionJudgeTests(unittest.TestCase):
         self.assertEqual(errors, [])
 
     def test_overlay_over_data_is_hard_to_read_even_if_issues_empty(self) -> None:
-        over_band = {"element": "legend (upper left)", "covers": "data",
+        over_band = {"element": "legend (upper left)", "covers": "data", "hides_information": True,
                      "detail": "hides the band's upper edge near 06-02"}
-        over_grid = {"element": "legend", "covers": "empty_space_or_gridlines", "detail": "-"}
+        over_grid = {"element": "legend", "covers": "empty_space_or_gridlines",
+                     "hides_information": False, "detail": "-"}
+        on_segment = {"element": "value label 34", "covers": "data", "hides_information": False,
+                      "detail": "written on its own bar segment"}
         errors, _ = self.validate(reply({"requirements": []}),
-                                  reply({"overlays": [over_grid], "issues": []}))
+                                  reply({"overlays": [over_grid, on_segment], "issues": []}))
         self.assertEqual(errors, [])
         errors, _ = self.validate(reply({"requirements": []}),
                                   reply({"overlays": [over_grid, over_band], "issues": []}))

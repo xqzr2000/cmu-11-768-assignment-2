@@ -107,3 +107,12 @@ exercised (its "acceptable" there is right, but not verified).
    text box and what it covers; covering data or text => hard_to_read), plus
    the four quadrants enlarged to ~1600 px (targets the sensor legend FNs and
    seed FNs 175, 213, 129, 086).
+
+### Part 4a measured (`output/part4a_*`)
+
+Seeds: macro 0.8327 (exec 1.0, wrong_data 0.6727, wrong_chart 0.9284,
+hard_to_read 0.7296 with FP 12, FN 2). Authored: hard_to_read 1.0, macro 0.25.
+The overlay rule fixed the authored FNs and 4 of 6 seed FNs (175, 213, 129,
+209) but every intended overlay fired: value labels on their own segment
+(016, 142, 183), annotation arrows touching their point (077, 167), a box on a
+contour (097), plus 136/164/050/126/047/143. Change 6 adds `hides_information`.

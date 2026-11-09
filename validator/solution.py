@@ -21,9 +21,11 @@ Part 4 additions (motivated by the authored runs):
    an instruction like "no labels may overlap" is a readability matter under
    the official taxonomy, and the judge had filed it as a design violation.
 5. The readability call first inventories every legend / annotation / text
-   box and what lies beneath it (any box over data or text is hard_to_read by
-   the official definition), and it sees the four quadrants enlarged, so a
+   box and what lies beneath it, and it sees the four quadrants enlarged, so a
    legend clipping a band edge or text cut at the image border is visible.
+6. Calibration after measuring 5 on the seeds (hard_to_read FP 2 -> 12): an
+   overlay counts only if the judge says it hides information a reader needs;
+   labels drawn on their own segment and arrows touching their target do not.
 
 The judge sees the instruction, input files, a compact transcript (commands
 and truncated outputs) and the figure, plus measured image facts (pixel size,
@@ -317,9 +319,10 @@ READABILITY_SCHEMA: dict[str, Any] = {
                     "element": {"type": "string"},
                     "covers": {"type": "string", "enum": [
                         "empty_space_or_gridlines", "data", "text_or_labels"]},
+                    "hides_information": {"type": "boolean"},
                     "detail": {"type": "string"},
                 },
-                "required": ["element", "covers", "detail"],
+                "required": ["element", "covers", "hides_information", "detail"],
                 "additionalProperties": False,
             },
         },
@@ -369,7 +372,11 @@ value label that sits inside a plotting area, and say exactly what is beneath
 it. Look closely: a legend box that hides part of a line, a band, a bar top or
 some markers covers `data`, even if most of the area under it is empty.
 Use `empty_space_or_gridlines` only when nothing but background or gridlines
-is hidden. Then fill `issues`.
+is hidden. Set `hides_information` to true only if a reader loses something
+because of it: a value they cannot read, part of a series they cannot follow,
+or text they cannot read. Value labels written on the bar, wedge or segment
+they label, and annotation arrows that touch the point they annotate, are
+intended placements: they do not hide information. Then fill `issues`.
 
 Severity `major` means a reader cannot read that element, or can only with real
 difficulty; `minor` means it is slightly cramped but still readable.
@@ -425,7 +432,7 @@ def judge_readability(run: Run) -> list[Error]:
         f"element_covers_content: {item['element'].strip()} covers "
         f"{item['covers'].replace('_', ' ')}: {item['detail'].strip()}"
         for item in result.get("overlays", [])
-        if item.get("covers") in ("data", "text_or_labels")
+        if item.get("covers") in ("data", "text_or_labels") and item.get("hides_information")
     ]
     if not findings:
         return []
