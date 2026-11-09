@@ -1,0 +1,8 @@
+execution_failure    MCC=0.0000  TP=0 TN=15 FP=0 FN=0  support(+/-)=0/15
+                     WARNING: insufficient ground-truth support; MCC reported as 0 by convention
+wrong_data           MCC=0.0000  TP=0 TN=15 FP=0 FN=0  support(+/-)=0/15
+                     WARNING: insufficient ground-truth support; MCC reported as 0 by convention
+wrong_chart          MCC=0.0000  TP=0 TN=15 FP=0 FN=0  support(+/-)=0/15
+                     WARNING: insufficient ground-truth support; MCC reported as 0 by convention
+hard_to_read         MCC=0.5547  TP=2 TN=10 FP=0 FN=3  support(+/-)=5/10
+macro_mcc            0.1387
