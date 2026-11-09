@@ -74,3 +74,36 @@ Two passes were run; the committed file is the second.
 Pass 1 gave macro 0.8657 (wrong_data 0.7045, FP 11): run-to-run variance of the
 judge at temperature 0 is about ±0.01 macro, mostly in wrong_data.
 Cumulative judge spend after baseline + two Part 2 passes + authored pass: ~$2.66.
+
+## Part 3 — authored runs (15 = 5 tasks x deepseek-flash / gpt-5.6-luna / glm-5.3-flash)
+
+All 15 runs submitted a figure in 3-7 model calls (6 min total, < $1 agent spend).
+Labelling method: each run's bash commands were replayed in a scratch directory
+under the course's savefig hook (pixel-identical to the delivered figure, so the
+manifest is exactly what was drawn); plotted values, order, labels, colours,
+styles, scales and limits were checked against the independent answer keys,
+then every figure was inspected by eye. Draft labels by Claude, reviewed by Russell.
+
+Agent outcome: every run plotted the correct data with the requested design.
+The only failures are legibility:
+- dense-department-budgets__glm: rotated labels cut off at the bottom-left edge.
+- dense-department-budgets__luna: names wrapped onto 2-4 lines collide.
+- sensor-daily-median__{deepseek,glm,luna}: the upper-left legend hides the
+  S2 band's upper edge near 06-02 (that day's max, ~32.1 °C). Borderline.
+
+Pre-iteration validator on authored runs (`output/pre_iteration_authored_predictions.json`):
+hard_to_read MCC 0.5547 (TP 2, TN 10, FP 0, FN 3); wrong_chart 1 FP (luna: the
+judge filed "labels must not overlap" as a design violation); execution_failure,
+wrong_data, wrong_chart have no positives (insufficient support, MCC 0 by
+convention); macro 0.1387. The agents, not the validator, limit what the
+large-input class could test: no agent produced a wrong aggregate, so the
+validator's inability to verify sums over a clipped 119 KB CSV was never
+exercised (its "acceptable" there is right, but not verified).
+
+## Part 4 — changes (validator/solution.py)
+
+1. `legibility` requirement kind, never counted as wrong_chart (fixes the luna FP).
+2. Readability call: mandatory overlay inventory (every legend / annotation /
+   text box and what it covers; covering data or text => hard_to_read), plus
+   the four quadrants enlarged to ~1600 px (targets the sensor legend FNs and
+   seed FNs 175, 213, 129, 086).

@@ -16,6 +16,15 @@ Pipeline for one run:
    legibility of what is drawn, against the official checklist, and is told
    that missing or wrong elements are not readability problems.
 
+Part 4 additions (motivated by the authored runs):
+4. A third requirement kind, `legibility`, which never counts as wrong_chart:
+   an instruction like "no labels may overlap" is a readability matter under
+   the official taxonomy, and the judge had filed it as a design violation.
+5. The readability call first inventories every legend / annotation / text
+   box and what lies beneath it (any box over data or text is hard_to_read by
+   the official definition), and it sees the four quadrants enlarged, so a
+   legend clipping a band edge or text cut at the image border is visible.
+
 The judge sees the instruction, input files, a compact transcript (commands
 and truncated outputs) and the figure, plus measured image facts (pixel size,
 DPI metadata) so size/DPI requirements are checked against facts, not guesses.
@@ -225,7 +234,7 @@ CHECKLIST_SCHEMA: dict[str, Any] = {
                 "type": "object",
                 "properties": {
                     "requirement": {"type": "string"},
-                    "kind": {"type": "string", "enum": ["data", "design"]},
+                    "kind": {"type": "string", "enum": ["data", "design", "legibility"]},
                     "status": {"type": "string", "enum": ["met", "violated", "unclear"]},
                     "evidence": {"type": "string"},
                 },
@@ -251,13 +260,16 @@ judge the figure that was actually saved.
 Tag each requirement with exactly one kind:
 {DATA_DEFINITION}
 {DESIGN_DEFINITION}
+`legibility` requirements ask for text or marks to be readable: labels fully
+visible, not overlapping, large enough, legible contrast. List them, but they
+never count as design violations; a separate reviewer judges readability.
 
 Status: `violated` only when the figure clearly fails that requirement and you
 can say how; `met` when it is satisfied; `unclear` when the image does not let
 you tell. Evidence must be specific (what is drawn vs what was asked).
-Do not add requirements the instruction does not make, and do not mark
-legibility problems (overlapping or clipped text, low contrast) as violations:
-a separate reviewer handles readability.
+Do not add requirements the instruction does not make, and never mark a
+design requirement violated because of a legibility problem (overlapping or
+clipped text, low contrast): tag such requirements `legibility` instead.
 
 TASK INSTRUCTION:
 {run.instructions}
@@ -297,6 +309,20 @@ def judge_data_and_chart(run: Run) -> list[Error]:
 READABILITY_SCHEMA: dict[str, Any] = {
     "type": "object",
     "properties": {
+        "overlays": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "element": {"type": "string"},
+                    "covers": {"type": "string", "enum": [
+                        "empty_space_or_gridlines", "data", "text_or_labels"]},
+                    "detail": {"type": "string"},
+                },
+                "required": ["element", "covers", "detail"],
+                "additionalProperties": False,
+            },
+        },
         "issues": {
             "type": "array",
             "items": {
@@ -315,7 +341,7 @@ READABILITY_SCHEMA: dict[str, Any] = {
             },
         },
     },
-    "required": ["issues"],
+    "required": ["overlays", "issues"],
     "additionalProperties": False,
 }
 
@@ -338,10 +364,20 @@ problems with what IS drawn:
 - squeezed_layout: data, boxes or panels crushed into an unreadable sliver by
   axis limits or by overlapping axes.
 
+First fill `overlays`: list EVERY legend, colour bar, annotation, text box and
+value label that sits inside a plotting area, and say exactly what is beneath
+it. Look closely: a legend box that hides part of a line, a band, a bar top or
+some markers covers `data`, even if most of the area under it is empty.
+Use `empty_space_or_gridlines` only when nothing but background or gridlines
+is hidden. Then fill `issues`.
+
 Severity `major` means a reader cannot read that element, or can only with real
 difficulty; `minor` means it is slightly cramped but still readable.
 Missing elements, wrong chart types, wrong colours or wrong values are NOT
 readability problems; ignore them. A clean chart has no issues.
+
+You get the whole image first, then its four quadrants enlarged (top-left,
+top-right, bottom-left, bottom-right) so small text and edges are visible.
 
 For context, the chart was meant to show:
 {instructions}
@@ -350,22 +386,50 @@ IMAGE FACTS: {facts}
 """
 
 
+def quadrant_parts(figure: Path) -> list[dict[str, Any]]:
+    """The four quadrants, enlarged so their long side is about 1600 px."""
+    parts = []
+    with Image.open(figure) as image:
+        image = image.convert("RGB")
+        width, height = image.size
+        scale = max(1.0, min(2.5, 1600 / max(width / 2, height / 2)))
+        for left, top in ((0, 0), (width // 2, 0), (0, height // 2), (width // 2, height // 2)):
+            crop = image.crop((left, top, left + (width + 1) // 2, top + (height + 1) // 2))
+            if scale > 1.0:
+                crop = crop.resize((round(crop.width * scale), round(crop.height * scale)),
+                                   Image.LANCZOS)
+            buffer = io.BytesIO()
+            crop.save(buffer, format="PNG")
+            encoded = base64.b64encode(buffer.getvalue()).decode()
+            parts.append({"type": "image_url", "image_url": {
+                "url": f"data:image/png;base64,{encoded}", "detail": "high"}})
+    return parts
+
+
 def judge_readability(run: Run) -> list[Error]:
     assert run.figure is not None
     content = [
         {"type": "text", "text": READABILITY_PROMPT.format(
             instructions=_clip(run.instructions, 3_000), facts=image_facts(run.figure))},
         _image_part(run.figure),
+        *quadrant_parts(run.figure),
     ]
     result = _ask_json(content, "readability_issues", READABILITY_SCHEMA)
-    major = [item for item in result.get("issues", []) if item.get("severity") == "major"]
-    if not major:
-        return []
-    evidence = " ".join(
+    findings = [
         f"{item['category']} at {item['where'].strip()}: {item['description'].strip()}"
-        for item in major
-    )
-    return [Error(family=ErrorFamily.HARD_TO_READ, evidence=evidence)]
+        for item in result.get("issues", []) if item.get("severity") == "major"
+    ]
+    # A legend or text box over data or text is a readability error by the
+    # official definition, however the judge rated its severity.
+    findings += [
+        f"element_covers_content: {item['element'].strip()} covers "
+        f"{item['covers'].replace('_', ' ')}: {item['detail'].strip()}"
+        for item in result.get("overlays", [])
+        if item.get("covers") in ("data", "text_or_labels")
+    ]
+    if not findings:
+        return []
+    return [Error(family=ErrorFamily.HARD_TO_READ, evidence=" ".join(findings))]
 
 
 def validate(run: Run) -> list[Error]:
