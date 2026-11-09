@@ -1,0 +1,64 @@
+{
+  "labels": [
+    {
+      "run_id": "dense-department-budgets__deepseek",
+      "errors": null
+    },
+    {
+      "run_id": "dense-department-budgets__glm",
+      "errors": null
+    },
+    {
+      "run_id": "dense-department-budgets__luna",
+      "errors": null
+    },
+    {
+      "run_id": "quarterly-revenue-by-region__deepseek",
+      "errors": null
+    },
+    {
+      "run_id": "quarterly-revenue-by-region__glm",
+      "errors": null
+    },
+    {
+      "run_id": "quarterly-revenue-by-region__luna",
+      "errors": null
+    },
+    {
+      "run_id": "sensor-daily-median__deepseek",
+      "errors": null
+    },
+    {
+      "run_id": "sensor-daily-median__glm",
+      "errors": null
+    },
+    {
+      "run_id": "sensor-daily-median__luna",
+      "errors": null
+    },
+    {
+      "run_id": "styled-decay-curves__deepseek",
+      "errors": null
+    },
+    {
+      "run_id": "styled-decay-curves__glm",
+      "errors": null
+    },
+    {
+      "run_id": "styled-decay-curves__luna",
+      "errors": null
+    },
+    {
+      "run_id": "top-products-unit-share__deepseek",
+      "errors": null
+    },
+    {
+      "run_id": "top-products-unit-share__glm",
+      "errors": null
+    },
+    {
+      "run_id": "top-products-unit-share__luna",
+      "errors": null
+    }
+  ]
+}
