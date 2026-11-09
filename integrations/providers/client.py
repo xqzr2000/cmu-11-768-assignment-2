@@ -14,7 +14,9 @@ from integrations.models import MODELS, ModelSpec
 from . import deepseek, openai as openai_adapter, zai
 from .base import NormalizedReply, parse_reply
 
-MAX_OUTPUT_TOKENS = 512
+MAX_OUTPUT_TOKENS = 512  # default for one-off probes
+#: Hard ceiling; agent runs need room for whole plotting scripts (+ reasoning).
+MAX_OUTPUT_CAP = 16384
 TIMEOUT_SECONDS = 60.0
 
 
@@ -49,7 +51,7 @@ def prepare_request(
         isinstance(x, dict) for x in items
     ):
         raise ValueError("Input must be a nonempty list of message/item objects.")
-    if type(max_output_tokens) is not int or not 1 <= max_output_tokens <= MAX_OUTPUT_TOKENS:
+    if type(max_output_tokens) is not int or not 1 <= max_output_tokens <= MAX_OUTPUT_CAP:
         raise ValueError("Output limit exceeds the offline-defined cap.")
     function_tools = tools if tools is not None else []
     if not isinstance(function_tools, list):

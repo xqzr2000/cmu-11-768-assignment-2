@@ -75,7 +75,7 @@ class ProviderRegistryOfflineTests(unittest.TestCase):
         spec = get_model("agent_a")
         messages = [{"role": "user", "content": "Create a chart."}]
         self.assertEqual(prepare_request(spec, messages)["max_output_tokens"], 512)
-        for limit in (0, -1, 513, 1.5, True):
+        for limit in (0, -1, 16385, 1.5, True):
             with self.subTest(limit=limit), self.assertRaises(ValueError):
                 prepare_request(spec, messages, max_output_tokens=limit)
 
