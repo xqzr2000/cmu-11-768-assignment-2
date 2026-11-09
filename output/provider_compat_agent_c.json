@@ -1,0 +1,9 @@
+{
+  "status": "failed",
+  "role": "agent_c",
+  "provider": "zai",
+  "requested_model": "glm-4.7-flash",
+  "error_type": "RateLimitError",
+  "one_request_may_have_been_billed": true,
+  "retries": 0
+}

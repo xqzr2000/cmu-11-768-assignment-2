@@ -1,0 +1,18 @@
+{
+  "run_id": "004",
+  "family": "wrong_chart",
+  "prompt_version": "v2",
+  "provider": "OpenAI",
+  "model_requested": "gpt-5.4-mini",
+  "model_reported": "gpt-5.4-mini-2026-03-17",
+  "has_error": false,
+  "evidence": "No concrete chart-design violation is evident. The figure preserves the requested 2x2 subplot layout, the specified function types, logarithmic axes where requested, and the fourth subplot includes error bars with a lower y-limit.",
+  "usage": {
+    "prompt_tokens": 5820,
+    "completion_tokens": 63,
+    "total_tokens": 5883
+  },
+  "completion_attempts": 1,
+  "human_labels_sent": false,
+  "official_qwen_equivalent": false
+}

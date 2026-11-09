@@ -1,0 +1,17 @@
+{
+  "run_id": "008",
+  "family": "wrong_chart",
+  "provider": "OpenAI",
+  "model_requested": "gpt-5.4-mini",
+  "model_reported": "gpt-5.4-mini-2026-03-17",
+  "has_error": true,
+  "evidence": "The rendered figure does not follow the requested Sankey design: it appears to be a custom ribbon diagram rather than a proper Sankey with clear source-left/target-right node structure, and the labels are mislabeled/duplicated (e.g., source and target sides show fruit totals but the plot omits a true node/link Sankey layout).",
+  "usage": {
+    "prompt_tokens": 13509,
+    "completion_tokens": 88,
+    "total_tokens": 13597
+  },
+  "completion_attempts": 1,
+  "human_labels_sent": false,
+  "official_qwen_equivalent": false
+}

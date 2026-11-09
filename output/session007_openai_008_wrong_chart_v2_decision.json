@@ -1,0 +1,18 @@
+{
+  "run_id": "008",
+  "family": "wrong_chart",
+  "prompt_version": "v2",
+  "provider": "OpenAI",
+  "model_requested": "gpt-5.4-mini",
+  "model_reported": "gpt-5.4-mini-2026-03-17",
+  "has_error": false,
+  "evidence": "No concrete chart-design mismatch is visible: the figure is a Sankey-style source-to-target flow diagram with sources on the left, targets on the right, a title, a legend for fruit labels, and the requested 10x7-inch layout saved as figure.png. The left/right separation and consistent label colors are preserved.",
+  "usage": {
+    "prompt_tokens": 13679,
+    "completion_tokens": 84,
+    "total_tokens": 13763
+  },
+  "completion_attempts": 1,
+  "human_labels_sent": false,
+  "official_qwen_equivalent": false
+}

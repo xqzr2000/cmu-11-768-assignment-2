@@ -1,0 +1,17 @@
+{
+  "run_id": "004",
+  "family": "wrong_chart",
+  "provider": "OpenAI",
+  "model_requested": "gpt-5.4-mini",
+  "model_reported": "gpt-5.4-mini-2026-03-17",
+  "has_error": true,
+  "evidence": "The figure does not follow the requested design in the fourth subplot: it should have both axes on a logarithmic scale, but the rendered plot only shows a log y-axis while the x-axis remains linear. Also, the requested x-data for the fourth subplot should be based on a linearly spaced array of powers of 15, but the plotted x-axis ranges from 0 to 30 and is not log-scaled.",
+  "usage": {
+    "prompt_tokens": 5650,
+    "completion_tokens": 104,
+    "total_tokens": 5754
+  },
+  "completion_attempts": 1,
+  "human_labels_sent": false,
+  "official_qwen_equivalent": false
+}

@@ -1,0 +1,17 @@
+{
+  "run_id": "004",
+  "family": "hard_to_read",
+  "provider": "OpenAI",
+  "model_requested": "gpt-5.4-mini",
+  "model_reported": "gpt-5.4-mini-2026-03-17",
+  "has_error": false,
+  "evidence": "The figure is legible overall: all four subplots, titles, axes, and curves are visible and readable. Some dense oscillations/error bars make parts busy, but not difficult or impossible to read.",
+  "usage": {
+    "prompt_tokens": 5647,
+    "completion_tokens": 60,
+    "total_tokens": 5707
+  },
+  "completion_attempts": 1,
+  "human_labels_sent": false,
+  "official_qwen_equivalent": false
+}
