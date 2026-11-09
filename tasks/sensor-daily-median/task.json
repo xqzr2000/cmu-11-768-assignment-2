@@ -1,0 +1,11 @@
+{
+  "task_id": "sensor-daily-median",
+  "task_class": "large-input-aggregation",
+  "instructions": "Using matplotlib, read sensors.csv. It holds temperature readings taken every 5 minutes, with columns timestamp (YYYY-MM-DD HH:MM), sensor (S1, S2 or S3) and temp_c in degrees Celsius. A blank temp_c is a dropout: ignore it, do not treat it as zero. Using only sensors S1 and S2 (leave S3 out entirely), compute each sensor's daily MEDIAN temperature for each of the 14 calendar days from 2025-06-01 to 2025-06-14. Requirements: 1. Plot the two daily-median series as lines with circle markers against the date on the x axis, S1 in colour 'tab:blue' and S2 in colour 'tab:red'. 2. For S2 only, shade the band between its daily minimum and daily maximum temperature in 'tab:red' with alpha 0.15. 3. The x tick labels show each date as MM-DD and are rotated 45 degrees. 4. The y axis label is exactly 'Temperature (°C)'. 5. The title is exactly 'Daily median temperature, S1 vs S2'. 6. Include a legend with the entries 'S1 median', 'S2 median' and 'S2 daily range'. Save the figure as figure.png.",
+  "inputs": [
+    {
+      "name": "sensors.csv",
+      "path": "inputs/sensors.csv"
+    }
+  ]
+}

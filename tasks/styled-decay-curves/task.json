@@ -1,0 +1,6 @@
+{
+  "task_id": "styled-decay-curves",
+  "task_class": "fine-visual-detail",
+  "instructions": "Using matplotlib and numpy, plot three functions of t sampled on t = np.linspace(0, 10, 201): f1 = exp(-0.5 t), f2 = exp(-t) and f3 = 0.5 exp(-2 t) + 1e-4. Requirements: 1. f1 is drawn in colour '#1b9e77' as a solid line with circle markers ('o') on every 20th point (markevery=20). 2. f2 is drawn in colour '#d95f02' as a dashed line ('--') with square markers ('s') on every 20th point. 3. f3 is drawn in colour '#7570b3' as a dash-dot line ('-.') with upward triangle markers ('^') on every 20th point. 4. All three lines have line width 2. 5. The y axis is logarithmic (base 10) with limits 1e-5 to 2; the x axis limits are 0 to 10. 6. A legend in the lower left corner has the labels exactly 'exp(-0.5t)', 'exp(-t)' and '0.5exp(-2t)+1e-4'. 7. The axis labels are exactly 't (s)' and 'amplitude', and the title is exactly 'Three decays on a log scale'. 8. Major grid lines are shown on both axes as dotted lines (':'). 9. The figure is 8 x 5 inches and is saved at 150 dpi as figure.png.",
+  "inputs": []
+}
