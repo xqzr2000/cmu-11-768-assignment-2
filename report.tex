@@ -15,6 +15,12 @@
 \date{November 2026}
 
 \newcommand{\run}[1]{\texttt{#1}}
+% Final (Part 2 + change 4) results, filled from output/final_seed_score.txt
+% and output/authored_score.txt.
+\newcommand{\FSexec}{--}\newcommand{\FSdata}{--}\newcommand{\FSchart}{--}
+\newcommand{\FShard}{--}\newcommand{\FSmacro}{--}
+\newcommand{\FAhard}{--}\newcommand{\FAfp}{--}\newcommand{\FAmacro}{--}
+\newcommand{\FINALVERDICT}{}
 
 \begin{document}
 \sloppy
@@ -402,13 +408,64 @@ and the \texttt{wrong\_chart} FP disappeared). On the seeds it over-fired:
 \texttt{hard\_to\_read} FN 6$\to$2 but FP 2$\to$12 (MCC 0.8297$\to$0.7296;
 macro 0.8327, with \texttt{wrong\_data} at 0.6727 within run-to-run noise).
 
-\textbf{Calibration (4b, final).} The judge must also state whether an overlay
+\textbf{Calibration (4b).} The judge must also state whether an overlay
 \emph{hides information a reader needs}. Labels drawn on their own segment and
 arrows that touch their target are declared intended placements.
-\FINALTABLES
+\begin{center}
+\small
+\begin{tabular}{llrrrrr}
+\toprule
+Set & Family & Part 2 & 4a & 4b & \textbf{Final} \\
+\midrule
+Seeds (110) & execution\_failure & 1.0000 & 1.0000 & 1.0000 & \FSexec \\
+ & wrong\_data & 0.7406 & 0.6727 & 0.6727 & \FSdata \\
+ & wrong\_chart & 0.9284 & 0.9284 & 0.9012 & \FSchart \\
+ & hard\_to\_read & 0.8297 & 0.7296 & 0.7703 & \FShard \\
+ & \textbf{macro} & \textbf{0.8747} & 0.8327 & 0.8360 & \textbf{\FSmacro} \\
+\midrule
+Authored (15) & hard\_to\_read & 0.5547 & 1.0000 & 1.0000 & \FAhard \\
+ & wrong\_chart FP & 1 & 0 & 0 & \FAfp \\
+ & \textbf{macro} & 0.1387 & 0.2500 & 0.2500 & \textbf{\FAmacro} \\
+\bottomrule
+\end{tabular}
+\end{center}
+On the authored runs \texttt{execution\_failure}, \texttt{wrong\_data} and
+\texttt{wrong\_chart} have no positive labels (MCC 0 by convention), so only
+\texttt{hard\_to\_read} and the false-positive count carry information.
+Seed confusion counts for \texttt{hard\_to\_read}: Part 2 FP 2 / FN 6
+(\run{086}, \run{129}, \run{161}, \run{175}, \run{209}, \run{213}); 4a FP 12 / FN 2;
+4b FP 7 (\run{047}, \run{050}, \run{097}, \run{126}, \run{136}, \run{143}, \run{202})
+/ FN 4 (\run{046}, \run{086}, \run{129}, \run{161}). 4b fixed \run{175},
+\run{209} and \run{213}, but it still fired on intended overlays (\run{097}'s
+deliberately placed max box) and on new borderline cases. The
+\texttt{wrong\_data} difference between Part 2 (0.7406) and 4a/4b (0.6727,
+FP 9$\to$11) is the same order as the run-to-run noise we measured (0.7045 vs
+0.7406 for identical code); change 4 does not touch the data path except by
+offering the \texttt{legibility} kind.
+
+\textbf{Choosing the final validator.} 4b wins on the 15 authored runs and
+loses 0.039 macro on the 110 seeds. The seed set is seven times larger,
+covers many more chart types, and is drawn from the same population as the
+private runs; the authored gain rests on 3 runs of one task that share a
+single failure. We therefore ship \textbf{Part 2 + change 4 only} (the
+\texttt{legibility} kind) and keep change 5 behind
+\texttt{OVERLAY\_INVENTORY = False} in \texttt{validator/solution.py}, with the
+readability prompt byte-identical to Part 2. The \emph{Final} column is that
+configuration (\texttt{output/final\_seed\_predictions.json},
+\texttt{output/authored\_predictions.json}); 4a and 4b are kept as
+\texttt{output/part4a\_*} and \texttt{output/part4b\_*}. \FINALVERDICT
 
 \subsection{Qualitative Analysis of Self-Authored Tasks}
-\FINALQUAL
+On the self-authored runs, change 5 did exactly what it was designed for. In
+\run{sensor-daily-median\_\_\{deepseek,glm,luna\}} the overlay inventory reported
+the upper-left legend covering the S2 band's upper edge, which Part 2 had
+called acceptable in all three, and \texttt{hard\_to\_read} went from 2/5 to 5/5
+with no new false positives. Change 4 removed the only authored false
+positive: on \run{dense-department-budgets\_\_luna} the overlap requirement is
+now tagged \texttt{legibility}, and the run receives \texttt{hard\_to\_read} only,
+matching the label. The lesson from the seeds is that a rule written to fix one
+failure on 15 runs must be checked against the broader set before shipping;
+legend-over-data is real, but most overlays on real charts are intended.
 
 \textbf{False positive with trajectory text (4a, seed \run{097}).} The
 agent placed its maximum label with
@@ -417,7 +474,10 @@ agent placed its maximum label with
 4a judge reported ``the box covers part of the yellow and green filled contour
 bands''. That is true, but the box was put there on purpose and hides nothing
 a reader needs, and the human label is acceptable. The rule ``any overlay on
-data'' had no notion of intent, which change 4b adds.
+data'' had no notion of intent. 4b added one, yet \run{097} still fired: asked
+whether the semi-transparent box hides information, the judge said yes, so an
+intent judgment delegated to the model is only as calibrated as the model.
+This run is one reason the final validator ships without change 5.
 
 \textbf{False negative (4a/4b, seed \run{161}).} The human label includes
 \texttt{hard\_to\_read}: ``on the shared log axis the sine collapses into

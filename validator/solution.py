@@ -20,7 +20,8 @@ Part 4 additions (motivated by the authored runs):
 4. A third requirement kind, `legibility`, which never counts as wrong_chart:
    an instruction like "no labels may overlap" is a readability matter under
    the official taxonomy, and the judge had filed it as a design violation.
-5. The readability call first inventories every legend / annotation / text
+5. (OVERLAY_INVENTORY, off in the final validator; see the flag.)
+   The readability call first inventories every legend / annotation / text
    box and what lies beneath it, and it sees the four quadrants enlarged, so a
    legend clipping a band edge or text cut at the image border is visible.
 6. Calibration after measuring 5 on the seeds (hard_to_read FP 2 -> 12): an
@@ -46,6 +47,12 @@ from PIL import Image, UnidentifiedImageError
 from validator.model import complete
 from validator.prediction import Error, ErrorFamily
 from validator.runner import Run
+
+#: Part 4 change 5 (overlay inventory + enlarged quadrants). Measured on the
+#: seeds it traded 3 fixed hard_to_read misses for 5 new false alarms (macro
+#: 0.8747 -> 0.8360) while fixing all 3 authored misses; off in the final
+#: validator because the seed set is the larger, more representative sample.
+OVERLAY_INVENTORY = False
 
 MAX_INPUT_CHARS_PER_FILE = 20_000
 MAX_TRANSCRIPT_CHARS = 60_000
@@ -347,6 +354,30 @@ READABILITY_SCHEMA: dict[str, Any] = {
     "required": ["overlays", "issues"],
     "additionalProperties": False,
 }
+ISSUES_ONLY_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "properties": {"issues": READABILITY_SCHEMA["properties"]["issues"]},
+    "required": ["issues"],
+    "additionalProperties": False,
+}
+
+OVERLAY_PROMPT = """First fill `overlays`: list EVERY legend, colour bar, annotation, text box and
+value label that sits inside a plotting area, and say exactly what is beneath
+it. Look closely: a legend box that hides part of a line, a band, a bar top or
+some markers covers `data`, even if most of the area under it is empty.
+Use `empty_space_or_gridlines` only when nothing but background or gridlines
+is hidden. Set `hides_information` to true only if a reader loses something
+because of it: a value they cannot read, part of a series they cannot follow,
+or text they cannot read. Value labels written on the bar, wedge or segment
+they label, and annotation arrows that touch the point they annotate, are
+intended placements: they do not hide information. Then fill `issues`.
+
+"""
+
+CROPS_PROMPT = """You get the whole image first, then its four quadrants enlarged (top-left,
+top-right, bottom-left, bottom-right) so small text and edges are visible.
+
+"""
 
 READABILITY_PROMPT = """You are checking whether a rendered chart is legible.
 Look closely at the whole image, including its edges. Report only these
@@ -367,24 +398,10 @@ problems with what IS drawn:
 - squeezed_layout: data, boxes or panels crushed into an unreadable sliver by
   axis limits or by overlapping axes.
 
-First fill `overlays`: list EVERY legend, colour bar, annotation, text box and
-value label that sits inside a plotting area, and say exactly what is beneath
-it. Look closely: a legend box that hides part of a line, a band, a bar top or
-some markers covers `data`, even if most of the area under it is empty.
-Use `empty_space_or_gridlines` only when nothing but background or gridlines
-is hidden. Set `hides_information` to true only if a reader loses something
-because of it: a value they cannot read, part of a series they cannot follow,
-or text they cannot read. Value labels written on the bar, wedge or segment
-they label, and annotation arrows that touch the point they annotate, are
-intended placements: they do not hide information. Then fill `issues`.
-
 Severity `major` means a reader cannot read that element, or can only with real
 difficulty; `minor` means it is slightly cramped but still readable.
 Missing elements, wrong chart types, wrong colours or wrong values are NOT
 readability problems; ignore them. A clean chart has no issues.
-
-You get the whole image first, then its four quadrants enlarged (top-left,
-top-right, bottom-left, bottom-right) so small text and edges are visible.
 
 For context, the chart was meant to show:
 {instructions}
@@ -415,13 +432,17 @@ def quadrant_parts(figure: Path) -> list[dict[str, Any]]:
 
 def judge_readability(run: Run) -> list[Error]:
     assert run.figure is not None
-    content = [
-        {"type": "text", "text": READABILITY_PROMPT.format(
-            instructions=_clip(run.instructions, 3_000), facts=image_facts(run.figure))},
-        _image_part(run.figure),
-        *quadrant_parts(run.figure),
-    ]
-    result = _ask_json(content, "readability_issues", READABILITY_SCHEMA)
+    prompt = READABILITY_PROMPT.format(
+        instructions=_clip(run.instructions, 3_000), facts=image_facts(run.figure))
+    if OVERLAY_INVENTORY:
+        marker = "Severity `major` means"
+        prompt = prompt.replace(marker, OVERLAY_PROMPT + marker, 1)
+        prompt = prompt.replace("For context,", CROPS_PROMPT + "For context,", 1)
+    content = [{"type": "text", "text": prompt}, _image_part(run.figure)]
+    if OVERLAY_INVENTORY:
+        content += quadrant_parts(run.figure)
+    schema = READABILITY_SCHEMA if OVERLAY_INVENTORY else ISSUES_ONLY_SCHEMA
+    result = _ask_json(content, "readability_issues", schema)
     findings = [
         f"{item['category']} at {item['where'].strip()}: {item['description'].strip()}"
         for item in result.get("issues", []) if item.get("severity") == "major"

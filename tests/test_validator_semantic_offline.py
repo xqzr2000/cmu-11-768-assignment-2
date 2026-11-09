@@ -139,6 +139,15 @@ class SolutionJudgeTests(unittest.TestCase):
             reply({"overlays": [], "issues": []}))
         self.assertEqual(errors, [])
 
+    def test_default_readability_call_is_part2_shape(self) -> None:
+        _, judge = self.validate(reply({"requirements": []}), reply({"issues": []}))
+        images = [p for p in judge.calls[1]["messages"][0]["content"] if p["type"] == "image_url"]
+        self.assertEqual(len(images), 1)
+        schema = judge.calls[1]["options"]["response_format"]["json_schema"]["schema"]
+        self.assertEqual(schema["required"], ["issues"])
+        self.assertNotIn("overlays", judge.text(1))
+
+    @patch.object(solution, "OVERLAY_INVENTORY", True)
     def test_overlay_over_data_is_hard_to_read_even_if_issues_empty(self) -> None:
         over_band = {"element": "legend (upper left)", "covers": "data", "hides_information": True,
                      "detail": "hides the band's upper edge near 06-02"}
@@ -154,6 +163,7 @@ class SolutionJudgeTests(unittest.TestCase):
         self.assertEqual([e.family for e in errors], [ErrorFamily.HARD_TO_READ])
         self.assertIn("band's upper edge", errors[0].evidence)
 
+    @patch.object(solution, "OVERLAY_INVENTORY", True)
     def test_readability_call_gets_whole_image_plus_four_enlarged_quadrants(self) -> None:
         _, judge = self.validate(reply({"requirements": []}), reply({"overlays": [], "issues": []}))
         images = [p for p in judge.calls[1]["messages"][0]["content"] if p["type"] == "image_url"]

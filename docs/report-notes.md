@@ -116,3 +116,12 @@ The overlay rule fixed the authored FNs and 4 of 6 seed FNs (175, 213, 129,
 209) but every intended overlay fired: value labels on their own segment
 (016, 142, 183), annotation arrows touching their point (077, 167), a box on a
 contour (097), plus 136/164/050/126/047/143. Change 6 adds `hides_information`.
+
+### Part 4b measured (your run, to be kept as `output/part4b_*`)
+
+Seeds: exec 1.0, wrong_data 0.6727 (FP 11 FN 3), wrong_chart 0.9012 (FP 1: 209),
+hard_to_read 0.7703 (FP 7: 047 050 097 126 136 143 202; FN 4: 046 086 129 161),
+macro 0.8360. Authored: hard_to_read 1.0, macro 0.25. Cumulative judge spend $4.41.
+
+Decision: ship Part 2 + change 4 only (OVERLAY_INVENTORY = False); the seed
+set is larger and more representative than the 15 authored runs.
