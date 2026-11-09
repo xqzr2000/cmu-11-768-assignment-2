@@ -1,11 +1,11 @@
-"""Offline tests of semantic-validator wiring with a mocked model response.
+"""Offline tests for the checklist and readability judge calls in validator.solution.
 
-No network, vision model, seed labels, or private task ID lookups are used.
-These test plumbing and schema only; they do not measure semantic accuracy.
+The judge is replaced by a scripted `complete`; no network, no labels.
 """
 
 from __future__ import annotations
 
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -13,134 +13,127 @@ from unittest.mock import patch
 
 from PIL import Image
 
-from validator.prediction import ErrorFamily, Prediction, PredictionFile
+from validator import solution
+from validator.prediction import ErrorFamily
 from validator.runner import Run
-from validator.solution import validate
 
 
-class SemanticIntegrationTests(unittest.TestCase):
+def reply(payload: object) -> dict:
+    text = payload if isinstance(payload, str) else json.dumps(payload)
+    return {"choices": [{"message": {"content": text}}]}
+
+
+def item(kind: str, status: str, requirement: str = "req", evidence: str = "ev") -> dict:
+    return {"requirement": requirement, "kind": kind, "status": status, "evidence": evidence}
+
+
+class ScriptedJudge:
+    def __init__(self, *replies: dict) -> None:
+        self.replies = list(replies)
+        self.calls: list[dict] = []
+
+    def __call__(self, messages, **options):
+        self.calls.append({"messages": messages, "options": options})
+        return self.replies.pop(0)
+
+    def text(self, index: int) -> str:
+        content = self.calls[index]["messages"][0]["content"]
+        return "\n".join(part.get("text", "") for part in content if part["type"] == "text")
+
+
+class SolutionJudgeTests(unittest.TestCase):
     def setUp(self) -> None:
-        self.temp = tempfile.TemporaryDirectory()
-        self.addCleanup(self.temp.cleanup)
-        self.root = Path(self.temp.name)
-        self.figure = self.root / "figure.png"
-        Image.new("RGB", (50, 40), "white").save(self.figure, format="PNG")
-        self.csv = self.root / "samples.csv"
-        self.csv.write_text("group,value\napple,5\norange,8\n")
-
-    def sample_run(self, figure: Path | None = None) -> Run:
-        return Run(
-            run_id="synthetic",
-            task_id="synthetic",
-            instructions="Plot the values in samples.csv, with labels and legend.",
+        temp = tempfile.TemporaryDirectory()
+        self.addCleanup(temp.cleanup)
+        root = Path(temp.name)
+        self.figure = root / "figure.png"
+        Image.new("RGB", (640, 480), "white").save(self.figure, dpi=(100, 100))
+        Image.open(self.figure).close()
+        csv = root / "data.csv"
+        csv.write_text("region,sales\nnorth,10\nsouth,20\n")
+        self.run = Run(
+            run_id="synthetic", task_id="synthetic",
+            instructions="Bar chart of sales by region, sorted descending, viridis.",
             messages=[
-                {"role": "user", "content": "Please draw the chart."},
-                {"role": "tool", "content": "source != 'orange'"},
+                {"role": "system", "content": "sys"},
+                {"role": "user", "content": "task text"},
+                {"role": "assistant", "content": "plotting", "tool_calls": [{"function": {
+                    "name": "bash", "arguments": json.dumps({"command": "python plot.py"})}}]},
+                {"role": "tool", "content": json.dumps(
+                    {"returncode": 0, "output": "x" * 5000})},
+                {"role": "exit", "content": "", "extra": {"exit_status": "Submitted"}},
             ],
-            figure=self.figure if figure is None else figure,
-            inputs={"samples.csv": self.csv},
+            figure=self.figure, inputs={"data.csv": csv},
         )
 
-    @staticmethod
-    def reply(text: str) -> dict:
-        return {"choices": [{"message": {"content": text}}]}
+    def validate(self, *replies: dict) -> tuple[list, ScriptedJudge]:
+        judge = ScriptedJudge(*replies)
+        with patch.object(solution, "complete", judge):
+            return solution.validate(self.run), judge
 
-    def test_three_semantic_requests_contain_task_csv_trajectory_and_png(self) -> None:
-        calls = []
-        answers = iter([
-            "YES: Requested orange series was omitted.",
-            "NO: Chart design follows the requested layout.",
-            "YES: Labels have insufficient contrast.",
-        ])
-
-        def fake_complete(messages, **kwargs):
-            calls.append((messages, kwargs))
-            return self.reply(next(answers))
-
-        with patch("validator.baseline.complete", side_effect=fake_complete):
-            errors = validate(self.sample_run())
-
-        self.assertEqual([error.family for error in errors], [
-            ErrorFamily.WRONG_DATA,
-            ErrorFamily.HARD_TO_READ,
-        ])
-        self.assertEqual(errors[0].evidence, "Requested orange series was omitted.")
-        self.assertEqual(errors[1].evidence, "Labels have insufficient contrast.")
-        self.assertEqual(len(calls), 3)
-
-        questions = [
-            "Does the plotted data differ",
-            "Does the figure fail to follow",
-            "Is the rendered figure difficult",
-        ]
-        for (messages, kwargs), question in zip(calls, questions, strict=True):
-            self.assertEqual(kwargs["max_tokens"], 250)
-            self.assertEqual(len(messages), 1)
-            self.assertEqual(messages[0]["role"], "user")
-            parts = messages[0]["content"]
-            self.assertEqual([part["type"] for part in parts], ["text", "image_url"])
-            prompt = parts[0]["text"]
-            self.assertTrue(prompt.startswith(question))
-            self.assertIn("samples.csv", prompt)
-            self.assertIn("orange,8", prompt)
-            self.assertIn("source != 'orange'", prompt)
-            self.assertIn("Plot the values", prompt)
-            self.assertTrue(parts[1]["image_url"]["url"].startswith("data:image/png;base64,"))
-
-        serialized = PredictionFile(
-            predictions=[Prediction(run_id="synthetic", errors=errors)]
-        ).model_dump(mode="json")
-        self.assertEqual([error["family"] for error in serialized["predictions"][0]["errors"]],
-                         ["wrong_data", "hard_to_read"])
-
-    def test_all_no_responses_return_empty_list(self) -> None:
-        with patch("validator.baseline.complete", return_value=self.reply("NO: Looks correct.")) as mock:
-            errors = validate(self.sample_run())
+    def test_clean_run_is_acceptable_with_two_calls(self) -> None:
+        errors, judge = self.validate(
+            reply({"requirements": [item("data", "met"), item("design", "met")]}),
+            reply({"issues": []}))
         self.assertEqual(errors, [])
-        self.assertEqual(mock.call_count, 3)
+        self.assertEqual(len(judge.calls), 2)
 
-    def test_three_yes_responses_return_all_nonterminal_families(self) -> None:
-        with patch("validator.baseline.complete", return_value=self.reply("YES: An issue is present.")) as mock:
-            errors = validate(self.sample_run())
-        self.assertEqual(
-            [error.family for error in errors],
-            [ErrorFamily.WRONG_DATA, ErrorFamily.WRONG_CHART, ErrorFamily.HARD_TO_READ],
-        )
-        self.assertEqual(mock.call_count, 3)
+    def test_design_violation_is_wrong_chart_only(self) -> None:
+        errors, _ = self.validate(
+            reply({"requirements": [item("data", "met"),
+                                    item("design", "violated", "viridis colormap", "uses jet")]}),
+            reply({"issues": []}))
+        self.assertEqual([e.family for e in errors], [ErrorFamily.WRONG_CHART])
+        self.assertIn("uses jet", errors[0].evidence)
 
-    def test_missing_figure_short_circuits_without_model_calls(self) -> None:
-        run = self.sample_run()
-        run = Run(
-            run_id=run.run_id,
-            task_id=run.task_id,
-            instructions=run.instructions,
-            messages=run.messages,
-            figure=None,
-            inputs=run.inputs,
-        )
-        with patch("validator.baseline.complete") as mock:
-            errors = validate(run)
-        self.assertEqual(len(errors), 1)
-        self.assertEqual(errors[0].family, ErrorFamily.EXECUTION_FAILURE)
-        mock.assert_not_called()
+    def test_data_violation_is_wrong_data_and_unclear_is_ignored(self) -> None:
+        errors, _ = self.validate(
+            reply({"requirements": [item("data", "violated", "sorted", "unsorted"),
+                                    item("design", "unclear")]}),
+            reply({"issues": []}))
+        self.assertEqual([e.family for e in errors], [ErrorFamily.WRONG_DATA])
 
-    def test_corrupt_figure_short_circuits_without_model_calls(self) -> None:
-        self.figure.write_bytes(b"not png bytes")
-        with patch("validator.baseline.complete") as mock:
-            errors = validate(self.sample_run())
-        self.assertEqual([error.family for error in errors], [ErrorFamily.EXECUTION_FAILURE])
-        mock.assert_not_called()
+    def test_only_major_readability_issues_count(self) -> None:
+        minor = {"category": "overlapping_text", "where": "x ticks",
+                 "description": "slightly tight", "severity": "minor"}
+        major = dict(minor, severity="major", description="labels overprint")
+        errors, _ = self.validate(reply({"requirements": []}), reply({"issues": [minor]}))
+        self.assertEqual(errors, [])
+        errors, _ = self.validate(reply({"requirements": []}), reply({"issues": [minor, major]}))
+        self.assertEqual([e.family for e in errors], [ErrorFamily.HARD_TO_READ])
+        self.assertIn("labels overprint", errors[0].evidence)
+        self.assertNotIn("slightly tight", errors[0].evidence)
 
-    def test_model_errors_are_not_misreported_as_acceptable(self) -> None:
-        with patch("validator.baseline.complete", side_effect=RuntimeError("model unavailable")) as mock:
-            with self.assertRaisesRegex(RuntimeError, "model unavailable"):
-                validate(self.sample_run())
-        self.assertEqual(mock.call_count, 1)
+    def test_checklist_request_carries_task_inputs_transcript_facts_and_image(self) -> None:
+        _, judge = self.validate(reply({"requirements": []}), reply({"issues": []}))
+        text = judge.text(0)
+        self.assertIn("sorted descending", text)
+        self.assertIn("north,10", text)
+        self.assertIn("$ python plot.py", text)
+        self.assertIn("pixel size 640x480", text)
+        self.assertIn("DPI metadata 100", text)
+        self.assertIn("characters omitted", text)  # long tool output is clipped
+        parts = judge.calls[0]["messages"][0]["content"]
+        self.assertTrue(any(p["type"] == "image_url" for p in parts))
+        self.assertEqual(judge.calls[0]["options"]["response_format"]["type"], "json_schema")
+        # The readability call never sees the transcript or the code.
+        self.assertNotIn("python plot.py", judge.text(1))
 
-    def test_unexpected_model_response_is_not_silently_ignored(self) -> None:
-        with patch("validator.baseline.complete", return_value={"choices": []}):
-            with self.assertRaises(IndexError):
-                validate(self.sample_run())
+    def test_fenced_json_is_parsed(self) -> None:
+        fenced = "```json\n" + json.dumps({"requirements": [item("data", "violated")]}) + "\n```"
+        errors, _ = self.validate(reply(fenced), reply({"issues": []}))
+        self.assertEqual([e.family for e in errors], [ErrorFamily.WRONG_DATA])
+
+    def test_bad_json_is_retried_then_raised_not_accepted(self) -> None:
+        errors, judge = self.validate(reply("oops"), reply({"requirements": []}),
+                                      reply({"issues": []}))
+        self.assertEqual(errors, [])
+        self.assertEqual(len(judge.calls), 3)
+        with self.assertRaises(ValueError):
+            self.validate(reply("oops"), reply("still not json"))
+
+    def test_blank_image_is_reported_in_facts(self) -> None:
+        self.assertIn("blank", solution.image_facts(self.figure))
 
 
 if __name__ == "__main__":
