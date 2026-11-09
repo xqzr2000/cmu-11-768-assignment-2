@@ -58,3 +58,19 @@ no `figure.png`.
 2. Requirement checklist (data vs design) + separate readability call with
    severity; only `major` readability issues count. Image facts (pixel size,
    DPI metadata, blank) are measured and given to the judge.
+
+### Part 2 results on the 110 seed runs (`output/pre_iteration_seed_predictions.json`)
+
+Two passes were run; the committed file is the second.
+
+| family | baseline MCC | Part 2 MCC (pass 2) | TP | TN | FP | FN |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| execution_failure | 0.5945 | 1.0000 | 12 | 98 | 0 | 0 |
+| wrong_data | 0.2363 | 0.7406 | 23 | 64 | 9 | 2 |
+| wrong_chart | 0.6286 | 0.9284 | 68 | 27 | 0 | 3 |
+| hard_to_read | 0.6345 | 0.8297 | 33 | 57 | 2 | 6 |
+| **macro** | **0.5235** | **0.8747** | | | | |
+
+Pass 1 gave macro 0.8657 (wrong_data 0.7045, FP 11): run-to-run variance of the
+judge at temperature 0 is about ±0.01 macro, mostly in wrong_data.
+Cumulative judge spend after baseline + two Part 2 passes + authored pass: ~$2.66.

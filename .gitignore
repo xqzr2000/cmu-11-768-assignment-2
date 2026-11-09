@@ -17,4 +17,3 @@ __pycache__/
 # Predictions (output/*.json) and generated runs (runs/) are submission
 # artifacts, so they are tracked. Only local spend logs stay out.
 /output/*.jsonl
-/labels.json

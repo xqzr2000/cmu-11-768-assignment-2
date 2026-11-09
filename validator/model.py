@@ -48,7 +48,9 @@ REASONING_EFFORT = os.getenv("VALIDATOR_REASONING_EFFORT") or None
 SERVICE_TIER = os.getenv("VALIDATOR_SERVICE_TIER") or None
 
 # Parameter fixes learned from the server's 400 responses, kept for the process.
-_RENAME_MAX_TOKENS = False
+# OpenAI's own API is known to need max_completion_tokens, so start there and
+# avoid a burst of 400s when --workers fires many first requests at once.
+_RENAME_MAX_TOKENS = "api.openai.com" in (os.getenv("VALIDATOR_BASE_URL") or "")
 _DROP_TEMPERATURE = False
 
 
