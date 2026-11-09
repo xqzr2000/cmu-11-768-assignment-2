@@ -1,0 +1,456 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\setlist{nosep,leftmargin=1.4em}
+
+\title{11-768 HW2: Evaluating a Data-Visualization Agent\\
+\large Independent, non-credit reproduction}
+\author{Russell (xqzr2000)}
+\date{November 2026}
+
+\newcommand{\run}[1]{\texttt{#1}}
+
+\begin{document}
+\sloppy
+\maketitle
+
+\paragraph{Deviations from the official setup (read first).}
+This is a self-study reproduction, so it does not use the course's Modal
+deployment. The judge is \textbf{GPT-6.1 Terra} (\texttt{gpt-6.1-terra}, OpenAI
+chat completions, \texttt{reasoning\_effort=none}, flex tier, temperature 0),
+not Qwen3-VL-30B-A3B. The three fixed agents are replaced by
+\textbf{DeepSeek Flash}, \textbf{GPT-5.6 Luna} and \textbf{GLM-5.3 Flash}, run by
+our own runner (\texttt{workflow/sandbox\_generate.py}) that keeps the course
+contract: mini-swe-agent's prompt, a single \texttt{bash} tool, 20 steps, 120\,s
+per command, 15 minutes per run, and submission by
+\texttt{echo COMPLETE\_TASK\_AND\_SUBMIT\_FINAL\_OUTPUT}. Each run executes in a
+fresh Docker container from our Assignment~1 sandbox (no network, all
+capabilities dropped, CPU/memory/PID limits). The image is pinned by digest and
+hash-locked; API keys never enter the container. All MCCs below are therefore
+for a much stronger judge than the graded one and are not comparable to course
+scores. Total judge spend for every number in this report was about \$5
+(\texttt{scripts/judge\_cost.py}).
+
+Reproduction: \texttt{validator.runner} (we added a \texttt{--workers} flag) and
+\texttt{workflow score} as in \texttt{ASSIGNMENT.md}. Every prediction file named
+below is in \texttt{output/}. Working notes: \texttt{docs/report-notes.md}.
+
+%=====================================================================
+\section{Part 1: Examine Seed Agent Runs}
+
+\subsection{Comparison of Ground-Truth and Validator Labels}
+The baseline (\texttt{validator/baseline.py}, unchanged) asks four separate
+YES/NO questions per run with the full trajectory, inputs and figure
+(402 calls, 3.3M prompt tokens, \$1.71).
+
+\begin{center}
+\begin{tabular}{lrrrrrr}
+\toprule
+Family & MCC & TP & TN & FP & FN & support +/- \\
+\midrule
+execution\_failure & 0.5945 & 8 & 93 & 5 & 4 & 12/98 \\
+wrong\_data & 0.2363 & 22 & 27 & 46 & 3 & 25/73 \\
+wrong\_chart & 0.6286 & 66 & 18 & 9 & 5 & 71/27 \\
+hard\_to\_read & 0.6345 & 29 & 52 & 7 & 10 & 39/59 \\
+\midrule
+macro & \textbf{0.5235} & & & & & \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Disagreements concentrate in \texttt{wrong\_data}. 46 of its 73 negatives are
+flagged, so recall is high and precision is near chance. The remaining errors
+cluster on a handful of runs whose agents struggled (sunburst, Sankey and voxel
+tasks), where one wrong execution verdict removes the other three families. One
+seed fact matters for the design: the 12 runs labelled
+\texttt{execution\_failure} are exactly the 12 runs with no \texttt{figure.png}.
+
+\subsection{Validator Error Type 1: execution judged from the story, not the artifact}
+\textbf{False positives} \run{026}, \run{047}, \run{081}, \run{191} and \run{205} all
+saved a decodable PNG, yet the judge answered that the agent ``exhausted its
+limits'' (\run{026}, \run{047}), ``exited after repeated formatting errors''
+(\run{191}, \run{205}) or that the image was ``not the requested 3D voxel plot''
+(\run{081}). In each case it read trouble in the trajectory (exit status
+\texttt{LimitsExceeded}/\texttt{RepeatedFormatError}, failed intermediate
+scripts) or a wrong chart as ``no valid figure''. Because the baseline returns
+early on \texttt{execution\_failure}, these five runs also lose 3
+\texttt{wrong\_data}, 5 \texttt{wrong\_chart} and 3 \texttt{hard\_to\_read} true
+positives. \textbf{False negatives} \run{001}, \run{145} and \run{171} have no
+figure but were judged acceptable. \run{103} also has none, but the judge reported
+wrong data, design and legibility for an image that does not exist. The
+baseline never checks the one fact that decides the label: whether the file
+exists and decodes.
+
+\subsection{Validator Error Type 2: per-family YES/NO questions conflate families}
+Asked ``does the plotted data differ from what was requested in any way?'', the
+judge answers YES whenever anything is wrong. Its own evidence often says the
+data is fine:
+\run{021} and \run{090} (``the plotted data, medians, and outliers match the
+request, but the chart is missing an x-axis label''); \run{013}, \run{106},
+\run{130} (forbidden colormap); \run{009}, \run{059} (tick labels not rotated);
+\run{131}, \run{143} (wrong subplot grid); \run{080} (missing value labels). The
+leak also runs the other way. Swapped values (\run{077}, \run{204}, \run{216}) and
+filtered-out rows (\run{008}, \run{069}) are reported as \texttt{wrong\_chart}.
+Several readability problems are seen but not filed as such: \run{175} (legend
+covers bar tops), \run{173} (annotation hides the curve), \run{129} (white labels
+on white) and \run{213} (colliding captions).
+
+\subsection{Proposed Validator Changes}
+\begin{enumerate}
+\item \textbf{Artifact-gated execution check.} Decide
+\texttt{execution\_failure} deterministically from \texttt{figure.png}
+(missing, not a PNG, or undecodable), never from the narrative, and always run
+the other judges when a valid figure exists.
+\item \textbf{Requirement checklist with family tags, plus a separate
+readability pass.} One structured call lists every requirement in the
+instruction, tags it \texttt{data} or \texttt{design} using the official
+definitions, and marks it met / violated / unclear. A family fires only when a
+requirement of its kind is violated. Legibility is judged in a separate,
+image-first call against the official \texttt{hard\_to\_read} checklist, told
+that missing or wrong elements are not legibility problems.
+\end{enumerate}
+
+%=====================================================================
+\section{Part 2: Improve Your Validator}
+
+\subsection{Implemented Changes}
+Both changes are in \texttt{validator/solution.py}.
+\begin{itemize}
+\item \textbf{Deterministic:} \texttt{judge\_execution} opens the PNG with
+Pillow (\texttt{verify} + full \texttt{load}). No model call is made for runs
+without a valid figure.
+\item \textbf{Measured image facts (deterministic, given to the judge):} pixel
+size, PNG DPI metadata, implied figure size in inches, and a blank-image flag.
+Requirements like ``1000$\times$1000 pixels'' or ``120 dpi'' are then checked
+against facts instead of guessed from a downscaled image.
+\item \textbf{Model, checklist call:} the instruction, input files (each clipped
+to 20k characters), a compact transcript (agent text and commands in full,
+tool output clipped to 1.5k characters), the image facts and the figure. The
+reply is a strict JSON schema
+(\texttt{requirement, kind}$\in$\{\texttt{data}, \texttt{design}\},
+\texttt{status, evidence}). \texttt{wrong\_data}/\texttt{wrong\_chart} are
+derived deterministically from violated items, and their evidence lists the
+violated requirements.
+\item \textbf{Model, readability call:} the instruction (for context) and the
+figure only, with no code or transcript, so legibility is judged from pixels.
+The reply is a list of issues in six categories mirroring the official list,
+each rated \texttt{minor}/\texttt{major}. Only \texttt{major} counts.
+\end{itemize}
+The validator makes two judge calls per run with a figure (about \$1 per seed
+pass at flex rates), compared with four for the baseline.
+
+\subsection{Seed-Set Performance vs.\ Baseline}
+\texttt{output/pre\_iteration\_seed\_predictions.json}. We ran it twice; pass 1
+gave macro 0.8657 (\texttt{wrong\_data} 0.7045), so judge noise is about $\pm$0.01
+macro even at temperature 0.
+
+\begin{center}
+\begin{tabular}{lrrrrrr}
+\toprule
+Family & Baseline & Part 2 & TP & TN & FP & FN \\
+\midrule
+execution\_failure & 0.5945 & \textbf{1.0000} & 12 & 98 & 0 & 0 \\
+wrong\_data & 0.2363 & \textbf{0.7406} & 23 & 64 & 9 & 2 \\
+wrong\_chart & 0.6286 & \textbf{0.9284} & 68 & 27 & 0 & 3 \\
+hard\_to\_read & 0.6345 & \textbf{0.8297} & 33 & 57 & 2 & 6 \\
+\midrule
+macro & 0.5235 & \textbf{0.8747} & & & & \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Qualitative Analysis of Targeted Error Types}
+\textbf{Error type 1 is eliminated on the seeds.} All 12 figure-less runs are
+caught with a concrete message and no model call, and \run{026}, \run{047},
+\run{081}, \run{191}, \run{205} are now judged on their figures: e.g.\ \run{047}
+gets \texttt{wrong\_data} and \texttt{wrong\_chart}, as labelled.
+
+\textbf{Error type 2 is largely fixed.} \texttt{wrong\_data} false positives fall
+from 46 to 9. \run{021} and \run{090} now receive only \texttt{wrong\_chart}
+(``missing x-axis label'' is tagged \texttt{design}), and \run{013}, \run{106},
+\run{130} lose their spurious \texttt{wrong\_data}. \texttt{wrong\_chart}
+false positives fall from 9 to 0: the swapped values in \run{077}, \run{204},
+\run{216} are now \texttt{wrong\_data} only, as labelled.
+
+\textbf{A remaining false positive (wrong\_data, \run{068}).} The task asks for
+a dotted $y=x$ line on a Mercator-style plot; the human label is
+\texttt{wrong\_chart} only (solid line, x limits $\pm$200). Our judge also
+reported \texttt{wrong\_data}: ``the saved script plots
+\texttt{s=t*pi/360} against \texttt{t}, so at longitude 180 the plotted latitude
+is about 1.57''. It reasoned from the code's unit conversion rather than from
+what the axes display. Giving the judge code catches real data bugs, but it also
+lets it ``find'' errors the rendered figure does not show. Most of the 9
+remaining \texttt{wrong\_data} FPs have this shape (\run{086}, \run{115},
+\run{161}, \run{163}, \run{203}, \run{206} all cite script internals). What is
+missing is a rule that a data violation must be visible in, or provable from,
+the figure.
+
+\textbf{A remaining false negative (hard\_to\_read, \run{175}).} The human label
+says ``the legend covers the tops of bars, so their heights cannot be read''.
+The trajectory places the legend with a bare \texttt{ax.legend()}. Our judge
+reported the 3D/2D design violations but no legibility issue. The readability
+call asks for a list of problems but never makes the judge look at what each
+overlay sits on, and at full-figure resolution a legend over the tops of thin
+bars is easy to miss. \run{086} (pale edgeless bars) and \run{129} (white labels
+on white) are the same pattern: the problem is small relative to the image.
+Part~4 targets exactly this.
+
+%=====================================================================
+\section{Part 3: Design New Evaluation Tasks}
+
+\subsection{Anticipated Generalization Weaknesses}
+\begin{enumerate}
+\item \textbf{Large-input aggregation} (\texttt{task\_class =
+large-input-aggregation}). The validator clips each input file at 20k
+characters, and the judge cannot execute code. When the plotted values are
+aggregates (sums, shares, medians) over thousands of rows, the judge can
+neither see all rows nor do the arithmetic. It must either trust the agent's
+code or mark the data requirement \texttt{unclear}, which our derivation treats
+as not violated. We therefore expected missed \texttt{wrong\_data} errors.
+\item \textbf{Fine visual detail} (\texttt{task\_class = fine-visual-detail}).
+Exact hex colours, dash patterns, marker shapes, log-axis formatting, and long
+rotated tick labels near the image edge are near the resolution limit of a
+vision model that sees a downscaled figure. We expected both missed
+\texttt{wrong\_chart} details and missed \texttt{hard\_to\_read} clipping and
+overlap.
+\end{enumerate}
+
+\subsection{Task Design}
+All inputs are synthetic and seeded (\texttt{scripts/make\_part3\_inputs.py}),
+so nothing published here leaks a real dataset.
+\begin{itemize}
+\item \texttt{quarterly-revenue-by-region} (aggregation). \texttt{transactions.csv},
+3{,}000 orders (119\,KB, six times the clip). Revenue per region and calendar
+quarter, $\text{units}\times\text{unit\_price}/1000$. A grouped bar chart with
+fixed region order, exact title and labels, $y$ from 0, 10$\times$6\,in at 100\,dpi. A
+wrong aggregation (e.g.\ summing units) produces a plausible chart whose error is
+invisible without recomputation.
+\item \texttt{top-products-unit-share} (aggregation). Same CSV. Each product's
+share of \emph{all} units, top 8 only, horizontal bars sorted largest-on-top,
+one-decimal \% labels. Tests normalization against the full denominator,
+filtering and ordering.
+\item \texttt{sensor-daily-median} (aggregation). \texttt{sensors.csv}, 12{,}096
+five-minute readings from 3 sensors with 4\% blank dropouts (311\,KB).
+Daily medians for S1 and S2 only (exclude S3, ignore blanks), with a
+min--max band for S2. Tests filtering, missing-value handling and per-day
+grouping.
+\item \texttt{styled-decay-curves} (visual detail). Three analytic curves with
+exact hex colours, \texttt{-}/\texttt{--}/\texttt{-.} styles, \texttt{o}/\texttt{s}/\texttt{\^{}}
+markers every 20th point, line width 2, log $y$ in $[10^{-5},2]$, dotted grid,
+legend lower left, 8$\times$5\,in at 150\,dpi.
+\item \texttt{dense-department-budgets} (visual detail). 30 bars labelled with
+long department names (up to 51 characters), rotated 60$^\circ$, right-aligned, 8\,pt,
+all fully visible and non-overlapping on a 12$\times$6\,in canvas. Clipping and
+overlap at the image edge are the expected failure modes.
+\end{itemize}
+
+\subsection{Agent Runs and Labeling}
+Each task was run once with each agent (15 runs, \texttt{runs/}). All 15
+submitted a figure within 3--7 model calls, about 6 minutes in total, for under
+\$1. To label, we replayed every run's bash commands in a scratch directory
+under the course's savefig hook (\texttt{harbor/example/tests/figure\_manifest.py}).
+Every replay was pixel-identical to the delivered figure, so the resulting JSON
+manifest is exactly what was drawn. We compared plotted values, order, tick
+labels, colours, line styles, markers, scales and limits against answer keys
+computed independently with Python's \texttt{csv} module, and then inspected
+every figure by eye. Claude drafted the labels with this evidence and Russell
+reviewed them (\texttt{labels.json}).
+
+\textbf{Outcome:} all 15 runs plot the correct data with the requested design.
+The only errors are \texttt{hard\_to\_read}:
+\begin{itemize}
+\item \run{dense-department-budgets\_\_glm}: the rotated names run off the
+bottom-left edge (``\ldots t of Transportation and Infrastructure'') because the
+agent used a fixed \texttt{subplots\_adjust(bottom=0.32)}.
+\item \run{dense-department-budgets\_\_luna}: the agent wrapped each name onto
+2--4 lines ``to keep the complete names readable'' and then rotated them; the
+wrapped blocks overprint their neighbours.
+\item \run{sensor-daily-median\_\_\{deepseek,glm,luna\}}: the default upper-left
+legend hides the upper edge of the S2 band near 06-02, which is that day's
+maximum, about 32.1\,$^\circ$C.
+\end{itemize}
+\textbf{Ambiguous decisions.} (i) The sensor legend hides only a small part of
+the band. We labelled it \texttt{hard\_to\_read} because the seed labels count a
+legend hiding part of a curve (\run{074}). (ii) Luna's wrapped names are still
+``the full department names'', so we did not add \texttt{wrong\_chart}; the
+overlap is legibility. (iii) For GLM's clipped labels we chose
+\texttt{hard\_to\_read} (partly cut) rather than \texttt{wrong\_chart}
+(entirely outside), per the official rule.
+
+\subsection{Validator Performance on New Tasks}
+\texttt{output/pre\_iteration\_authored\_predictions.json}:
+
+\begin{center}
+\begin{tabular}{lrrrrrr}
+\toprule
+Family & MCC & TP & TN & FP & FN & support +/- \\
+\midrule
+execution\_failure & 0 (n/a) & 0 & 15 & 0 & 0 & 0/15 \\
+wrong\_data & 0 (n/a) & 0 & 15 & 0 & 0 & 0/15 \\
+wrong\_chart & 0 (n/a) & 0 & 14 & 1 & 0 & 0/15 \\
+hard\_to\_read & 0.5547 & 2 & 10 & 0 & 3 & 5/15 \\
+\midrule
+macro & 0.1387 & & & & & \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Three families have no positive labels, so the scorer reports 0 by convention.
+\textbf{Agent vs.\ validator weaknesses.} The aggregation class did not expose
+validator weakness 1, because no agent produced a wrong aggregate: these agents
+are much stronger than the course's 3B--30B models. The validator's
+``acceptable'' on those 9 runs is correct, but it was not \emph{verified}. It
+saw only the first and last 10k characters of each CSV, so a wrong sum would
+very likely also have been called acceptable. We show in Section~3.5 that
+Harbor's deterministic verifier \emph{does} catch exactly such an error. The
+visual-detail class exposed agent weaknesses (GLM's fixed margins, Luna's
+wrapping) and two validator weaknesses. First, all three sensor occlusions
+were missed, a small overlay at full-figure resolution. Second, one false
+positive: on \run{dense\ldots\_\_luna} the judge filed ``ensure no x-axis tick
+labels overlap'' as a violated \emph{design} requirement. My instruction stated
+a legibility property as a requirement, and the checklist had no way to say
+``this is legibility''. Both the exact styles and the large-scale values
+were judged correctly in all 15 runs.
+
+\subsection{Harbor Packaging}
+\texttt{scripts/build\_harbor\_tasks.py} fills each \texttt{harbor/tasks/<id>/} from
+the \texttt{workflow package} scaffold. It writes an exact sidecar schema for
+\texttt{plotted\_values.json} in \texttt{instruction.md} (the seeded prompt is
+untouched), a reference \texttt{solve.sh}, and a verifier. The verifier
+(\texttt{harbor/shared/verifier\_core.py}, adapted from the course example)
+implements S1 (valid non-blank PNG, inputs unchanged by sha256, script left
+behind), S2 (re-run \texttt{plot.py} in a scrubbed copy under the savefig hook
+and assert on the artist-tree manifest: values, order, orientation, tick labels,
+title/labels, limits, scale, colours, line styles, markers, legend), S3 (the
+delivered PNG equals a fresh render) and S5 (the sidecar matches literal answer
+keys computed independently of the reference solution).
+
+\textbf{Rewards} (\texttt{workflow check-submission}, real Harbor in Docker):
+\HARBORRESULTS
+
+\textbf{Mutant scoring 0:}
+\texttt{quarterly-revenue-by-region/mutants/sum\_units} sums \emph{units}
+instead of revenue ($\times$1000 so the bars stay on a similar scale). The chart
+looks right but East Q1 is 2694 instead of 74.732. It is rejected by
+\texttt{test\_s5\_sidecar\_matches\_key} and
+\texttt{test\_s2\_sixteen\_vertical\_bars\_with\_the\_right\_heights}.
+
+\textbf{Mutant scoring 1.0:}
+\texttt{dense-department-budgets/mutants/unrotated\_labels} has correct values,
+names, order, colour and size, but leaves the 30 names horizontal and drops
+\texttt{tight\_layout}, so they overprint into one unreadable band and the outer
+ones run off the canvas. The manifest records tick \emph{text}, not tick
+geometry or rotation, and nothing compares rendered text bounding boxes, so
+every assertion passes. This is a genuine \texttt{hard\_to\_read} error that
+only a model looking at pixels catches.
+
+\textbf{Can a deterministic verifier decide each family for these tasks?}
+\begin{itemize}
+\item \texttt{execution\_failure}: \textbf{yes}. File existence, PNG
+validity, a non-blank canvas and a re-runnable script are all mechanical.
+\item \texttt{wrong\_data}: \textbf{yes, for these tasks}, because each has a
+closed-form answer key and the manifest exposes the plotted numbers exactly.
+It is stronger than our VLM here, especially for large inputs.
+\item \texttt{wrong\_chart}: \textbf{mostly}. Type, orientation, labels, limits,
+scale, colours, dash style and marker are in the manifest. Rotation,
+\texttt{markevery}, legend location and dotted-grid style were not checked,
+and some design properties (e.g.\ ``3D'', ``hollow centre'') need
+chart-type-specific readers.
+\item \texttt{hard\_to\_read}: \textbf{no, in general}. Overlap, clipping,
+occlusion and contrast are properties of the rendered layout. One could
+compute text bounding boxes after drawing, but ``readable'' is a perceptual
+threshold that any such rule only approximates. The second mutant shows the gap.
+\end{itemize}
+\textbf{Why per-task verifiers cannot grade the private runs.} A Harbor verifier
+encodes one task's answer key and its exact output contract (\texttt{plot.py},
+\texttt{plotted\_values.json}, fixed filenames and schema). The private runs come
+from tasks we never authored, with no answer keys, no sidecars, no re-runnable
+script contract, and no figure manifest; the validator receives only a
+trajectory and a PNG. Writing a verifier needs the task in advance, and grading
+needs a judgment that generalizes across unseen tasks. That is the job the VLM
+validator exists to do.
+
+%=====================================================================
+\section{Part 4: Iterate on Your Design}
+
+\subsection{Additional Improvement Motivated by Part 3}
+\begin{enumerate}
+\item \textbf{A \texttt{legibility} requirement kind} that never counts as
+\texttt{wrong\_chart}. Motivated by the \run{dense\ldots\_\_luna} false positive:
+instructions on private tasks may also phrase legibility as a requirement
+(``all labels must be visible''), and the official taxonomy puts the failure in
+\texttt{hard\_to\_read}.
+\item \textbf{Overlay inventory and enlarged quadrants.} The readability call must
+first list every legend, colour bar, annotation, text box and value label with
+what lies beneath it, and it receives the four quadrants of the figure enlarged to
+about 1600\,px in addition to the whole image. Motivated by the three missed
+sensor occlusions, and by the seed misses with the same shape (\run{175},
+\run{213}, \run{129}, \run{086}).
+\end{enumerate}
+
+\subsection{Final Evaluation on Seed and New Tasks}
+\textbf{First version (4a, \texttt{output/part4a\_*})} counted any overlay that
+covers data or text as \texttt{hard\_to\_read}. On the authored runs it fixed
+all three misses (\texttt{hard\_to\_read} 0.5547$\to$1.0, macro 0.1387$\to$0.25,
+and the \texttt{wrong\_chart} FP disappeared). On the seeds it over-fired:
+\texttt{hard\_to\_read} FN 6$\to$2 but FP 2$\to$12 (MCC 0.8297$\to$0.7296;
+macro 0.8327, with \texttt{wrong\_data} at 0.6727 within run-to-run noise).
+
+\textbf{Calibration (4b, final).} The judge must also state whether an overlay
+\emph{hides information a reader needs}. Labels drawn on their own segment and
+arrows that touch their target are declared intended placements.
+\FINALTABLES
+
+\subsection{Qualitative Analysis of Self-Authored Tasks}
+\FINALQUAL
+
+\textbf{False positive with trajectory text (4a, seed \run{097}).} The
+agent placed its maximum label with
+\texttt{plt.annotate(f'Max: \{z\_max:.3f\}', xy=(x\_max, y\_max), xytext=(x\_max
++ 0.2, y\_max + 0.2), \ldots, bbox=dict(\ldots, fc='white', alpha=0.8))}. The
+4a judge reported ``the box covers part of the yellow and green filled contour
+bands''. That is true, but the box was put there on purpose and hides nothing
+a reader needs, and the human label is acceptable. The rule ``any overlay on
+data'' had no notion of intent, which change 4b adds.
+
+\textbf{False negative (4a/4b, seed \run{161}).} The human label includes
+\texttt{hard\_to\_read}: ``on the shared log axis the sine collapses into
+flat-topped blocks''. The trajectory shows why: the agent set \texttt{ax2 = ax1}
+and plotted \texttt{np.sin(2*np.pi*t)} on the log-scaled axis. Our judge
+correctly reports the missing twin axis (\texttt{wrong\_chart}) but not the
+legibility consequence. Our hypothesis: once a cause is filed as a design
+violation, the readability pass, which sees only pixels, interprets the blocks
+as an intended rendering of a clipped series rather than as unreadable data.
+Readability errors that are \emph{consequences} of a design error are a
+blind spot of separating the two calls.
+
+\subsection{Further Changes}
+\begin{itemize}
+\item \textbf{Infrastructure for this reproduction}: \texttt{validator/model.py}
+adapts to OpenAI's \texttt{max\_completion\_tokens}/\texttt{temperature}
+constraints, supports the flex tier, and logs token usage.
+\texttt{validator.runner --workers N} judges runs concurrently (default
+unchanged). \texttt{scripts/disagreements.py} lists per-family FP/FN with both
+evidences.
+\item \textbf{Not done, and what we would try next}: (i) a ``visible-in-figure''
+rule for \texttt{wrong\_data}, to cut the code-reasoning false positives
+(\run{068}, \run{086}, \run{161}); (ii) giving the judge deterministic summaries
+of large inputs (row counts, per-column totals) so aggregate checks are not
+blind; (iii) re-executing the agent's final script under the savefig hook
+inside a sandbox, as our labelling did, to give the judge exact plotted values.
+This is the single most powerful signal we found, but it executes untrusted
+code at grading time and therefore needs a sandbox the grader may not have.
+\item \textbf{Caveat on generalization}: every number here uses GPT-6.1 Terra.
+The validator's structure (deterministic execution gate, strict JSON
+checklists, derived families, image facts, crops) is model-agnostic, but the
+calibration of 4b (\texttt{hides\_information}) relies on judgment that a 30B
+model may make less reliably.
+\end{itemize}
+
+\end{document}
