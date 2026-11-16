@@ -6,6 +6,10 @@ This project follows the four-part evaluation workflow in [CMU's original Assign
 
 **Start here:** [Final report (PDF)](report.pdf) · [LaTeX source](report.tex) · [Original requirements](ASSIGNMENT.md) · [AI-use disclosure](AI_USAGE.md) · [Recorded submission check](output/check_submission.txt)
 
+[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/xqzr2000/cmu-11-768-assignment-2/blob/main/notebooks/CMU_11_768_Assignment_2_Project_Walkthrough.ipynb)
+
+The [walkthrough notebook](notebooks/CMU_11_768_Assignment_2_Project_Walkthrough.ipynb) follows one seed run through the validator, runs the file-based execution check and the scorer on the committed predictions, and replays the Harbor value checks on a reference solution and two mutants. It needs no API key or Docker.
+
 | Final checkpoint | Observed result |
 | --- | --- |
 | Public seed evaluation | **110 runs**; baseline macro-MCC **0.5235** → final **0.8726** |
@@ -230,6 +234,7 @@ The original Modal deployment scripts and `workflow generate` remain as upstream
 | Path | Contents |
 | --- | --- |
 | [`ASSIGNMENT.md`](ASSIGNMENT.md) | Unmodified assignment requirements and grading specification |
+| [`notebooks/`](notebooks/) | Colab walkthrough of the validator, scoring and Harbor checks using the committed artifacts |
 | [`validator/solution.py`](validator/solution.py) | Final task-agnostic validator; no seed IDs or ground-truth lookup |
 | [`artifacts/`](artifacts/) / [`seed_labels.json`](seed_labels.json) | Original public seed trajectories, figures and labels |
 | [`tasks/`](tasks/) / [`runs/`](runs/) / [`labels.json`](labels.json) | Authored tasks, 15 real agent runs and human-reviewed labels |
