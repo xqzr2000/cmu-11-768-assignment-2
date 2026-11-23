@@ -8,7 +8,7 @@ This project follows the four-part evaluation workflow in [CMU's original Assign
 
 [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/xqzr2000/cmu-11-768-assignment-2/blob/main/notebooks/CMU_11_768_Assignment_2_Project_Walkthrough.ipynb)
 
-The [walkthrough notebook](notebooks/CMU_11_768_Assignment_2_Project_Walkthrough.ipynb) follows one seed run through the validator, runs the file-based execution check and the scorer on the committed predictions, and replays the Harbor value checks on a reference solution and two mutants. It needs no API key or Docker.
+The [walkthrough notebook](notebooks/CMU_11_768_Assignment_2_Project_Walkthrough.ipynb) is the guided tour of the whole project, with its outputs saved so it reads on GitHub. It covers how the work unfolded, each assignment part with runnable evidence, the agent sandbox (including the real agent loop driven by a scripted model), model choices and cost, and the lessons and limitations. Re-running it needs no API key or Docker.
 
 | Final checkpoint | Observed result |
 | --- | --- |
